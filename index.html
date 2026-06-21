@@ -71,14 +71,10 @@
       const gallery = document.getElementById('gallery');
 
       btn.style.left = (window.innerWidth / 2 - btn.offsetWidth / 2) + 'px';
-      btn.style.top = (window.innerHeight / 2 - btn.offsetHeight / 2) + 'px';
+      btn.style.top = (window.innerHeight / 2 - btn.offsetHeight / 15) + 'px';
 
       let tired = false;
-
-      setTimeout(() => {
-        tired = true;
-        btn.textContent = 'fine.';
-      }, 12000);
+      let started = false;
 
       document.addEventListener('mousemove', (e) => {
         if (tired) return;
@@ -90,6 +86,15 @@
         const dist = Math.hypot(e.clientX - btnCenterX, e.clientY - btnCenterY);
 
         if (dist < 160) {
+          if (!started) {
+            started = true;
+            const waitTime = Math.random() * (20000 - 5000) + 5000;
+            setTimeout(() => {
+              tired = true;
+              btn.textContent = 'fine.';
+            }, waitTime);
+          }
+
           const newX = Math.random() * (window.innerWidth - rect.width);
           const newY = Math.random() * (window.innerHeight - rect.height);
           btn.style.left = newX + 'px';
