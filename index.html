@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gallery</title>
+    <title>Chaotic Gameplay</title>
     <style>
       * {
         margin: 0;
@@ -15,8 +15,8 @@
         background: #0a0a0a;
         color: #f0f0f0;
         font-family: monospace;
-        height: 100vh;
-        overflow: hidden;
+        min-height: 100vh;
+        overflow-x: hidden;
       }
 
       #home {
@@ -26,6 +26,12 @@
         justify-content: center;
         height: 100vh;
         gap: 2rem;
+      }
+
+      #home h1 {
+        font-size: 2rem;
+        letter-spacing: 0.2em;
+        opacity: 0.8;
       }
 
       #enter-btn {
@@ -46,7 +52,59 @@
       }
 
       #gallery {
+        padding: 4rem 2rem;
+        display: none;
+      }
+
+      #gallery h1 {
+        font-size: 1.2rem;
+        letter-spacing: 0.2em;
+        opacity: 0.4;
+        margin-bottom: 3rem;
+        text-align: center;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+
+      .card {
+        border: 1px solid rgba(255,255,255,0.1);
         padding: 2rem;
+        cursor: pointer;
+        transition: border-color 0.2s, background 0.2s;
+        text-decoration: none;
+        color: #f0f0f0;
+        display: block;
+      }
+
+      .card:hover {
+        border-color: rgba(255,255,255,0.5);
+        background: rgba(255,255,255,0.03);
+      }
+
+      .card-tag {
+        font-size: 0.65rem;
+        letter-spacing: 0.15em;
+        opacity: 0.35;
+        text-transform: uppercase;
+        margin-bottom: 0.75rem;
+      }
+
+      .card-title {
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+        font-weight: bold;
+      }
+
+      .card-desc {
+        font-size: 0.8rem;
+        opacity: 0.45;
+        line-height: 1.6;
       }
 
       .hidden {
@@ -56,13 +114,24 @@
   </head>
   <body>
     <div id="home">
-      <h1>welcome.</h1>
+      <h1>chaotic gameplay.</h1>
       <button id="enter-btn">enter</button>
     </div>
 
-    <div id="gallery" class="hidden">
-      <h1>gallery</h1>
-      <!-- your stuff goes here later -->
+    <div id="gallery">
+      <h1>// games</h1>
+      <div class="grid">
+        <a class="card" href="games/aim_trainer.html" target="_blank">
+          <div class="card-tag">shooter · 3d</div>
+          <div class="card-title">Aim Trainer</div>
+          <div class="card-desc">Train your aim against moving targets. Say "bang" to shoot. 60 seconds.</div>
+        </a>
+        <a class="card" href="games/dead_zone.html" target="_blank">
+          <div class="card-tag">fps · top-down</div>
+          <div class="card-title">Dead Zone</div>
+          <div class="card-desc">Survive waves of enemies in a post-apocalyptic dead zone. Say "bang" to shoot.</div>
+        </a>
+      </div>
     </div>
 
     <script>
@@ -104,7 +173,7 @@
 
       btn.addEventListener('click', () => {
         home.style.display = 'none';
-        gallery.classList.remove('hidden');
+        gallery.style.display = 'block';
       });
     </script>
   </body>
