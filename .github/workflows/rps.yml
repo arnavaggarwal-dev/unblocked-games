@@ -1,0 +1,53 @@
+name: Rock Paper Scissors
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  play:
+    if: github.event.issue.number == 1  # change to your issue number
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Play RPS
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const comment = context.payload.comment.body.trim().toLowerCase();
+            const choices = { '🪨': 'rock', '📄': 'paper', '✂️': 'scissors' };
+            const emojis = { rock: '🪨', paper: '📄', scissors: '✂️' };
+            const wins = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
+
+            let player = null;
+            for (const [emoji, name] of Object.entries(choices)) {
+              if (comment.includes(emoji) || comment.includes(name)) {
+                player = name;
+                break;
+              }
+            }
+
+            if (!player) return;
+
+            const cpuName = Object.keys(wins)[Math.floor(Math.random() * 3)];
+            const playerEmoji = emojis[player];
+            const cpuEmoji = emojis[cpuName];
+
+            let result;
+            if (player === cpuName) result = "It's a tie! 🤝";
+            else if (wins[player] === cpuName) result = "You win! 🎉";
+            else result = "You lose! 😈";
+
+            const user = context.payload.comment.user.login;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `@${user} played ${playerEmoji} — I played ${cpuEmoji}\n\n## ${result}\n\n> Play again by commenting 🪨, 📄, or ✂️`
+            });
