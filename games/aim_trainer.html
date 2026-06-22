@@ -34,6 +34,22 @@ canvas { display:block }
 #hint { position:absolute; bottom:22px; left:50%; transform:translateX(-50%);
   font-size:11px; color:rgba(255,255,255,.28); text-align:center; line-height:1.8; pointer-events:none }
 
+#calib-btn {
+  position:absolute; bottom:22px; right:24px;
+  pointer-events:all;
+  padding:6px 14px; font-size:11px; font-family:monospace;
+  background:transparent; color:rgba(255,255,255,.4);
+  border:1px solid rgba(255,255,255,.15); border-radius:4px;
+  cursor:pointer; letter-spacing:.08em;
+}
+#calib-btn:hover { color:#fff; border-color:rgba(255,255,255,.4); }
+
+#head-status {
+  position:absolute; top:22px; left:50%; transform:translateX(-50%);
+  font-size:10px; letter-spacing:.1em; color:rgba(255,255,255,.3);
+  margin-top:60px; pointer-events:none;
+}
+
 .screen { position:absolute; inset:0; z-index:20; pointer-events:all;
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   background:rgba(5,7,12,.88); backdrop-filter:blur(8px) }
@@ -70,12 +86,14 @@ canvas { display:block }
   <div id="mode-badge">3RD PERSON</div>
   <div id="flash"></div>
   <div id="streak"></div>
-  <div id="hint"><span class="kk">LMB</span> Shoot &nbsp;·&nbsp; <span class="kk">RMB</span> / <span class="kk">V</span> ADS &nbsp;·&nbsp; Move mouse to aim</div>
+  <div id="hint"><span class="kk">Bang</span> Shoot &nbsp;·&nbsp; <span class="kk">RMB</span> / <span class="kk">V</span> ADS &nbsp;·&nbsp; Move head to aim</div>
+  <button id="calib-btn">⊕ recalibrate</button>
+  <div id="head-status">HEAD TRACKING INIT...</div>
 </div>
 
 <div id="start-screen" class="screen">
   <h1>Aim Trainer</h1>
-  <p class="sub"><span class="kk">LMB</span> Shoot &nbsp; <span class="kk">RMB</span> ADS &nbsp; <span class="kk">V</span> Toggle camera<br>Drag mouse to aim &nbsp;·&nbsp; 60 seconds</p>
+  <p class="sub">Move your <strong>head</strong> to aim &nbsp;·&nbsp; Say <span class="kk">bang</span> to shoot<br><span class="kk">RMB</span> ADS &nbsp; <span class="kk">V</span> Toggle camera &nbsp;·&nbsp; 60 seconds</p>
   <button class="btn" id="start-btn">Start</button>
 </div>
 
@@ -86,9 +104,13 @@ canvas { display:block }
   <button class="btn" id="restart-btn">Play again</button>
 </div>
 
+<!-- MediaPipe -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 
+// ── Three.js setup ────────────────────────────────────────────
 var canvas   = document.getElementById('c');
 var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -134,20 +156,12 @@ scene.add(muzzleLight);
 (function buildEnv() {
   function plane(w, d, mat, x, y, z, rx) {
     var m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), mat);
-    m.position.set(x, y, z);
-    m.rotation.x = rx;
-    m.receiveShadow = true;
-    scene.add(m);
+    m.position.set(x, y, z); m.rotation.x = rx; m.receiveShadow = true; scene.add(m);
   }
   function box(w, h, d, mat, x, y, z) {
     var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-    m.position.set(x, y, z);
-    m.castShadow = true;
-    m.receiveShadow = true;
-    scene.add(m);
-    return m;
+    m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; scene.add(m); return m;
   }
-
   var mFloor = new THREE.MeshStandardMaterial({ color:0x0c0e12, roughness:0.96 });
   var mCeil  = new THREE.MeshStandardMaterial({ color:0x090b0f, roughness:0.95 });
   var mWall  = new THREE.MeshStandardMaterial({ color:0x131720, roughness:0.88 });
@@ -155,7 +169,6 @@ scene.add(muzzleLight);
   var mStrip = new THREE.MeshStandardMaterial({ color:0x88aaee, emissive:new THREE.Color(0x3355bb), emissiveIntensity:0.65, roughness:0.8 });
   var mPanel = new THREE.MeshStandardMaterial({ color:0x0e1218, roughness:0.92 });
   var mTrim  = new THREE.MeshStandardMaterial({ color:0x182030, roughness:0.9 });
-
   plane(18, 28, mFloor,  0,    0,    4, -Math.PI/2);
   plane(18, 28, mCeil,   0,  5.2,   4,  Math.PI/2);
   box(18, 7.5, 0.22, mWall,    0,  3.75, 10.11);
@@ -170,196 +183,188 @@ scene.add(muzzleLight);
 })();
 
 function makeGun() {
-  var g   = new THREE.Group();
-  var m1  = new THREE.MeshStandardMaterial({ color:0x252525, roughness:0.42, metalness:0.92 });
-  var m2  = new THREE.MeshStandardMaterial({ color:0x0f0f0f, roughness:0.35, metalness:0.95 });
-  var mgr = new THREE.MeshStandardMaterial({ color:0x1c1408, roughness:0.95 });
-  var mac = new THREE.MeshStandardMaterial({ color:0x3d5570, roughness:0.28, metalness:0.88 });
-  var HPI = Math.PI / 2;
-
-  function p(geo, mat, x, y, z, rx, ry, rz) {
-    var mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(x, y, z);
-    if (rx || ry || rz) mesh.rotation.set(rx||0, ry||0, rz||0);
-    mesh.castShadow = true;
-    g.add(mesh);
-  }
-
-  p(new THREE.BoxGeometry(0.054,0.054,0.36),         m1,   0,  0.000,  0.04);
-  p(new THREE.BoxGeometry(0.050,0.047,0.26),         m2,   0, -0.051,  0.07);
-  p(new THREE.CylinderGeometry(0.012,0.012,0.42,8),  m2,   0,  0.007,  0.30,  HPI);
-  p(new THREE.CylinderGeometry(0.020,0.017,0.054,8), m1,   0,  0.007,  0.534, HPI);
-  p(new THREE.BoxGeometry(0.044,0.165,0.072),        mgr,  0, -0.128,  0.018, 0.13);
-  p(new THREE.BoxGeometry(0.037,0.125,0.063),        m1,   0, -0.143,  0.102);
-  p(new THREE.BoxGeometry(0.048,0.048,0.18),         mgr,  0, -0.003, -0.164);
-  p(new THREE.BoxGeometry(0.020,0.009,0.27),         mac,  0,  0.033,  0.055);
-  p(new THREE.BoxGeometry(0.026,0.026,0.046),        m1,   0,  0.052,  0.076);
-  p(new THREE.BoxGeometry(0.052,0.048,0.22),         m1,   0,  0.000,  0.240);
-  p(new THREE.BoxGeometry(0.034,0.085,0.052),        mgr,  0, -0.078,  0.265);
-
+  var g=new THREE.Group();
+  var m1=new THREE.MeshStandardMaterial({color:0x252525,roughness:0.42,metalness:0.92});
+  var m2=new THREE.MeshStandardMaterial({color:0x0f0f0f,roughness:0.35,metalness:0.95});
+  var mgr=new THREE.MeshStandardMaterial({color:0x1c1408,roughness:0.95});
+  var mac=new THREE.MeshStandardMaterial({color:0x3d5570,roughness:0.28,metalness:0.88});
+  var HPI=Math.PI/2;
+  function p(geo,mat,x,y,z,rx,ry,rz){var mesh=new THREE.Mesh(geo,mat);mesh.position.set(x,y,z);if(rx||ry||rz)mesh.rotation.set(rx||0,ry||0,rz||0);mesh.castShadow=true;g.add(mesh);}
+  p(new THREE.BoxGeometry(0.054,0.054,0.36),m1,0,0.000,0.04);
+  p(new THREE.BoxGeometry(0.050,0.047,0.26),m2,0,-0.051,0.07);
+  p(new THREE.CylinderGeometry(0.012,0.012,0.42,8),m2,0,0.007,0.30,HPI);
+  p(new THREE.CylinderGeometry(0.020,0.017,0.054,8),m1,0,0.007,0.534,HPI);
+  p(new THREE.BoxGeometry(0.044,0.165,0.072),mgr,0,-0.128,0.018,0.13);
+  p(new THREE.BoxGeometry(0.037,0.125,0.063),m1,0,-0.143,0.102);
+  p(new THREE.BoxGeometry(0.048,0.048,0.18),mgr,0,-0.003,-0.164);
+  p(new THREE.BoxGeometry(0.020,0.009,0.27),mac,0,0.033,0.055);
+  p(new THREE.BoxGeometry(0.026,0.026,0.046),m1,0,0.052,0.076);
+  p(new THREE.BoxGeometry(0.052,0.048,0.22),m1,0,0.000,0.240);
+  p(new THREE.BoxGeometry(0.034,0.085,0.052),mgr,0,-0.078,0.265);
   return g;
 }
 
 function makePlayer() {
-  var g   = new THREE.Group();
-  var mb  = new THREE.MeshStandardMaterial({ color:0x1e2e3e, roughness:0.86 });
-  var md  = new THREE.MeshStandardMaterial({ color:0x0d1520, roughness:0.9  });
-  var ms  = new THREE.MeshStandardMaterial({ color:0xc4a070, roughness:0.9  });
-  var mbo = new THREE.MeshStandardMaterial({ color:0x101010, roughness:0.75 });
-  var mh  = new THREE.MeshStandardMaterial({ color:0x111922, roughness:0.7, metalness:0.3 });
-  var mv  = new THREE.MeshStandardMaterial({ color:0x2244aa, roughness:0.15, metalness:0.8, transparent:true, opacity:0.7 });
-
-  function p(geo, mat, x, y, z) {
-    var mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(x, y, z);
-    mesh.castShadow = true;
-    g.add(mesh);
-  }
-
-  p(new THREE.BoxGeometry(0.44,0.58,0.20), mb,   0,  1.19, 0);
-  p(new THREE.BoxGeometry(0.10,0.10,0.22), md,   0.27,1.47,0);
-  p(new THREE.BoxGeometry(0.10,0.10,0.22), md,  -0.27,1.47,0);
-  p(new THREE.BoxGeometry(0.12,0.50,0.12), md,   0.30,0.94,0);
-  p(new THREE.BoxGeometry(0.12,0.50,0.12), md,  -0.30,0.94,0);
-  p(new THREE.BoxGeometry(0.18,0.62,0.18), mb,   0.12,0.45,0);
-  p(new THREE.BoxGeometry(0.18,0.62,0.18), mb,  -0.12,0.45,0);
-  p(new THREE.BoxGeometry(0.20,0.09,0.28), mbo,  0.12,0.07,0.03);
-  p(new THREE.BoxGeometry(0.20,0.09,0.28), mbo, -0.12,0.07,0.03);
-  p(new THREE.BoxGeometry(0.30,0.26,0.28), mh,   0,  1.745,0);
-  p(new THREE.BoxGeometry(0.24,0.09,0.04), mv,   0,  1.740,0.145);
-
+  var g=new THREE.Group();
+  var mb=new THREE.MeshStandardMaterial({color:0x1e2e3e,roughness:0.86});
+  var md=new THREE.MeshStandardMaterial({color:0x0d1520,roughness:0.9});
+  var mbo=new THREE.MeshStandardMaterial({color:0x101010,roughness:0.75});
+  var mh=new THREE.MeshStandardMaterial({color:0x111922,roughness:0.7,metalness:0.3});
+  var mv=new THREE.MeshStandardMaterial({color:0x2244aa,roughness:0.15,metalness:0.8,transparent:true,opacity:0.7});
+  function p(geo,mat,x,y,z){var mesh=new THREE.Mesh(geo,mat);mesh.position.set(x,y,z);mesh.castShadow=true;g.add(mesh);}
+  p(new THREE.BoxGeometry(0.44,0.58,0.20),mb,0,1.19,0);
+  p(new THREE.BoxGeometry(0.10,0.10,0.22),md,0.27,1.47,0);
+  p(new THREE.BoxGeometry(0.10,0.10,0.22),md,-0.27,1.47,0);
+  p(new THREE.BoxGeometry(0.12,0.50,0.12),md,0.30,0.94,0);
+  p(new THREE.BoxGeometry(0.12,0.50,0.12),md,-0.30,0.94,0);
+  p(new THREE.BoxGeometry(0.18,0.62,0.18),mb,0.12,0.45,0);
+  p(new THREE.BoxGeometry(0.18,0.62,0.18),mb,-0.12,0.45,0);
+  p(new THREE.BoxGeometry(0.20,0.09,0.28),mbo,0.12,0.07,0.03);
+  p(new THREE.BoxGeometry(0.20,0.09,0.28),mbo,-0.12,0.07,0.03);
+  p(new THREE.BoxGeometry(0.30,0.26,0.28),mh,0,1.745,0);
+  p(new THREE.BoxGeometry(0.24,0.09,0.04),mv,0,1.740,0.145);
   return g;
 }
 
 var targets = [];
-var GRID_COLS = 7, GRID_ROWS = 7;
-var GRID_SX   = 0.80, GRID_SY = 0.68;   
-var GRID_WZ   = 9.95;                    
-var MAX_ACTIVE = 2;
-var TRAD = 0.26;                         
+var GRID_COLS=7, GRID_ROWS=7, GRID_SX=0.80, GRID_SY=0.68, GRID_WZ=9.95, MAX_ACTIVE=2, TRAD=0.26;
 
 (function makeTargets() {
-  var DS = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide, color:0x07080b, roughness:0.95 });
-
-  function mkRing(parent, radius, tube, col, emit, eInt) {
-    var mat = new THREE.MeshStandardMaterial({
-      color: col, roughness:0.42, metalness:0.2, side: THREE.DoubleSide,
-      emissive: new THREE.Color(emit), emissiveIntensity: eInt
-    });
-    var m = new THREE.Mesh(new THREE.TorusGeometry(radius, tube, 10, 48), mat);
-    parent.add(m); return m;
+  function mkRing(parent,radius,tube,col,emit,eInt){
+    var mat=new THREE.MeshStandardMaterial({color:col,roughness:0.42,metalness:0.2,side:THREE.DoubleSide,emissive:new THREE.Color(emit),emissiveIntensity:eInt});
+    var m=new THREE.Mesh(new THREE.TorusGeometry(radius,tube,10,48),mat);
+    parent.add(m);return m;
   }
-
-  var offX = ((GRID_COLS-1) * GRID_SX) / 2;   
-  var offY = ((GRID_ROWS-1) * GRID_SY) / 2;   
-
-  for (var r=0; r<GRID_ROWS; r++) {
-    for (var c=0; c<GRID_COLS; c++) {
-
-      var pivot = new THREE.Group();
-      var slotX = c*GRID_SX - offX;
-      var slotY = 2.2 + r*GRID_SY - offY;      
-      pivot.position.set(slotX, slotY, GRID_WZ);
+  var offX=((GRID_COLS-1)*GRID_SX)/2, offY=((GRID_ROWS-1)*GRID_SY)/2;
+  for(var r=0;r<GRID_ROWS;r++){
+    for(var c=0;c<GRID_COLS;c++){
+      var pivot=new THREE.Group();
+      pivot.position.set(c*GRID_SX-offX, 2.2+r*GRID_SY-offY, GRID_WZ);
       scene.add(pivot);
-
-      var vis = new THREE.Group();
-      vis.position.y = TRAD;                   
-      vis.rotation.y = Math.PI;               
-      pivot.add(vis);
-
-      var back = new THREE.Mesh(
-        new THREE.CircleGeometry(TRAD + 0.04, 32),
-        new THREE.MeshStandardMaterial({ color:0x07080b, roughness:0.95, side:THREE.DoubleSide })
-      );
-      back.position.z = 0.01;
-      vis.add(back);
-
-      var ring1 = mkRing(vis, TRAD*0.92, 0.026, 0xcc1111, 0x660000, 0.40);
-      var ring2 = mkRing(vis, TRAD*0.57, 0.020, 0xff5511, 0x551100, 0.30);
-      var ring3 = mkRing(vis, TRAD*0.26, 0.016, 0xffffff, 0x888888, 0.28);
-
-      var dot = new THREE.Mesh(
-        new THREE.CircleGeometry(TRAD*0.10, 16),
-        new THREE.MeshStandardMaterial({ color:0xffffff, emissive:new THREE.Color(0xffffff),
-          emissiveIntensity:0.8, side:THREE.DoubleSide })
-      );
-      dot.position.z = 0.015; vis.add(dot);
-
-      var hit = new THREE.Mesh(
-        new THREE.CircleGeometry(TRAD, 24),
-        new THREE.MeshStandardMaterial({ transparent:true, opacity:0, depthWrite:false, side:THREE.DoubleSide })
-      );
-      hit.position.z = 0.02; vis.add(hit);
-
-      var peg = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.018, 0.018, 0.10, 8),
-        new THREE.MeshStandardMaterial({ color:0x333333, metalness:0.8, roughness:0.4 })
-      );
-      peg.rotation.z = Math.PI/2;
-      pivot.add(peg);
-
-      pivot.visible = false;
-      targets.push({
-        pivot: pivot,
-        vis:   vis,
-        hit:   hit,
-        rings: [ring1, ring2, ring3],
-        active:   false,
-        falling:  false,
-        fallAngle: 0,
-        timer:    null
-      });
+      var vis=new THREE.Group(); vis.position.y=TRAD; vis.rotation.y=Math.PI; pivot.add(vis);
+      var back=new THREE.Mesh(new THREE.CircleGeometry(TRAD+0.04,32),new THREE.MeshStandardMaterial({color:0x07080b,roughness:0.95,side:THREE.DoubleSide}));
+      back.position.z=0.01; vis.add(back);
+      var ring1=mkRing(vis,TRAD*0.92,0.026,0xcc1111,0x660000,0.40);
+      var ring2=mkRing(vis,TRAD*0.57,0.020,0xff5511,0x551100,0.30);
+      var ring3=mkRing(vis,TRAD*0.26,0.016,0xffffff,0x888888,0.28);
+      var dot=new THREE.Mesh(new THREE.CircleGeometry(TRAD*0.10,16),new THREE.MeshStandardMaterial({color:0xffffff,emissive:new THREE.Color(0xffffff),emissiveIntensity:0.8,side:THREE.DoubleSide}));
+      dot.position.z=0.015; vis.add(dot);
+      var hit=new THREE.Mesh(new THREE.CircleGeometry(TRAD,24),new THREE.MeshStandardMaterial({transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}));
+      hit.position.z=0.02; vis.add(hit);
+      var peg=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.10,8),new THREE.MeshStandardMaterial({color:0x333333,metalness:0.8,roughness:0.4}));
+      peg.rotation.z=Math.PI/2; pivot.add(peg);
+      pivot.visible=false;
+      targets.push({pivot,vis,hit,rings:[ring1,ring2,ring3],active:false,falling:false,fallAngle:0,timer:null});
     }
   }
 })();
 
-function countActive() {
-  var n=0;
-  for (var i=0;i<targets.length;i++) if (targets[i].active || targets[i].falling) n++;
-  return n;
+function countActive(){var n=0;for(var i=0;i<targets.length;i++)if(targets[i].active||targets[i].falling)n++;return n;}
+function spawnRandom(){
+  if(countActive()>=MAX_ACTIVE)return;
+  var idle=[];for(var i=0;i<targets.length;i++)if(!targets[i].active&&!targets[i].falling)idle.push(i);
+  if(!idle.length)return;
+  var t=targets[idle[Math.floor(Math.random()*idle.length)]];
+  var cols=[0xcc1111,0xff5511,0xffffff],emits=[0x660000,0x551100,0x888888],eInts=[0.40,0.30,0.28];
+  for(var i=0;i<t.rings.length;i++){t.rings[i].material.color.set(cols[i]);t.rings[i].material.emissive.set(emits[i]);t.rings[i].material.emissiveIntensity=eInts[i];}
+  t.pivot.rotation.x=0;t.pivot.visible=true;t.active=true;t.falling=false;t.fallAngle=0;
+}
+function spawnToFill(){while(countActive()<MAX_ACTIVE)spawnRandom();}
+
+var player=makePlayer(); scene.add(player);
+var gunPivot=new THREE.Group(); scene.add(gunPivot);
+var gun=makeGun(); gunPivot.add(gun);
+
+var score=0,streak=0,timeLeft=60,running=false;
+var mode='tpp',targetFOV=72;
+var yaw=0,pitch=0;
+var SENS=0.0022;
+
+// ── Head tracking state ───────────────────────────────────────
+var headYaw=0, headPitch=0;          // smoothed head angles fed into game
+var calibYaw=0, calibPitch=0;        // calibration offsets
+var rawYaw=0, rawPitch=0;            // latest raw from mediapipe
+var headReady=false;
+var HEAD_SENS_YAW   = 2.2;           // amplify head yaw → game yaw
+var HEAD_SENS_PITCH = 1.8;           // amplify head pitch → game pitch
+var HEAD_SMOOTH     = 0.12;          // lerp factor (lower = smoother but laggier)
+
+var headStatusEl = document.getElementById('head-status');
+
+function calibrate() {
+  calibYaw   = rawYaw;
+  calibPitch = rawPitch;
+  headStatusEl.textContent = 'HEAD TRACKING ACTIVE';
 }
 
-function spawnRandom() {
-  if (countActive() >= MAX_ACTIVE) return;
-  var idle = [];
-  for (var i=0;i<targets.length;i++) if (!targets[i].active && !targets[i].falling) idle.push(i);
-  if (!idle.length) return;
-  var idx = idle[Math.floor(Math.random() * idle.length)];
-  var t = targets[idx];
+document.getElementById('calib-btn').addEventListener('click', calibrate);
 
-  var cols  = [0xcc1111, 0xff5511, 0xffffff];
-  var emits = [0x660000, 0x551100, 0x888888];
-  var eInts = [0.40, 0.30, 0.28];
-  for (var i=0; i<t.rings.length; i++) {
-    t.rings[i].material.color.set(cols[i]);
-    t.rings[i].material.emissive.set(emits[i]);
-    t.rings[i].material.emissiveIntensity = eInts[i];
+// ── MediaPipe Face Mesh ───────────────────────────────────────
+var videoEl = document.createElement('video');
+videoEl.style.display = 'none';
+document.body.appendChild(videoEl);
+
+var faceMesh = new FaceMesh({ locateFile: function(f){ return 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/' + f; } });
+faceMesh.setOptions({
+  maxNumFaces: 1,
+  refineLandmarks: false,
+  minDetectionConfidence: 0.5,
+  minTrackingConfidence: 0.5,
+});
+
+faceMesh.onResults(function(results) {
+  if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) return;
+
+  var lm = results.multiFaceLandmarks[0];
+
+  // Key landmarks:
+  // 1  = nose tip
+  // 9  = nose bridge top
+  // 234 = left cheek
+  // 454 = right cheek
+  // 10  = forehead
+  // 152 = chin
+
+  var nose    = lm[1];
+  var forehead = lm[10];
+  var chin    = lm[152];
+  var leftCheek  = lm[234];
+  var rightCheek = lm[454];
+
+  // Yaw: horizontal offset of nose relative to cheek midpoint
+  var cheekMidX = (leftCheek.x + rightCheek.x) / 2;
+  var cheekMidY = (leftCheek.y + rightCheek.y) / 2;
+  var newRawYaw = (nose.x - cheekMidX) * 6.0;
+
+  // Pitch: vertical offset of nose relative to forehead-chin midpoint
+  var faceMidY = (forehead.y + chin.y) / 2;
+  var newRawPitch = (nose.y - faceMidY) * 5.0;
+
+  rawYaw   = newRawYaw;
+  rawPitch = newRawPitch;
+
+  if (!headReady) {
+    headReady = true;
+    calibrate(); // auto-calibrate on first detection
+    headStatusEl.textContent = 'HEAD TRACKING ACTIVE';
   }
-  t.pivot.rotation.x = 0;
-  t.pivot.visible    = true;
-  t.active           = true;
-  t.falling          = false;
-  t.fallAngle        = 0;
-}
+});
 
-function spawnToFill() {
-  while (countActive() < MAX_ACTIVE) spawnRandom();
-}
+// Start camera
+var mpCamera = new Camera(videoEl, {
+  onFrame: async function() {
+    await faceMesh.send({ image: videoEl });
+  },
+  width: 320,
+  height: 240,
+});
+mpCamera.start().catch(function(e){ headStatusEl.textContent = 'CAM DENIED'; console.warn(e); });
 
-var player   = makePlayer();      scene.add(player);
-var gunPivot = new THREE.Group(); scene.add(gunPivot);
-var gun      = makeGun();         gunPivot.add(gun);
-
-var score=0, streak=0, timeLeft=60, running=false;
-var mode='tpp', targetFOV=72;
-var yaw=0, pitch=0;
-var locked=false, dragging=false, lastX=0, lastY=0;
-var SENS=0.0022, DSENS=0.003;
-
+// ── Game logic ────────────────────────────────────────────────
 var aimDir   = new THREE.Vector3();
 var rightVec = new THREE.Vector3();
 var UP       = new THREE.Vector3(0,1,0);
-var HEAD     = new THREE.Vector3(0,1.55,0);
+var HEAD_POS = new THREE.Vector3(0,1.55,0);
 var aimTgt   = new THREE.Vector3();
 var tCam     = new THREE.Vector3();
 var tGun     = new THREE.Vector3();
@@ -370,164 +375,109 @@ var center2D  = new THREE.Vector2(0,0);
 
 function shoot() {
   if (!running) return;
-
   muzzleLight.intensity = 7;
   muzzleLight.position.copy(gunPivot.position).addScaledVector(aimDir, 0.68);
-  setTimeout(function(){ muzzleLight.intensity = 0; }, 52);
-
+  setTimeout(function(){ muzzleLight.intensity=0; }, 52);
   screenFlash('rgba(255,255,255,0.07)');
-
   camera.updateMatrixWorld(true);
   raycaster.setFromCamera(center2D, camera);
-
-  var hitMeshes = [];
-  for (var i=0; i<targets.length; i++) { if (targets[i].active && !targets[i].falling) hitMeshes.push(targets[i].hit); }
-
-  var intersects = raycaster.intersectObjects(hitMeshes);
-  if (intersects.length > 0) {
-    for (var j=0; j<targets.length; j++) {
-      if (targets[j].hit === intersects[0].object) { registerHit(targets[j]); break; }
-    }
-  } else {
-    streak = 0;
-  }
+  var hitMeshes=[];
+  for(var i=0;i<targets.length;i++){if(targets[i].active&&!targets[i].falling)hitMeshes.push(targets[i].hit);}
+  var intersects=raycaster.intersectObjects(hitMeshes);
+  if(intersects.length>0){
+    for(var j=0;j<targets.length;j++){if(targets[j].hit===intersects[0].object){registerHit(targets[j]);break;}}
+  } else { streak=0; }
 }
 
 function registerHit(t) {
-  t.active  = false;
-  t.falling = true;
-  t.fallAngle = 0;
+  t.active=false; t.falling=true; t.fallAngle=0;
   score++; streak++;
   updateHUD(); showStreak();
-
-  for (var i=0; i<t.rings.length; i++) {
-    t.rings[i].material.emissive.set(0xffffff);
-    t.rings[i].material.emissiveIntensity = 2.5;
-  }
+  for(var i=0;i<t.rings.length;i++){t.rings[i].material.emissive.set(0xffffff);t.rings[i].material.emissiveIntensity=2.5;}
   screenFlash('rgba(255,70,70,0.14)');
-
   clearTimeout(t.timer);
-  t.timer = setTimeout(function(){
-    t.falling = false;
-    t.pivot.visible = false;
-    setTimeout(function(){ spawnRandom(); }, 300 + Math.random()*400);
-  }, 340);
+  t.timer=setTimeout(function(){t.falling=false;t.pivot.visible=false;setTimeout(function(){spawnRandom();},300+Math.random()*400);},340);
 }
 
-var timerEl  = document.getElementById('timer');
-var scoreEl  = document.getElementById('score-val');
-var streakEl = document.getElementById('streak');
-var flashEl  = document.getElementById('flash');
-var xhairEl  = document.getElementById('xhair');
-var modeEl   = document.getElementById('mode-badge');
-var hintEl   = document.getElementById('hint');
+var timerEl=document.getElementById('timer');
+var scoreEl=document.getElementById('score-val');
+var streakEl=document.getElementById('streak');
+var flashEl=document.getElementById('flash');
+var xhairEl=document.getElementById('xhair');
+var modeEl=document.getElementById('mode-badge');
+var hintEl=document.getElementById('hint');
 
-function updateHUD() {
-  scoreEl.textContent = score;
-  var t = Math.ceil(timeLeft);
-  timerEl.textContent = t;
-  if (t <= 10) timerEl.classList.add('low'); else timerEl.classList.remove('low');
+function updateHUD(){
+  scoreEl.textContent=score;
+  var t=Math.ceil(timeLeft); timerEl.textContent=t;
+  if(t<=10)timerEl.classList.add('low');else timerEl.classList.remove('low');
 }
-
-function screenFlash(color) {
-  flashEl.style.background = color;
-  flashEl.style.opacity = '1';
+function screenFlash(color){
+  flashEl.style.background=color; flashEl.style.opacity='1';
   clearTimeout(flashEl._t);
-  flashEl._t = setTimeout(function(){ flashEl.style.opacity='0'; flashEl.style.background=''; }, 75);
+  flashEl._t=setTimeout(function(){flashEl.style.opacity='0';flashEl.style.background='';},75);
 }
-
-function showStreak() {
-  if (streak < 2) return;
-  streakEl.textContent = streak >= 6 ? streak + '× STREAK!' : streak + '×';
-  streakEl.style.opacity = '1';
+function showStreak(){
+  if(streak<2)return;
+  streakEl.textContent=streak>=6?streak+'× STREAK!':streak+'×';
+  streakEl.style.opacity='1';
   clearTimeout(streakEl._t);
-  streakEl._t = setTimeout(function(){ streakEl.style.opacity='0'; }, 1500);
+  streakEl._t=setTimeout(function(){streakEl.style.opacity='0';},1500);
 }
 
-var tickInterval = null;
-
-function startGame() {
-  score=0; streak=0; timeLeft=60; running=true; mode='tpp'; targetFOV=72; yaw=0; pitch=0;
-
-  for (var i=0; i<targets.length; i++) {
-    clearTimeout(targets[i].timer);
-    targets[i].active = false;
-    targets[i].falling = false;
-    targets[i].fallAngle = 0;
-    targets[i].pivot.visible = false;
-  }
+var tickInterval=null;
+function startGame(){
+  score=0;streak=0;timeLeft=60;running=true;mode='tpp';targetFOV=72;yaw=0;pitch=0;
+  headYaw=0;headPitch=0;
+  for(var i=0;i<targets.length;i++){clearTimeout(targets[i].timer);targets[i].active=false;targets[i].falling=false;targets[i].fallAngle=0;targets[i].pivot.visible=false;}
   spawnToFill();
-
-  document.getElementById('start-screen').style.display = 'none';
-  document.getElementById('end-screen').style.display   = 'none';
-  document.getElementById('hud').style.display          = 'block';
-  modeEl.textContent = '3RD PERSON';
+  document.getElementById('start-screen').style.display='none';
+  document.getElementById('end-screen').style.display='none';
+  document.getElementById('hud').style.display='block';
+  modeEl.textContent='3RD PERSON';
   xhairEl.classList.remove('ads');
   updateHUD();
-  canvas.requestPointerLock();
-
   clearInterval(tickInterval);
-  tickInterval = setInterval(function(){
-    if (!running) return;
-    timeLeft = Math.max(0, timeLeft - 0.1);
+  tickInterval=setInterval(function(){
+    if(!running)return;
+    timeLeft=Math.max(0,timeLeft-0.1);
     updateHUD();
-    if (timeLeft <= 0) endGame();
-  }, 100);
+    if(timeLeft<=0)endGame();
+  },100);
 }
 
-function endGame() {
-  running = false;
-  clearInterval(tickInterval);
-  if (document.exitPointerLock) document.exitPointerLock();
-  document.getElementById('hud').style.display        = 'none';
-  document.getElementById('end-screen').style.display = 'flex';
-  document.getElementById('final-val').textContent    = score;
-  var ratings = [
-    [0,  'Keep practicing — aim comes with time'],
-    [8,  'Solid start! Getting sharper'],
-    [16, 'Nice shooting! Looking dangerous'],
-    [24, 'Sharp aim — quick and consistent'],
-    [32, 'Deadly accurate. Top-tier precision!']
-  ];
-  var msg = ratings[0][1];
-  for (var i=0; i<ratings.length; i++) { if (score >= ratings[i][0]) msg = ratings[i][1]; }
-  document.getElementById('end-msg').textContent = msg;
+function endGame(){
+  running=false; clearInterval(tickInterval);
+  document.getElementById('hud').style.display='none';
+  document.getElementById('end-screen').style.display='flex';
+  document.getElementById('final-val').textContent=score;
+  var ratings=[[0,'Keep practicing — aim comes with time'],[8,'Solid start! Getting sharper'],[16,'Nice shooting! Looking dangerous'],[24,'Sharp aim — quick and consistent'],[32,'Deadly accurate. Top-tier precision!']];
+  var msg=ratings[0][1];
+  for(var i=0;i<ratings.length;i++){if(score>=ratings[i][0])msg=ratings[i][1];}
+  document.getElementById('end-msg').textContent=msg;
 }
 
-canvas.addEventListener('mousedown', function(e){
-  if (!running) return;
-  e.preventDefault();
-  if (e.button === 2) toggleMode();
-});
-canvas.addEventListener('mouseup',     function(){ dragging=false; });
 canvas.addEventListener('contextmenu', function(e){ e.preventDefault(); });
-
-document.addEventListener('pointerlockchange', function(){
-  locked = document.pointerLockElement === canvas;
-  hintEl.style.display = locked ? 'none' : 'block';
-});
-
-document.addEventListener('mousemove', function(e){
-  if (!running) return;
-  yaw   += e.movementX * SENS;
-  pitch -= e.movementY * SENS;
-  pitch = Math.max(-0.65, Math.min(0.65, pitch));
-  yaw   = Math.max(-1.2,  Math.min(1.2,  yaw));
+canvas.addEventListener('mousedown', function(e){
+  if(!running)return;
+  e.preventDefault();
+  if(e.button===2)toggleMode();
 });
 
 document.addEventListener('keydown', function(e){
-  if (!running) return;
-  if (e.code === 'KeyV' || e.code === 'KeyC') toggleMode();
+  if(!running)return;
+  if(e.code==='KeyV'||e.code==='KeyC')toggleMode();
+  if(e.code==='KeyR')calibrate();
 });
 
-function toggleMode() {
-  mode = mode === 'tpp' ? 'ads' : 'tpp';
-  targetFOV = mode === 'tpp' ? 72 : 34;
-  modeEl.textContent = mode === 'tpp' ? '3RD PERSON' : 'ADS';
-  if (mode === 'ads') xhairEl.classList.add('ads'); else xhairEl.classList.remove('ads');
+function toggleMode(){
+  mode=mode==='tpp'?'ads':'tpp';
+  targetFOV=mode==='tpp'?72:34;
+  modeEl.textContent=mode==='tpp'?'3RD PERSON':'ADS';
+  if(mode==='ads')xhairEl.classList.add('ads');else xhairEl.classList.remove('ads');
 }
 
-document.getElementById('start-btn').addEventListener('click',   startGame);
+document.getElementById('start-btn').addEventListener('click', startGame);
 document.getElementById('restart-btn').addEventListener('click', startGame);
 
 var clock = new THREE.Clock();
@@ -537,57 +487,55 @@ function animate() {
   var dt = Math.min(clock.getDelta(), 0.05);
 
   if (running) {
+    // ── Update yaw/pitch from head tracking ──
+    if (headReady) {
+      var targetYaw   = (rawYaw   - calibYaw)   * HEAD_SENS_YAW;
+      var targetPitch = (rawPitch - calibPitch)  * HEAD_SENS_PITCH;
+
+      // Smooth with lerp to reduce jitter
+      headYaw   += (targetYaw   - headYaw)   * HEAD_SMOOTH;
+      headPitch += (targetPitch - headPitch)  * HEAD_SMOOTH;
+
+      // Clamp to game limits
+      yaw   = Math.max(-1.2,  Math.min(1.2,  headYaw));
+      pitch = Math.max(-0.65, Math.min(0.65, -headPitch)); // invert pitch (look up = negative Y)
+    }
 
     aimDir.set(
-      Math.sin(yaw) * Math.cos(pitch),
+      Math.sin(yaw)*Math.cos(pitch),
       Math.sin(pitch),
-      Math.cos(yaw) * Math.cos(pitch)
+      Math.cos(yaw)*Math.cos(pitch)
     ).normalize();
 
     rightVec.crossVectors(UP, aimDir).normalize();
-    aimTgt.copy(HEAD).addScaledVector(aimDir, 18);
+    aimTgt.copy(HEAD_POS).addScaledVector(aimDir, 18);
 
-    if (mode === 'tpp') {
-      tCam.copy(HEAD)
-        .addScaledVector(aimDir,  -2.2)
-        .addScaledVector(rightVec, 0.37)
-        .addScaledVector(UP,       0.26);
+    if(mode==='tpp'){
+      tCam.copy(HEAD_POS).addScaledVector(aimDir,-2.2).addScaledVector(rightVec,0.37).addScaledVector(UP,0.26);
     } else {
-      tCam.copy(HEAD);
+      tCam.copy(HEAD_POS);
     }
-    camera.position.lerp(tCam, Math.min(dt * 14, 0.95));
+    camera.position.lerp(tCam, Math.min(dt*14,0.95));
     camera.lookAt(aimTgt);
-    camera.fov += (targetFOV - camera.fov) * Math.min(dt * 9, 0.95);
+    camera.fov+=(targetFOV-camera.fov)*Math.min(dt*9,0.95);
     camera.updateProjectionMatrix();
 
-    if (mode === 'tpp') {
-      tGun.copy(HEAD)
-        .addScaledVector(rightVec, 0.30)
-        .addScaledVector(aimDir,   0.72)
-        .addScaledVector(UP,      -0.17);
+    if(mode==='tpp'){
+      tGun.copy(HEAD_POS).addScaledVector(rightVec,0.30).addScaledVector(aimDir,0.72).addScaledVector(UP,-0.17);
     } else {
-      tGun.copy(camera.position)
-        .addScaledVector(aimDir,  0.30)
-        .addScaledVector(UP,     -0.13);
+      tGun.copy(camera.position).addScaledVector(aimDir,0.30).addScaledVector(UP,-0.13);
     }
-    gunPivot.position.lerp(tGun, Math.min(dt * 13, 0.95));
-    tmpV.copy(tGun).addScaledVector(aimDir, 2);
+    gunPivot.position.lerp(tGun, Math.min(dt*13,0.95));
+    tmpV.copy(tGun).addScaledVector(aimDir,2);
     gunPivot.lookAt(tmpV);
+    player.visible=(mode==='tpp');
+    player.rotation.y=yaw;
 
-    player.visible    = (mode === 'tpp');
-    player.rotation.y = yaw;
-
-    var et = clock.getElapsedTime();
-    for (var i=0; i<targets.length; i++) {
-      var tgt = targets[i];
-      if (tgt.falling) {
-
-        tgt.fallAngle += dt * 7.5;
-        tgt.pivot.rotation.x = Math.min(tgt.fallAngle, Math.PI * 0.48);
-      } else if (tgt.active) {
-
-        tgt.rings[0].material.emissiveIntensity = 0.28 + 0.18 * Math.sin(et * 2.4 + i * 0.88);
-      }
+    var et=clock.getElapsedTime();
+    for(var i=0;i<targets.length;i++){
+      var tgt=targets[i];
+      if(tgt.falling){tgt.fallAngle+=dt*7.5;tgt.pivot.rotation.x=Math.min(tgt.fallAngle,Math.PI*0.48);}
+      else if(tgt.active){tgt.rings[0].material.emissiveIntensity=0.28+0.18*Math.sin(et*2.4+i*0.88);}
     }
   }
 
@@ -597,36 +545,32 @@ function animate() {
 animate();
 
 window.addEventListener('resize', function(){
-  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.aspect=window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(window.innerWidth,window.innerHeight);
 });
-// Sound-triggered shooting
-navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-  const ctx = new AudioContext();
-  const source = ctx.createMediaStreamSource(stream);
-  const analyser = ctx.createAnalyser();
+
+// ── Sound shoot ───────────────────────────────────────────────
+navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+  var ctx     = new AudioContext();
+  var source  = ctx.createMediaStreamSource(stream);
+  var analyser = ctx.createAnalyser();
   analyser.fftSize = 256;
   source.connect(analyser);
-
-  const data = new Uint8Array(analyser.frequencyBinCount);
-  let lastShot = 0;
-  const THRESHOLD = 240;
-  const COOLDOWN = 500;
-
-  const detect = () => {
+  var data     = new Uint8Array(analyser.frequencyBinCount);
+  var lastShot = 0;
+  var THRESHOLD = 240;
+  var COOLDOWN  = 500;
+  var detect = function() {
     requestAnimationFrame(detect);
     analyser.getByteFrequencyData(data);
-    const peak = Math.max(...data);
-    const now = Date.now();
-    if (peak > THRESHOLD && now - lastShot > COOLDOWN) {
-      lastShot = now;
-      shoot();
-    }
+    var peak = Math.max.apply(null, data);
+    var now  = Date.now();
+    if (peak > THRESHOLD && now - lastShot > COOLDOWN) { lastShot = now; shoot(); }
   };
-
   detect();
-}).catch(e => console.warn('Mic denied:', e));
+}).catch(function(e){ console.warn('Mic denied:', e); });
+
 </script>
 </body>
 </html>
