@@ -15,12 +15,9 @@
     padding:8px 22px; font-size:13px; font-weight:500;
     cursor:pointer; pointer-events:all;
     -webkit-appearance:none; appearance:none;
-    outline:none !important; box-shadow:none !important;
-    white-space:nowrap;
+    outline:none !important; box-shadow:none !important; white-space:nowrap;
   }
-  #startBtn:hover, #flyBtn:hover,
-  #startBtn:focus, #flyBtn:focus,
-  #startBtn:active, #flyBtn:active { background:#fff !important; color:#111 !important; }
+  #startBtn:hover,#flyBtn:hover,#startBtn:focus,#flyBtn:focus,#startBtn:active,#flyBtn:active { background:#fff !important; color:#111 !important; }
   #flyBtn { position:absolute; z-index:20; display:none; transform:translate(-50%,-50%); will-change:transform,left,top; }
   .btn-piece { position:absolute; z-index:20; background:#fff; pointer-events:none; overflow:hidden; box-sizing:border-box; transform:translate(-50%,-50%); will-change:transform,left,top; height:34px; }
   .btn-piece-text { display:block; color:#111; font-size:13px; font-weight:500; line-height:34px; width:90px; text-align:center; white-space:nowrap; }
@@ -46,14 +43,14 @@
 const { Engine, Runner, Bodies, Body, World, Events } = Matter
 
 const W = 640, H = 460
-const PW = 90, PH = 10   // paddle
+const PW = 90, PH = 10
 const BCOLS = 5, BROWS = 3
 const BW = 108, BH = 36, BGAP = 8
 const BOX = 18, BOY = 55
-const BR = 7              // ball radius
-const BTW = 90, BTH = 34 // button size
+const BR = 7
+const BTW = 90, BTH = 34
 const SPD = 5.5
-const TRAIL = 22
+const TRAIL = 14  // shorter trail = less draw calls
 
 const canvas = document.getElementById('c')
 const ctx = canvas.getContext('2d')
@@ -62,17 +59,17 @@ const wrap = document.getElementById('wrap')
 const overlay = document.getElementById('overlay')
 const startBtn = document.getElementById('startBtn')
 const flyBtn = document.getElementById('flyBtn')
-const msg = document.getElementById('msg')
+const msgEl = document.getElementById('msg')
 const oTitle = document.getElementById('oTitle')
 const oMsg = document.getElementById('oMsg')
 
 let eng, runner, paddle, ball, bricks = []
 let running = false, done = false
 let mx = W/2, flashT
+let keys = { left: false, right: false }
 let btnMode = false, t = 0
 let respawning = false, plays = 0, spent = 0
-let pieces = []
-let ballTrail = []
+let pieces = [], ballTrail = []
 
 function resize() {
   const aw = Math.max(280, (document.documentElement.clientWidth || window.innerWidth) - 12)
@@ -92,43 +89,37 @@ function pieceCount(n) {
 }
 
 function jitter() { return (Math.random()*2-1) * 5 * Math.PI/180 }
-
 function jitterV(b) {
-  const a = jitter(), c = Math.cos(a), s = Math.sin(a)
-  ;[b.vx, b.vy] = [b.vx*c - b.vy*s, b.vx*s + b.vy*c]
+  const a=jitter(), c=Math.cos(a), s=Math.sin(a)
+  ;[b.vx, b.vy] = [b.vx*c-b.vy*s, b.vx*s+b.vy*c]
 }
-
 function jitterBody(body) {
-  const a = jitter(), c = Math.cos(a), s = Math.sin(a), v = body.velocity
-  Body.setVelocity(body, { x: v.x*c - v.y*s, y: v.x*s + v.y*c })
+  const a=jitter(), c=Math.cos(a), s=Math.sin(a), v=body.velocity
+  Body.setVelocity(body, { x:v.x*c-v.y*s, y:v.x*s+v.y*c })
 }
 
 function flash(txt) {
-  msg.textContent = txt
+  msgEl.textContent = txt
   clearTimeout(flashT)
-  flashT = setTimeout(() => msg.textContent = '', 2200)
+  flashT = setTimeout(() => msgEl.textContent='', 2200)
 }
 
 function makeBricks(e) {
   bricks = []
-  for (let r = 0; r < BROWS; r++) {
-    for (let c = 0; c < BCOLS; c++) {
-      const x = BOX + c*(BW+BGAP) + BW/2
-      const y = BOY + r*(BH+BGAP) + BH/2
-      const b = Bodies.rectangle(x, y, BW, BH, { isStatic:true, label:'brick', restitution:1, friction:0, frictionStatic:0 })
-      b.gameData = { hits:0, alive:true }
-      bricks.push(b)
-      World.add(e.world, b)
-    }
+  for (let r=0; r<BROWS; r++) for (let c=0; c<BCOLS; c++) {
+    const x=BOX+c*(BW+BGAP)+BW/2, y=BOY+r*(BH+BGAP)+BH/2
+    const b = Bodies.rectangle(x, y, BW, BH, { isStatic:true, label:'brick', restitution:1, friction:0, frictionStatic:0 })
+    b.gameData = { hits:0, alive:true }
+    bricks.push(b); World.add(e.world, b)
   }
 }
 
 function makeWalls(e) {
   const o = { isStatic:true, label:'wall', restitution:1, friction:0, frictionStatic:0 }
   World.add(e.world, [
-    Bodies.rectangle(W/2, -25, W, 50, o),
-    Bodies.rectangle(-25, H/2, 50, H, o),
-    Bodies.rectangle(W+25, H/2, 50, H, o)
+    Bodies.rectangle(W/2,-25,W,50,o),
+    Bodies.rectangle(-25,H/2,50,H,o),
+    Bodies.rectangle(W+25,H/2,50,H,o)
   ])
 }
 
@@ -141,8 +132,7 @@ function initWorld() {
     collisionFilter: { category:0x0001, mask:0x0002 }
   })
   World.add(eng.world, paddle)
-  makeBricks(eng)
-  makeWalls(eng)
+  makeBricks(eng); makeWalls(eng)
   Events.on(eng, 'collisionStart', onHit)
   Runner.run(runner, eng)
 }
@@ -153,334 +143,307 @@ function dropBall(e) {
     inertia:Infinity, inverseInertia:0,
     collisionFilter: { category:0x0002, mask:0x0001|0x0004|0x0008 }
   })
-  const a = (Math.random()*0.6 + 0.2) * Math.PI
-  Body.setVelocity(ball, { x: Math.cos(a)*SPD*(Math.random()>0.5?1:-1), y: -Math.abs(Math.sin(a)*SPD) })
-  World.add(e.world, ball)
-  ballTrail = []
+  const a = (Math.random()*0.6+0.2)*Math.PI
+  Body.setVelocity(ball, { x:Math.cos(a)*SPD*(Math.random()>0.5?1:-1), y:-Math.abs(Math.sin(a)*SPD) })
+  World.add(e.world, ball); ballTrail=[]
 }
 
 function clampSpeed() {
   if (!ball) return
-  let { x:vx, y:vy } = ball.velocity
-  if (Math.abs(vx) < 1.5) vx = 1.5*(vx>=0?1:-1)
-  if (Math.abs(vy) < 1)   vy = 1*(vy>=0?1:-1)
-  const spd = Math.hypot(vx, vy)
-  if (spd > 0) { vx = vx/spd*SPD; vy = vy/spd*SPD }
-  let { x:bx, y:by } = ball.position
-  let moved = false
-  if (bx-BR < 0)   { bx = BR+1;   vx =  Math.abs(vx); moved=true }
-  if (bx+BR > W)   { bx = W-BR-1; vx = -Math.abs(vx); moved=true }
-  if (by-BR < 0)   { by = BR+1;   vy =  Math.abs(vy); moved=true }
-  if (moved) Body.setPosition(ball, { x:bx, y:by })
-  Body.setVelocity(ball, { x:vx, y:vy })
+  let {x:vx,y:vy} = ball.velocity
+  if (Math.abs(vx)<1.5) vx=1.5*(vx>=0?1:-1)
+  if (Math.abs(vy)<1)   vy=1*(vy>=0?1:-1)
+  const spd=Math.hypot(vx,vy)
+  if (spd>0) { vx=vx/spd*SPD; vy=vy/spd*SPD }
+  let {x:bx,y:by}=ball.position; let moved=false
+  if (bx-BR<0)  { bx=BR+1;   vx= Math.abs(vx); moved=true }
+  if (bx+BR>W)  { bx=W-BR-1; vx=-Math.abs(vx); moved=true }
+  if (by-BR<0)  { by=BR+1;   vy= Math.abs(vy); moved=true }
+  if (moved) Body.setPosition(ball,{x:bx,y:by})
+  Body.setVelocity(ball,{x:vx,y:vy})
 }
 
 function corners(b, w, h) {
-  const c = Math.cos(b.angle), s = Math.sin(b.angle), hw = w/2, hh = h/2
+  const c=Math.cos(b.angle), s=Math.sin(b.angle), hw=w/2, hh=h/2
   return [
-    { x: b.x - hw*c + hh*s, y: b.y - hw*s - hh*c },
-    { x: b.x + hw*c + hh*s, y: b.y + hw*s - hh*c },
-    { x: b.x + hw*c - hh*s, y: b.y + hw*s + hh*c },
-    { x: b.x - hw*c - hh*s, y: b.y - hw*s + hh*c }
+    {x:b.x-hw*c+hh*s, y:b.y-hw*s-hh*c},
+    {x:b.x+hw*c+hh*s, y:b.y+hw*s-hh*c},
+    {x:b.x+hw*c-hh*s, y:b.y+hw*s+hh*c},
+    {x:b.x-hw*c-hh*s, y:b.y-hw*s+hh*c}
   ]
 }
 
-function proj(pts, ax, ay) {
-  let lo = Infinity, hi = -Infinity
-  for (const p of pts) {
-    const d = p.x*ax + p.y*ay
-    if (d < lo) lo = d
-    if (d > hi) hi = d
-  }
-  return [lo, hi]
+function proj(pts,ax,ay) {
+  let lo=Infinity,hi=-Infinity
+  for (const p of pts) { const d=p.x*ax+p.y*ay; if(d<lo)lo=d; if(d>hi)hi=d }
+  return [lo,hi]
 }
 
-function obbRect(bc, ba, rx, ry, rw, rh) {
-  const rc = [
-    {x:rx-rw/2,y:ry-rh/2},{x:rx+rw/2,y:ry-rh/2},
-    {x:rx+rw/2,y:ry+rh/2},{x:rx-rw/2,y:ry+rh/2}
-  ]
-  const axes = [[Math.cos(ba),Math.sin(ba)],[-Math.sin(ba),Math.cos(ba)],[1,0],[0,1]]
-  let minOv = Infinity, nx = 0, ny = 0
+function obbRect(bc,ba,rx,ry,rw,rh) {
+  const rc=[{x:rx-rw/2,y:ry-rh/2},{x:rx+rw/2,y:ry-rh/2},{x:rx+rw/2,y:ry+rh/2},{x:rx-rw/2,y:ry+rh/2}]
+  const axes=[[Math.cos(ba),Math.sin(ba)],[-Math.sin(ba),Math.cos(ba)],[1,0],[0,1]]
+  let minOv=Infinity,nx=0,ny=0
   for (const [ax,ay] of axes) {
-    const [a0,a1] = proj(bc,ax,ay), [b0,b1] = proj(rc,ax,ay)
-    if (a1 < b0 || b1 < a0) return null
-    const ov = Math.min(a1,b1) - Math.max(a0,b0)
-    if (ov < minOv) { minOv=ov; nx=ax; ny=ay }
+    const [a0,a1]=proj(bc,ax,ay),[b0,b1]=proj(rc,ax,ay)
+    if (a1<b0||b1<a0) return null
+    const ov=Math.min(a1,b1)-Math.max(a0,b0)
+    if (ov<minOv){minOv=ov;nx=ax;ny=ay}
   }
-  return { ov:minOv, nx, ny }
+  return {ov:minOv,nx,ny}
 }
 
 function obbObb(cA,aA,cB,aB) {
-  const axes = [[Math.cos(aA),Math.sin(aA)],[-Math.sin(aA),Math.cos(aA)],[Math.cos(aB),Math.sin(aB)],[-Math.sin(aB),Math.cos(aB)]]
-  let minOv = Infinity, nx = 0, ny = 0
+  const axes=[[Math.cos(aA),Math.sin(aA)],[-Math.sin(aA),Math.cos(aA)],[Math.cos(aB),Math.sin(aB)],[-Math.sin(aB),Math.cos(aB)]]
+  let minOv=Infinity,nx=0,ny=0
   for (const [ax,ay] of axes) {
-    const [a0,a1] = proj(cA,ax,ay), [b0,b1] = proj(cB,ax,ay)
-    if (a1 < b0 || b1 < a0) return null
-    const ov = Math.min(a1,b1) - Math.max(a0,b0)
-    if (ov < minOv) { minOv=ov; nx=ax; ny=ay }
+    const [a0,a1]=proj(cA,ax,ay),[b0,b1]=proj(cB,ax,ay)
+    if (a1<b0||b1<a0) return null
+    const ov=Math.min(a1,b1)-Math.max(a0,b0)
+    if (ov<minOv){minOv=ov;nx=ax;ny=ay}
   }
-  if (minOv <= 0.3) return null
-  return { ov:minOv, nx, ny }
+  if (minOv<=0.3) return null
+  return {ov:minOv,nx,ny}
 }
 
 function clearPieces() {
   for (const p of pieces) if (p.el?.parentNode) p.el.remove()
-  pieces = []
+  pieces=[]
 }
 
-function makePiece(idx, n, pw) {
-  const el = document.createElement('div')
-  el.className = 'btn-piece'
-  el.style.width = pw + 'px'
-  const r = BTH/2
-  if      (n === 1)     el.style.borderRadius = r+'px'
-  else if (idx === 0)   { el.style.borderTopLeftRadius=r+'px'; el.style.borderBottomLeftRadius=r+'px' }
-  else if (idx === n-1) { el.style.borderTopRightRadius=r+'px'; el.style.borderBottomRightRadius=r+'px' }
-  const span = document.createElement('span')
-  span.className = 'btn-piece-text'
-  span.textContent = 'play again'
-  span.style.transform = `translateX(${-idx*pw}px)`
-  el.appendChild(span)
-  return el
+function makePiece(idx,n,pw) {
+  const el=document.createElement('div')
+  el.className='btn-piece'; el.style.width=pw+'px'
+  const r=BTH/2
+  if      (n===1)     el.style.borderRadius=r+'px'
+  else if (idx===0)   { el.style.borderTopLeftRadius=r+'px'; el.style.borderBottomLeftRadius=r+'px' }
+  else if (idx===n-1) { el.style.borderTopRightRadius=r+'px'; el.style.borderBottomRightRadius=r+'px' }
+  const span=document.createElement('span')
+  span.className='btn-piece-text'; span.textContent='play again'
+  span.style.transform=`translateX(${-idx*pw}px)`
+  el.appendChild(span); return el
 }
 
 function spawnPieces(n) {
   clearPieces()
-  const pw = BTW/n
-  const spread = {1:0,2:0.7,4:1.7,8:2.6}[n]||0
-  for (let i = 0; i < n; i++) {
-    const el = makePiece(i, n, pw)
-    wrap.appendChild(el)
-    const ox = (i-(n-1)/2)*pw
-    const a = n===1 ? -Math.PI/2 : -Math.PI/2 + (i/(n-1)-0.5)*spread
-    const p = {
-      x: W/2+ox, y: H/2+55,
-      vx: Math.cos(a)*SPD, vy: Math.sin(a)*SPD,
-      angle:0, av: 0.08*(Math.random()>0.5?1:-1),
-      w:pw, h:BTH, trail:[]
-    }
-    el.style.left = p.x+'px'; el.style.top = p.y+'px'
-    el.style.transform = 'translate(-50%,-50%) rotate(0rad)'
-    pieces.push({ p, el })
+  const pw=BTW/n, spread={1:0,2:0.7,4:1.7,8:2.6}[n]||0
+  for (let i=0; i<n; i++) {
+    const el=makePiece(i,n,pw); wrap.appendChild(el)
+    const ox=(i-(n-1)/2)*pw
+    const a=n===1?-Math.PI/2:-Math.PI/2+(i/(n-1)-0.5)*spread
+    const p={x:W/2+ox,y:H/2+55,vx:Math.cos(a)*SPD,vy:Math.sin(a)*SPD,angle:0,av:0.08*(Math.random()>0.5?1:-1),w:pw,h:BTH,trail:[]}
+    el.style.left=p.x+'px'; el.style.top=p.y+'px'
+    el.style.transform='translate(-50%,-50%) rotate(0rad)'
+    pieces.push({p,el})
   }
 }
 
 function respawnPiece(idx) {
-  const pc = pieces[idx]
-  if (!pc) return
+  const pc=pieces[idx]; if (!pc) return
   spent++
-  const a = -Math.PI/2 + (Math.random()*0.6-0.3)
-  Object.assign(pc.p, { x:W/2, y:H-70, vx:Math.cos(a)*SPD, vy:Math.sin(a)*SPD, angle:0, av:0.05*(Math.random()>0.5?1:-1), trail:[] })
+  const a=-Math.PI/2+(Math.random()*0.6-0.3)
+  Object.assign(pc.p,{x:W/2,y:H-70,vx:Math.cos(a)*SPD,vy:Math.sin(a)*SPD,angle:0,av:0.05*(Math.random()>0.5?1:-1),trail:[]})
 }
 
-function stepPiece(p, idx) {
-  p.trail.push({ x:p.x, y:p.y })
-  if (p.trail.length > TRAIL) p.trail.shift()
+function stepPiece(p,idx) {
+  p.trail.push({x:p.x,y:p.y})
+  if (p.trail.length>TRAIL) p.trail.shift()
 
-  p.x += p.vx; p.y += p.vy
-  p.angle += p.av
-  p.av = Math.max(-0.45, Math.min(0.45, p.av*0.993))
+  p.x+=p.vx; p.y+=p.vy; p.angle+=p.av
+  p.av=Math.max(-0.45,Math.min(0.45,p.av*0.993))
 
-  if (Math.abs(p.vx) < 1.5) p.vx = 1.5*(p.vx>=0?1:-1)
-  if (Math.abs(p.vy) < 1)   p.vy = 1*(p.vy>=0?1:-1)
-  const spd = Math.hypot(p.vx, p.vy)
-  if (spd > 0.1) { p.vx = p.vx/spd*SPD; p.vy = p.vy/spd*SPD }
+  if (Math.abs(p.vx)<1.5) p.vx=1.5*(p.vx>=0?1:-1)
+  if (Math.abs(p.vy)<1)   p.vy=1*(p.vy>=0?1:-1)
+  const spd=Math.hypot(p.vx,p.vy)
+  if (spd>0.1){p.vx=p.vx/spd*SPD;p.vy=p.vy/spd*SPD}
 
-  const cs = corners(p, p.w, p.h)
+  const cs=corners(p,p.w,p.h)
   let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity
-  for (const c of cs) { x0=Math.min(x0,c.x); x1=Math.max(x1,c.x); y0=Math.min(y0,c.y); y1=Math.max(y1,c.y) }
+  for (const c of cs){x0=Math.min(x0,c.x);x1=Math.max(x1,c.x);y0=Math.min(y0,c.y);y1=Math.max(y1,c.y)}
 
-  let wallHit = false
-  if (x0<0)   { p.x-=x0;       p.vx= Math.abs(p.vx); p.av+=p.vy*0.02; wallHit=true }
-  if (x1>W)   { p.x-=(x1-W);   p.vx=-Math.abs(p.vx); p.av-=p.vy*0.02; wallHit=true }
-  if (y0<0)   { p.y-=y0;       p.vy= Math.abs(p.vy); p.av+=p.vx*0.02; wallHit=true }
-  if (y1>H+20){ respawnPiece(idx); return }
-  if (wallHit) { jitterV(p); }
+  let wh=false
+  if(x0<0)  {p.x-=x0;    p.vx= Math.abs(p.vx);p.av+=p.vy*0.02;wh=true}
+  if(x1>W)  {p.x-=(x1-W);p.vx=-Math.abs(p.vx);p.av-=p.vy*0.02;wh=true}
+  if(y0<0)  {p.y-=y0;    p.vy= Math.abs(p.vy);p.av+=p.vx*0.02;wh=true}
+  if(y1>H+20){respawnPiece(idx);return}
+  if(wh) jitterV(p)
 
-  const pcx = paddle ? paddle.position.x : W/2
-  const pcy = H-35
-  let cs2 = corners(p, p.w, p.h)
-  const ph = obbRect(cs2, p.angle, pcx, pcy, PW, PH)
-  if (ph && p.vy > -0.1) {
-    let nx=ph.nx, ny=ph.ny
-    if (nx*(p.x-pcx)+ny*(p.y-pcy) < 0) { nx=-nx; ny=-ny }
-    p.x+=nx*ph.ov; p.y+=ny*ph.ov
-    const dot = p.vx*nx+p.vy*ny
-    if (dot<0) { p.vx-=2*dot*nx; p.vy-=2*dot*ny }
-    const rel = (p.x-pcx)/(PW/2)
-    p.vx += rel*1.5
-    const ns = Math.hypot(p.vx,p.vy)
-    if (ns>0) { p.vx=p.vx/ns*SPD; p.vy=p.vy/ns*SPD }
-    p.av += rel*0.25
-    jitterV(p)
-    cs2 = corners(p, p.w, p.h)
+  const pcx=paddle?paddle.position.x:W/2, pcy=H-35
+  const cs2=corners(p,p.w,p.h)
+  const ph=obbRect(cs2,p.angle,pcx,pcy,PW,PH)
+  if(ph&&p.vy>-0.1){
+    let nx=ph.nx,ny=ph.ny
+    if(nx*(p.x-pcx)+ny*(p.y-pcy)<0){nx=-nx;ny=-ny}
+    p.x+=nx*ph.ov;p.y+=ny*ph.ov
+    const dot=p.vx*nx+p.vy*ny
+    if(dot<0){p.vx-=2*dot*nx;p.vy-=2*dot*ny}
+    const rel=(p.x-pcx)/(PW/2); p.vx+=rel*1.5
+    const ns=Math.hypot(p.vx,p.vy)
+    if(ns>0){p.vx=p.vx/ns*SPD;p.vy=p.vy/ns*SPD}
+    p.av+=rel*0.25; jitterV(p)
   }
 
+  const cs3=corners(p,p.w,p.h)
   for (const bk of bricks) {
-    if (!bk.gameData.alive) continue
-    const bp = bk.position
-    const h = obbRect(cs2, p.angle, bp.x, bp.y, BW, BH)
-    if (!h) continue
+    if(!bk.gameData.alive) continue
+    const bp=bk.position
+    const h=obbRect(cs3,p.angle,bp.x,bp.y,BW,BH); if(!h) continue
     let nx=h.nx,ny=h.ny
-    if (nx*(p.x-bp.x)+ny*(p.y-bp.y) < 0) { nx=-nx; ny=-ny }
-    p.x+=nx*h.ov; p.y+=ny*h.ov
+    if(nx*(p.x-bp.x)+ny*(p.y-bp.y)<0){nx=-nx;ny=-ny}
+    p.x+=nx*h.ov;p.y+=ny*h.ov
     const dot=p.vx*nx+p.vy*ny
-    if (dot<0) { p.vx-=2*dot*nx; p.vy-=2*dot*ny }
-    p.av += (p.vx*(-ny)+p.vy*nx)*0.025
-    jitterV(p)
-    const gd = bk.gameData
-    if (gd.hits===0) gd.hits=1
-    else { gd.alive=false; World.remove(eng.world, bk) }
+    if(dot<0){p.vx-=2*dot*nx;p.vy-=2*dot*ny}
+    p.av+=(p.vx*(-ny)+p.vy*nx)*0.025; jitterV(p)
+    if(bk.gameData.hits===0) bk.gameData.hits=1
+    else{bk.gameData.alive=false;World.remove(eng.world,bk)}
     break
   }
 }
 
 function pieceBounce() {
-  for (let i=0; i<pieces.length; i++) {
-    for (let j=i+1; j<pieces.length; j++) {
-      const a=pieces[i].p, b=pieces[j].p
-      const dx=b.x-a.x, dy=b.y-a.y
-      const reach = Math.max(a.w,a.h)+Math.max(b.w,b.h)
-      if (dx*dx+dy*dy > reach*reach) continue
-      const ca=corners(a,a.w,a.h), cb=corners(b,b.w,b.h)
-      const h=obbObb(ca,a.angle,cb,b.angle)
-      if (!h) continue
-      let nx=h.nx,ny=h.ny
-      if (nx*(b.x-a.x)+ny*(b.y-a.y)<0){nx=-nx;ny=-ny}
-      a.x-=nx*h.ov*0.5; a.y-=ny*h.ov*0.5
-      b.x+=nx*h.ov*0.5; b.y+=ny*h.ov*0.5
-      const van=a.vx*nx+a.vy*ny, vbn=b.vx*nx+b.vy*ny
-      if (van-vbn <= 0) continue
-      a.vx+=(vbn-van)*nx; a.vy+=(vbn-van)*ny
-      b.vx+=(van-vbn)*nx; b.vy+=(van-vbn)*ny
-      const sa=Math.hypot(a.vx,a.vy); if(sa>0){a.vx=a.vx/sa*SPD;a.vy=a.vy/sa*SPD}
-      const sb=Math.hypot(b.vx,b.vy); if(sb>0){b.vx=b.vx/sb*SPD;b.vy=b.vy/sb*SPD}
-      a.av+=(Math.random()-0.5)*0.2; b.av+=(Math.random()-0.5)*0.2
-      jitterV(a); jitterV(b)
-    }
+  for (let i=0;i<pieces.length;i++) for (let j=i+1;j<pieces.length;j++) {
+    const a=pieces[i].p, b=pieces[j].p
+    const dx=b.x-a.x, dy=b.y-a.y, reach=Math.max(a.w,a.h)+Math.max(b.w,b.h)
+    if(dx*dx+dy*dy>reach*reach) continue
+    const ca=corners(a,a.w,a.h), cb=corners(b,b.w,b.h)
+    const h=obbObb(ca,a.angle,cb,b.angle); if(!h) continue
+    let nx=h.nx,ny=h.ny
+    if(nx*(b.x-a.x)+ny*(b.y-a.y)<0){nx=-nx;ny=-ny}
+    a.x-=nx*h.ov*0.5;a.y-=ny*h.ov*0.5;b.x+=nx*h.ov*0.5;b.y+=ny*h.ov*0.5
+    const van=a.vx*nx+a.vy*ny, vbn=b.vx*nx+b.vy*ny
+    if(van-vbn<=0) continue
+    a.vx+=(vbn-van)*nx;a.vy+=(vbn-van)*ny;b.vx+=(van-vbn)*nx;b.vy+=(van-vbn)*ny
+    const sa=Math.hypot(a.vx,a.vy);if(sa>0){a.vx=a.vx/sa*SPD;a.vy=a.vy/sa*SPD}
+    const sb=Math.hypot(b.vx,b.vy);if(sb>0){b.vx=b.vx/sb*SPD;b.vy=b.vy/sb*SPD}
+    a.av+=(Math.random()-0.5)*0.2;b.av+=(Math.random()-0.5)*0.2
+    jitterV(a);jitterV(b)
   }
 }
 
 function syncDom() {
   for (const pc of pieces) {
-    pc.el.style.left = pc.p.x+'px'
-    pc.el.style.top  = pc.p.y+'px'
-    pc.el.style.transform = `translate(-50%,-50%) rotate(${pc.p.angle}rad)`
+    pc.el.style.left=pc.p.x+'px'; pc.el.style.top=pc.p.y+'px'
+    pc.el.style.transform=`translate(-50%,-50%) rotate(${pc.p.angle}rad)`
   }
 }
 
 function startGame(usePieces) {
-  done=false; spent=0; msg.textContent=''; respawning=false
-  plays++; clearPieces(); flyBtn.style.display='none'; ballTrail=[]
+  done=false;spent=0;msgEl.textContent='';respawning=false
+  plays++;clearPieces();flyBtn.style.display='none';ballTrail=[]
   initWorld()
-  overlay.style.display='none'; startBtn.style.display='inline-block'; running=true
-  if (usePieces) {
-    btnMode=true; ball=null
-    spawnPieces(pieceCount(plays))
-  } else {
-    btnMode=false; dropBall(eng)
-    flash('move mouse · hit each brick twice to break it')
-  }
+  overlay.style.display='none';startBtn.style.display='inline-block';running=true
+  if(usePieces){btnMode=true;ball=null;spawnPieces(pieceCount(plays))}
+  else{btnMode=false;dropBall(eng);flash('move mouse or arrow keys · hit each brick twice')}
 }
 
 function onHit(e) {
-  if (btnMode) return
-  for (const pair of e.pairs) {
-    const { bodyA:a, bodyB:b } = pair
-    const ballBody = a.label==='ball'?a : b.label==='ball'?b : null
-    if (!ballBody) continue
-    const bk = a.label==='brick'?a : b.label==='brick'?b : null
-    if (bk?.gameData?.alive) {
-      if (bk.gameData.hits===0) bk.gameData.hits=1
-      else { bk.gameData.alive=false; World.remove(eng.world, bk) }
+  if(btnMode) return
+  for(const pair of e.pairs){
+    const{bodyA:a,bodyB:b}=pair
+    const ballBody=a.label==='ball'?a:b.label==='ball'?b:null; if(!ballBody) continue
+    const bk=a.label==='brick'?a:b.label==='brick'?b:null
+    if(bk?.gameData?.alive){
+      if(bk.gameData.hits===0) bk.gameData.hits=1
+      else{bk.gameData.alive=false;World.remove(eng.world,bk)}
     }
     jitterBody(ballBody)
   }
 }
 
 function endGame(won) {
-  if (done) return
-  done=true; running=false
-  if (runner) Runner.stop(runner)
-  btnMode=false; clearPieces(); startBtn.style.display='none'
-  oTitle.textContent = won ? 'you won!' : 'game over'
-  oMsg.textContent = `balls expended: ${spent}`
+  if(done) return
+  done=true;running=false
+  if(runner) Runner.stop(runner)
+  btnMode=false;clearPieces();startBtn.style.display='none'
+  oTitle.textContent=won?'you won!':'game over'
+  oMsg.textContent=`balls expended: ${spent}`
   overlay.style.display='flex'
   flyBtn.style.display='block'
-  flyBtn.style.left=W/2+'px'; flyBtn.style.top=(H/2+55)+'px'
+  flyBtn.style.left=W/2+'px';flyBtn.style.top=(H/2+55)+'px'
   flyBtn.style.transform='translate(-50%,-50%) rotate(0rad)'
-  flyBtn.onclick = () => startGame(true)
+  flyBtn.onclick=()=>startGame(true)
 }
+
+const PADDLE_SPEED = 7
 
 function tick() {
-  if (!running || done) return
-  Body.setPosition(paddle, { x: Math.max(PW/2, Math.min(W-PW/2, mx)), y:H-35 })
-  if (btnMode) {
-    for (let i=0; i<pieces.length; i++) stepPiece(pieces[i].p, i)
+  if(!running||done) return
+
+  // arrow key paddle movement
+  if(keys.left)  mx = Math.max(PW/2, mx-PADDLE_SPEED)
+  if(keys.right) mx = Math.min(W-PW/2, mx+PADDLE_SPEED)
+
+  Body.setPosition(paddle,{x:Math.max(PW/2,Math.min(W-PW/2,mx)),y:H-35})
+
+  if(btnMode){
+    for(let i=0;i<pieces.length;i++) stepPiece(pieces[i].p,i)
     pieceBounce(); syncDom()
   } else {
-    if (ball) { ballTrail.push({x:ball.position.x,y:ball.position.y}); if(ballTrail.length>TRAIL)ballTrail.shift() }
+    if(ball){ballTrail.push({x:ball.position.x,y:ball.position.y});if(ballTrail.length>TRAIL)ballTrail.shift()}
     clampSpeed()
-    if (ball && ball.position.y>H+20 && !respawning) {
-      spent++; World.remove(eng.world,ball); ball=null; ballTrail=[]; respawning=true
-      setTimeout(()=>{ respawning=false; if(running&&!done&&!btnMode)dropBall(eng) },500)
+    if(ball&&ball.position.y>H+20&&!respawning){
+      spent++;World.remove(eng.world,ball);ball=null;ballTrail=[];respawning=true
+      setTimeout(()=>{respawning=false;if(running&&!done&&!btnMode)dropBall(eng)},500)
     }
   }
-  if (bricks.length && bricks.every(b=>!b.gameData.alive)) endGame(true)
+  if(bricks.length&&bricks.every(b=>!b.gameData.alive)) endGame(true)
 }
 
+// trails — single polyline stroke per trail, ONE shadowBlur call total
 function drawTrailBall() {
-  if (ballTrail.length < 2) return
-  const hue = (t*4)%360
-  for (let i=1; i<ballTrail.length; i++) {
-    const f = i/ballTrail.length
-    ctx.save()
-    ctx.globalCompositeOperation='screen'
-    ctx.shadowBlur = 18*f; ctx.shadowColor=`hsl(${hue},100%,65%)`
-    ctx.fillStyle=`hsla(${hue},100%,70%,${f*0.85})`
-    ctx.beginPath(); ctx.arc(ballTrail[i].x, ballTrail[i].y, BR*f*0.9+1, 0, Math.PI*2); ctx.fill()
-    ctx.restore()
+  if(ballTrail.length<2) return
+  const hue=(t*4)%360
+  ctx.save()
+  ctx.globalCompositeOperation='screen'
+  ctx.shadowBlur=12; ctx.shadowColor=`hsl(${hue},100%,60%)`
+  ctx.strokeStyle=`hsl(${hue},100%,68%)`
+  ctx.lineWidth=BR*1.6; ctx.lineCap='round'; ctx.lineJoin='round'
+  ctx.globalAlpha=0.7
+  ctx.beginPath()
+  ctx.moveTo(ballTrail[0].x, ballTrail[0].y)
+  for(let i=1;i<ballTrail.length;i++){
+    ctx.globalAlpha=0.12+(i/ballTrail.length)*0.6
+    ctx.lineTo(ballTrail[i].x, ballTrail[i].y)
   }
+  ctx.stroke()
+  ctx.restore()
 }
 
-function drawTrailPiece(p, idx) {
-  if (!p.trail||p.trail.length<2) return
-  const hue = (idx/Math.max(pieces.length,1))*360
-  for (let i=1; i<p.trail.length; i++) {
-    const f = i/p.trail.length
-    ctx.save()
-    ctx.globalCompositeOperation='screen'
-    ctx.shadowBlur=22*f; ctx.shadowColor=`hsl(${hue},100%,65%)`
-    ctx.fillStyle=`hsla(${hue},100%,70%,${f*0.7})`
-    ctx.translate(p.trail[i].x, p.trail[i].y)
-    ctx.rotate(p.angle*(i/p.trail.length))
-    ctx.fillRect(-p.w*f*0.27, -p.h*f*0.4, p.w*f*0.55, p.h*f*0.8)
-    ctx.restore()
+function drawTrailPiece(p,idx) {
+  if(!p.trail||p.trail.length<2) return
+  const hue=(idx/Math.max(pieces.length,1))*360
+  ctx.save()
+  ctx.globalCompositeOperation='screen'
+  ctx.shadowBlur=10; ctx.shadowColor=`hsl(${hue},100%,60%)`
+  ctx.strokeStyle=`hsl(${hue},100%,68%)`
+  ctx.lineWidth=Math.max(p.w*0.4, 4); ctx.lineCap='round'; ctx.lineJoin='round'
+  ctx.beginPath()
+  ctx.moveTo(p.trail[0].x, p.trail[0].y)
+  for(let i=1;i<p.trail.length;i++){
+    ctx.globalAlpha=0.1+(i/p.trail.length)*0.65
+    ctx.lineTo(p.trail[i].x, p.trail[i].y)
   }
+  ctx.stroke()
+  ctx.restore()
 }
 
 function drawDisco() {
-  const DOWN = Math.PI/2
-  const DX=W/2, DY=240, DR=22
+  const DX=W/2, DY=240, DR=22, DOWN=Math.PI/2
   const beams=[
-    {a:DOWN-0.75,c:[255,20,147],r:0.13,ph:0.5},{a:DOWN-0.45,c:[0,191,255],r:0.10,ph:1.2},
-    {a:DOWN-0.15,c:[255,215,0],r:0.085,ph:2.1},{a:DOWN+0.15,c:[147,112,219],r:0.11,ph:3.0},
-    {a:DOWN+0.45,c:[0,255,127],r:0.14,ph:3.8},{a:DOWN+0.75,c:[255,99,71],r:0.09,ph:4.5},
-    {a:DOWN,c:[30,144,255],r:0.12,ph:5.2}
+    {a:DOWN-0.75,c:'255,20,147',r:0.13,ph:0.5},{a:DOWN-0.45,c:'0,191,255',r:0.10,ph:1.2},
+    {a:DOWN-0.15,c:'255,215,0',r:0.085,ph:2.1},{a:DOWN+0.15,c:'147,112,219',r:0.11,ph:3.0},
+    {a:DOWN+0.45,c:'0,255,127',r:0.14,ph:3.8},{a:DOWN+0.75,c:'255,99,71',r:0.09,ph:4.5},
+    {a:DOWN,c:'30,144,255',r:0.12,ph:5.2}
   ]
   ctx.save(); ctx.globalCompositeOperation='screen'
-  for (const bm of beams) {
-    const ang = bm.a + Math.sin(t*0.013+bm.ph)*0.20
-    const alpha = Math.max(0,Math.sin(t*bm.r+bm.ph))*0.28
-    if (alpha<0.03) continue
-    const len=320, hw=65
+  for(const bm of beams){
+    const ang=bm.a+Math.sin(t*0.013+bm.ph)*0.20
+    const alpha=Math.max(0,Math.sin(t*bm.r+bm.ph))*0.26
+    if(alpha<0.03) continue
+    const len=300, hw=60
     const px=-Math.sin(ang)*hw, py=Math.cos(ang)*hw
     const tx=DX+Math.cos(ang)*len, ty=DY+Math.sin(ang)*len
     const g=ctx.createLinearGradient(DX,DY,tx,ty)
-    g.addColorStop(0,`rgba(${bm.c},${alpha})`)
-    g.addColorStop(0.6,`rgba(${bm.c},${alpha*0.18})`)
-    g.addColorStop(1,`rgba(${bm.c},0)`)
+    g.addColorStop(0,`rgba(${bm.c},${alpha})`); g.addColorStop(0.6,`rgba(${bm.c},${alpha*0.15})`); g.addColorStop(1,`rgba(${bm.c},0)`)
     ctx.fillStyle=g; ctx.beginPath()
     ctx.moveTo(DX,DY); ctx.lineTo(tx-px,ty-py); ctx.lineTo(tx+px,ty+py)
     ctx.closePath(); ctx.fill()
@@ -495,14 +458,13 @@ function drawDisco() {
   ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(DX,DY,DR,0,Math.PI*2); ctx.fill()
 
   const rot=t*0.025
-  for(let lat=-Math.PI/2+0.18; lat<Math.PI/2-0.05; lat+=0.28){
+  for(let lat=-Math.PI/2+0.18;lat<Math.PI/2-0.05;lat+=0.28){
     const rr=DR*Math.cos(lat), ry=DY+DR*Math.sin(lat)*0.95, dc=Math.max(5,Math.floor(rr*0.7))
     for(let i=0;i<dc;i++){
-      const lon=(i/dc)*Math.PI*2+rot, z=Math.cos(lon)
-      if(z<0.12) continue
+      const lon=(i/dc)*Math.PI*2+rot, z=Math.cos(lon); if(z<0.12) continue
       const sx=DX+rr*Math.sin(lon), sy=ry, sz=2+z*1.3
       const sp=Math.sin(t*0.5+lat*17.3+lon*11.7)*0.5+0.5, br=Math.pow(sp,5)*0.95+0.05
-      ctx.fillStyle=`rgba(${220+br*35},${220+br*35},240,${0.35+br*0.65*z})`
+      ctx.fillStyle=`rgba(${220+br*35|0},${220+br*35|0},240,${0.35+br*0.65*z})`
       ctx.fillRect(sx-sz/2,sy-sz/2,sz,sz)
     }
   }
@@ -511,50 +473,52 @@ function drawDisco() {
 }
 
 function drawHUD() {
-  const n = btnMode ? pieces.length : (ball?1:0)
+  const n=btnMode?pieces.length:(ball?1:0)
   ctx.save()
   ctx.font='bold 19px "Comic Sans MS","Comic Sans","Chalkboard SE",cursive'
-  ctx.textBaseline='top'; ctx.shadowBlur=14
+  ctx.textBaseline='top'; ctx.shadowBlur=12
   const h1=(t*7)%360, h2=(t*9+140)%360
   const w1=Math.sin(t*0.25)*1.2, w2=Math.cos(t*0.31)*1.2
-  ctx.textAlign='left';  ctx.fillStyle=`hsl(${h1},100%,65%)`; ctx.shadowColor=ctx.fillStyle; ctx.fillText(`balls expended: ${spent}`, 14, 12+w1)
-  ctx.textAlign='right'; ctx.fillStyle=`hsl(${h2},100%,65%)`; ctx.shadowColor=ctx.fillStyle; ctx.fillText(`pieces: ${n}`, W-14, 12+w2)
+  ctx.textAlign='left';  ctx.fillStyle=`hsl(${h1},100%,65%)`; ctx.shadowColor=ctx.fillStyle; ctx.fillText(`balls expended: ${spent}`,14,12+w1)
+  ctx.textAlign='right'; ctx.fillStyle=`hsl(${h2},100%,65%)`; ctx.shadowColor=ctx.fillStyle; ctx.fillText(`pieces: ${n}`,W-14,12+w2)
   ctx.restore()
 }
 
 function draw() {
-  ctx.fillStyle='rgba(10,10,18,0.78)'; ctx.fillRect(0,0,W,H)
+  ctx.fillStyle='rgba(10,10,18,0.80)'; ctx.fillRect(0,0,W,H)
+
+  // subtle grid — skip for perf, every other line
   ctx.strokeStyle='rgba(255,255,255,0.02)'; ctx.lineWidth=1
-  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
-  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+  for(let x=0;x<W;x+=80){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+  for(let y=0;y<H;y+=80){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
 
   drawDisco()
 
-  if (btnMode) { for(let i=0;i<pieces.length;i++) drawTrailPiece(pieces[i].p,i) }
+  if(btnMode) for(let i=0;i<pieces.length;i++) drawTrailPiece(pieces[i].p,i)
   else drawTrailBall()
 
-  for (const bk of bricks) {
-    if (!bk.gameData.alive) continue
+  for(const bk of bricks){
+    if(!bk.gameData.alive) continue
     const p=bk.position
     ctx.fillStyle=bk.gameData.hits===0?'#5DCAA5':'#D85A30'
     ctx.beginPath(); ctx.roundRect(p.x-BW/2,p.y-BH/2,BW,BH,4); ctx.fill()
-    if (bk.gameData.hits===1){
-      ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.lineWidth=1.5
+    if(bk.gameData.hits===1){
+      ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=1.5
       ctx.beginPath(); ctx.moveTo(p.x-8,p.y-8); ctx.lineTo(p.x,p.y+4); ctx.lineTo(p.x+10,p.y+12); ctx.stroke()
     }
   }
 
-  if (paddle) {
+  if(paddle){
     const p=paddle.position
     const g=ctx.createLinearGradient(p.x-PW/2,0,p.x+PW/2,0)
     g.addColorStop(0,'#7F77DD'); g.addColorStop(0.5,'#AFA9EC'); g.addColorStop(1,'#7F77DD')
     ctx.fillStyle=g; ctx.beginPath(); ctx.roundRect(p.x-PW/2,p.y-PH/2,PW,PH,5); ctx.fill()
   }
 
-  if (!btnMode && ball) {
+  if(!btnMode&&ball){
     const p=ball.position
     ctx.save()
-    ctx.shadowBlur=18; ctx.shadowColor=`hsl(${(t*4)%360},100%,70%)`
+    ctx.shadowBlur=14; ctx.shadowColor=`hsl(${(t*4)%360},100%,70%)`
     const g=ctx.createRadialGradient(p.x-2,p.y-2,1,p.x,p.y,BR)
     g.addColorStop(0,'#fff'); g.addColorStop(1,'#B5D4F4')
     ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,BR,0,Math.PI*2); ctx.fill()
@@ -564,30 +528,34 @@ function draw() {
   drawHUD()
 }
 
-function loop() {
-  t++; tick(); draw()
-  requestAnimationFrame(loop)
-}
+function loop() { t++; tick(); draw(); requestAnimationFrame(loop) }
 
 canvas.addEventListener('mousemove', e => {
   const r=canvas.getBoundingClientRect()
-  mx = (e.clientX-r.left)*(canvas.width/r.width)
+  mx=(e.clientX-r.left)*(canvas.width/r.width)
 })
 canvas.addEventListener('touchmove', e => {
   e.preventDefault()
   const r=canvas.getBoundingClientRect()
-  mx = (e.touches[0].clientX-r.left)*(canvas.width/r.width)
-}, { passive:false })
+  mx=(e.touches[0].clientX-r.left)*(canvas.width/r.width)
+},{passive:false})
+
+window.addEventListener('keydown', e => {
+  if(e.key==='ArrowLeft'||e.key==='a')  keys.left=true
+  if(e.key==='ArrowRight'||e.key==='d') keys.right=true
+  if(e.key==='ArrowLeft'||e.key==='ArrowRight') e.preventDefault()
+})
+window.addEventListener('keyup', e => {
+  if(e.key==='ArrowLeft'||e.key==='a')  keys.left=false
+  if(e.key==='ArrowRight'||e.key==='d') keys.right=false
+})
 
 initWorld()
 overlay.style.display='flex'
-startBtn.addEventListener('click', ()=>startGame(false))
-window.addEventListener('resize', resize)
-if (window.ResizeObserver) {
-  const ro=new ResizeObserver(resize)
-  ro.observe(document.documentElement); ro.observe(document.body)
-}
-document.addEventListener('fullscreenchange', resize)
+startBtn.addEventListener('click',()=>startGame(false))
+window.addEventListener('resize',resize)
+if(window.ResizeObserver){const ro=new ResizeObserver(resize);ro.observe(document.documentElement);ro.observe(document.body)}
+document.addEventListener('fullscreenchange',resize)
 resize(); loop()
 </script>
 </body>
