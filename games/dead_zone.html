@@ -23,7 +23,7 @@ let jv=0,jmp=false,gst='start';
 let weapon='gun',bullets=[],knifeSw=0,dmgAngle=0,dmgTimer=0,walkT=0,recoilY=0;
 let particles=[],dyingZombies=[];
 let shakeX=0,shakeY=0,killFlash=0;
-const ammoPacks=[{x:4.5,y:4.5,a:true},{x:10.5,y:3.5,a:true},{x:16.5,y:10.5,a:true},{x:6.5,y:14.5,a:true},{x:13.5,y:17.5,a:true}];
+const ammoPacks=[{x:4.5,y:4.5,a:true,t:0},{x:10.5,y:3.5,a:true,t:0},{x:16.5,y:10.5,a:true,t:0},{x:6.5,y:14.5,a:true,t:0},{x:13.5,y:17.5,a:true,t:0}];
 const rot=a=>{const c=Math.cos(a),s=Math.sin(a),dx=pl.dx,ppx=pl.px;pl.dx=dx*c-pl.dy*s;pl.dy=dx*s+pl.dy*c;pl.px=ppx*c-pl.py*s;pl.py=ppx*s+pl.py*c;};
 const mkZ=(x,y)=>({x,y,hp:2,fl:0,sp:0.013+Math.random()*0.008,wa:Math.random()*6.28,wt:0,at:60,dance:Math.random()*6.28,griddy:0,gp:0});
 let ZS=[mkZ(5.5,5.5),mkZ(10.5,10.5),mkZ(15.5,5.5),mkZ(5.5,15.5),mkZ(15.5,15.5),mkZ(8.5,3.5),mkZ(3.5,9.5),mkZ(12.5,7.5)];
@@ -358,7 +358,11 @@ const update=()=>{
     else{if(--z.wt<=0){z.wa=Math.random()*6.28;z.wt=80+Math.random()*100|0;}const wx=z.x+Math.cos(z.wa)*z.sp*0.4,wy=z.y+Math.sin(z.wa)*z.sp*0.4;if(!isW(wx,z.y))z.x=wx;if(!isW(z.x,wy))z.y=wy;}
     if(d<0.75&&z.at<=0){pl.hp-=8;pl.dmg=22;z.at=55;if(pl.hp<=0)pl.dead=true;dmgAngle=Math.atan2(z.y-pl.y,z.x-pl.x)-Math.atan2(pl.dy,pl.dx);dmgTimer=80;}
   }
-  for(const ap of ammoPacks){if(!ap.a)continue;const ddx=pl.x-ap.x,ddy=pl.y-ap.y;if(ddx*ddx+ddy*ddy<0.75*0.75){ap.a=false;pl.ammo=Math.min(99,pl.ammo+10);}}
+  for(const ap of ammoPacks){
+    if(!ap.a){if(++ap.t>=1800)ap.a=true, ap.t=0;continue;
+    const ddx=pl.x-ap.x,ddy=pl.y-ap.y;
+    if(ddx*ddx+ddy*ddy<0.75*0.75){ap.a=false;ap.t=0;pl.ammo=Math.min(99,pl.ammo+10);}
+    }
   particles=particles.filter(p=>{p.sx+=p.vx;p.sy+=p.vy;p.vy+=0.22;p.vx*=0.97;p.life--;return p.life>0;});
   spawnTimer++;
   if(spawtimer>=spawnInterval){
