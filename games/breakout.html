@@ -537,7 +537,6 @@ function drawHUD() {
   const h1=(t*7)%360, h2=(t*9+140)%360
   const w1=Math.sin(t*0.25)*1.2, w2=Math.cos(t*0.31)*1.2
   ctx.textAlign='left';  ctx.fillStyle=`hsl(${h1},100%,65%)`; ctx.shadowColor=ctx.fillStyle; ctx.fillText(`balls expended: ${spent}`,14,12+w1)
-  ctx.textAlign='right'; ctx.fillStyle=`hsl(${h2},100%,65%)`; ctx.shadowColor=ctx.fillStyle; ctx.fillText(`pieces: ${n}`,W-14,12+w2)
   ctx.restore()
 }
 
