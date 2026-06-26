@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dancing Cheeseburger</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #1a0a00;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Arial Black', sans-serif;
+    }
+
+    .floor {
+      position: fixed; bottom: 0; left: 0;
+      width: 100%; height: 22%;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      z-index: 0;
+    }
+    .tile { border: 1px solid rgba(0,0,0,0.4); animation: tileFlash 0.6s infinite alternate; }
+    .tile:nth-child(6n+1) { background:#ff3a6e; animation-delay:0s; }
+    .tile:nth-child(6n+2) { background:#ffcc00; animation-delay:0.1s; }
+    .tile:nth-child(6n+3) { background:#00e5ff; animation-delay:0.2s; }
+    .tile:nth-child(6n+4) { background:#7b2fff; animation-delay:0.3s; }
+    .tile:nth-child(6n+5) { background:#ff6a00; animation-delay:0.15s; }
+    .tile:nth-child(6n+6) { background:#00ff88; animation-delay:0.05s; }
+    @keyframes tileFlash { from{opacity:0.15} to{opacity:0.9} }
+
+    .spotlights { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; }
+    .beam { position:absolute; top:-10px; width:80px; height:75vh; transform-origin:top center; opacity:0.07; filter:blur(20px); animation:swing 3s ease-in-out infinite alternate; }
+    .beam-1 { left:20%; background:linear-gradient(to bottom,#ff3a6e,transparent); animation-duration:2.8s; }
+    .beam-2 { left:50%; background:linear-gradient(to bottom,#ffcc00,transparent); animation-duration:3.2s; animation-delay:-1s; }
+    .beam-3 { left:75%; background:linear-gradient(to bottom,#00e5ff,transparent); animation-duration:2.5s; animation-delay:-0.5s; }
+    @keyframes swing { from{transform:rotate(-18deg)} to{transform:rotate(18deg)} }
+
+    /* ---- ANGRY MODE: faster/redder beams ---- */
+    body.angry .beam { opacity: 0.18; }
+    body.angry .beam-1 { animation-duration: 0.7s; background: linear-gradient(to bottom,#ff0000,transparent); }
+    body.angry .beam-2 { animation-duration: 0.9s; background: linear-gradient(to bottom,#ff4400,transparent); }
+    body.angry .beam-3 { animation-duration: 0.6s; background: linear-gradient(to bottom,#ff0066,transparent); }
+    body.angry .tile { animation-duration: 0.15s !important; }
+
+    .stage {
+      position:relative; z-index:10;
+      display:flex; flex-direction:column; align-items:center;
+      margin-bottom:8vh;
+      transition: transform 0.8s cubic-bezier(.34,1.56,.64,1);
+    }
+
+    .shadow {
+      width:120px; height:22px;
+      background:rgba(0,0,0,0.55); border-radius:50%;
+      margin-top:-10px;
+      animation:shadowPulse 0.5s ease-in-out infinite alternate;
+      filter:blur(6px);
+    }
+    @keyframes shadowPulse { from{transform:scaleX(0.75);opacity:0.4} to{transform:scaleX(1.0);opacity:0.7} }
+
+    /* ---- NORMAL BURGER ANIMATIONS ---- */
+    .burger-wrap {
+      animation: bounce 0.5s ease-in-out infinite alternate,
+                 sway   1s   ease-in-out infinite alternate,
+                 spin360 10s linear      infinite;
+      transform-origin: center bottom;
+      filter: drop-shadow(0 0 18px rgba(255,200,0,0.55));
+      transition: width 0.8s cubic-bezier(.34,1.56,.64,1),
+                  height 0.8s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes bounce {
+      from { transform:translateY(0px) scaleY(1) scaleX(1); }
+      to   { transform:translateY(-28px) scaleY(1.06) scaleX(0.94); }
+    }
+    @keyframes sway {
+      from { transform:rotate(-12deg); }
+      to   { transform:rotate(12deg); }
+    }
+    @keyframes spin360 {
+      0%   { filter:drop-shadow(0 0 18px rgba(255,200,0,0.55)) hue-rotate(0deg); }
+      50%  { filter:drop-shadow(0 0 30px rgba(255,100,0,0.8))  hue-rotate(180deg); }
+      100% { filter:drop-shadow(0 0 18px rgba(255,200,0,0.55)) hue-rotate(360deg); }
+    }
+
+    /* ---- ANGRY BURGER ANIMATIONS ---- */
+    body.angry .burger-wrap {
+      animation: angryBounce 0.18s ease-in-out infinite alternate,
+                 angrySway   0.22s ease-in-out infinite alternate,
+                 angryPulse  0.4s  ease-in-out infinite alternate;
+    }
+    @keyframes angryBounce {
+      from { transform:translateY(0px) scaleY(1) scaleX(1); }
+      to   { transform:translateY(-45px) scaleY(1.1) scaleX(0.88); }
+    }
+    @keyframes angrySway {
+      from { transform:rotate(-22deg); }
+      to   { transform:rotate(22deg); }
+    }
+    @keyframes angryPulse {
+      from { filter:drop-shadow(0 0 30px rgba(255,0,0,0.9)) hue-rotate(0deg); }
+      to   { filter:drop-shadow(0 0 60px rgba(255,80,0,1))  hue-rotate(20deg); }
+    }
+
+    /* ---- NORMAL ARM/LEG ---- */
+    .arm-left  { animation:armWiggleLeft  0.5s ease-in-out infinite alternate; transform-origin:60px 100px; }
+    .arm-right { animation:armWiggleRight 0.5s ease-in-out infinite alternate; transform-origin:140px 100px; }
+    @keyframes armWiggleLeft  { from{transform:rotate(-20deg)} to{transform:rotate(25deg)} }
+    @keyframes armWiggleRight { from{transform:rotate(20deg)}  to{transform:rotate(-25deg)} }
+
+    .leg-left  { animation:legKickLeft  0.5s ease-in-out infinite alternate; transform-origin:80px 150px; }
+    .leg-right { animation:legKickRight 0.5s ease-in-out infinite alternate; transform-origin:120px 150px; }
+    @keyframes legKickLeft  { from{transform:rotate(-15deg)} to{transform:rotate(30deg)} }
+    @keyframes legKickRight { from{transform:rotate(15deg)}  to{transform:rotate(-30deg)} }
+
+    /* ---- ANGRY ARM/LEG ---- */
+    body.angry .arm-left  { animation:angryArmL 0.18s ease-in-out infinite alternate; }
+    body.angry .arm-right { animation:angryArmR 0.18s ease-in-out infinite alternate; }
+    @keyframes angryArmL { from{transform:rotate(-50deg)} to{transform:rotate(10deg)} }
+    @keyframes angryArmR { from{transform:rotate(50deg)}  to{transform:rotate(-10deg)} }
+
+    body.angry .leg-left  { animation:angryLegL 0.18s ease-in-out infinite alternate; transform-origin:80px 168px; }
+    body.angry .leg-right { animation:angryLegR 0.18s ease-in-out infinite alternate; transform-origin:120px 168px; }
+    @keyframes angryLegL { from{transform:rotate(-55deg)} to{transform:rotate(20deg)} }
+    @keyframes angryLegR { from{transform:rotate(55deg)}  to{transform:rotate(-20deg)} }
+
+    /* Eye */
+    .eye { animation:blink 2.5s ease-in-out infinite; }
+    @keyframes blink { 0%,90%,100%{transform:scaleY(1)} 95%{transform:scaleY(0.08)} }
+    body.angry .eye { animation:angrySquint 0.3s ease-in-out infinite alternate; }
+    @keyframes angrySquint { from{transform:scaleY(0.4)} to{transform:scaleY(0.6)} }
+
+    /* Seeds */
+    .seed { animation:seedBob 0.5s ease-in-out infinite alternate; }
+    .seed:nth-child(odd) { animation-delay:0.12s; }
+    @keyframes seedBob { from{transform:translateY(0)} to{transform:translateY(-3px)} }
+
+    /* Hidden/shown elements for angry mode */
+    .happy-face  { }
+    .angry-face  { display:none; }
+    .hand-normal { }
+    .hand-finger { display:none; }
+    body.angry .happy-face  { display:none; }
+    body.angry .angry-face  { display:block; }
+    body.angry .hand-normal { display:none; }
+    body.angry .hand-finger { display:block; }
+
+    /* Title */
+    .title {
+      position:fixed; top:24px;
+      color:#ffcc00; font-size:1.5rem; letter-spacing:0.18em; text-transform:uppercase;
+      text-shadow:0 0 20px #ff6a00, 0 0 40px #ff3a6e;
+      animation:titlePulse 1s ease-in-out infinite alternate;
+      z-index:20; pointer-events:none;
+      transition: color 0.5s;
+    }
+    body.angry .title { color:#ff3333; text-shadow:0 0 20px #ff0000, 0 0 40px #ff4400; }
+    @keyframes titlePulse {
+      from{opacity:0.75;text-shadow:0 0 15px #ff6a00}
+      to  {opacity:1.00;text-shadow:0 0 35px #ffcc00, 0 0 60px #ff3a6e}
+    }
+
+    /* Music notes */
+    .notes-container { position:fixed; bottom:25%; width:100%; pointer-events:none; z-index:5; }
+    .note { position:absolute; font-size:1.6rem; animation:floatNote 2s ease-in forwards; opacity:0; }
+    @keyframes floatNote {
+      0%  {opacity:0; transform:translateY(0) rotate(0deg);}
+      20% {opacity:1;}
+      100%{opacity:0; transform:translateY(-90px) rotate(25deg);}
+    }
+
+    /* Fries */
+    .fry-container { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:30; }
+    .fry { position:absolute; top:-80px; pointer-events:none; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+
+    /* Click ripple */
+    .click-ripple {
+      position:fixed; border-radius:50%; border:3px solid #ffcc00;
+      width:10px; height:10px; transform:translate(-50%,-50%);
+      pointer-events:none; z-index:50; animation:rippleOut 0.5s ease-out forwards;
+    }
+    @keyframes rippleOut {
+      from{width:10px;height:10px;opacity:1}
+      to  {width:70px;height:70px;opacity:0}
+    }
+
+    /* Exit button */
+    #exitBtn {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      z-index: 100;
+      background: #ff3a3a;
+      color: #fff;
+      border: 3px solid #ff0000;
+      border-radius: 12px;
+      padding: 12px 28px;
+      font-family: 'Arial Black', sans-serif;
+      font-size: 1rem;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 0 20px #ff0000, 0 0 40px #ff440088;
+      opacity: 0;
+      transform: scale(0.5) translateY(20px);
+      pointer-events: none;
+      transition: opacity 0.6s ease, transform 0.6s cubic-bezier(.34,1.56,.64,1);
+    }
+    #exitBtn.visible {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      pointer-events: all;
+    }
+    #exitBtn:hover {
+      background: #ff0000;
+      box-shadow: 0 0 40px #ff0000, 0 0 80px #ff440099;
+      transform: scale(1.08);
+    }
+    #exitBtn.clicked {
+      animation: btnPanic 0.3s ease-in-out;
+    }
+    @keyframes btnPanic {
+      0%  { transform: scale(1); }
+      30% { transform: scale(1.3) rotate(-5deg); }
+      60% { transform: scale(0.9) rotate(3deg); }
+      100%{ transform: scale(1); }
+    }
+
+    /* Rage flash overlay */
+    #rageFlash {
+      position: fixed; inset: 0;
+      background: #ff0000;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 200;
+      animation: none;
+    }
+    #rageFlash.flash {
+      animation: rageIn 0.6s ease-out forwards;
+    }
+    @keyframes rageIn {
+      0%  { opacity: 0.8; }
+      100%{ opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="rageFlash"></div>
+
+  <div class="spotlights">
+    <div class="beam beam-1"></div>
+    <div class="beam beam-2"></div>
+    <div class="beam beam-3"></div>
+  </div>
+
+  <div class="floor" id="floor"></div>
+
+  <p class="title" id="titleText">🍔 Boogie Burger 🍔</p>
+
+  <div class="stage" id="stage">
+    <svg class="burger-wrap" id="burgerSvg" viewBox="0 0 200 220" width="220" height="242"
+         xmlns="http://www.w3.org/2000/svg" aria-label="Dancing Cheeseburger">
+
+      <!-- LEGS -->
+      <g class="leg-left">
+        <rect x="68" y="168" width="26" height="38" rx="10" fill="#c97b30"/>
+        <ellipse cx="68" cy="208" rx="18" ry="8" fill="#3a1f0d"/>
+      </g>
+      <g class="leg-right">
+        <rect x="106" y="168" width="26" height="38" rx="10" fill="#c97b30"/>
+        <ellipse cx="132" cy="208" rx="18" ry="8" fill="#3a1f0d"/>
+      </g>
+
+      <!-- ARM LEFT -->
+      <g class="arm-left">
+        <rect x="24" y="90" width="46" height="20" rx="10" fill="#c97b30"/>
+        <!-- normal hand -->
+        <g class="hand-normal">
+          <circle cx="22" cy="99" r="12" fill="#ffe066"/>
+          <line x1="14" y1="94" x2="10" y2="89" stroke="#ffe066" stroke-width="4" stroke-linecap="round"/>
+          <line x1="20" y1="91" x2="18" y2="85" stroke="#ffe066" stroke-width="4" stroke-linecap="round"/>
+          <line x1="26" y1="90" x2="26" y2="84" stroke="#ffe066" stroke-width="4" stroke-linecap="round"/>
+        </g>
+        <!-- middle finger hand (left) -->
+        <g class="hand-finger">
+          <circle cx="22" cy="99" r="13" fill="#ffe066"/>
+          <!-- closed fist lines -->
+          <line x1="13" y1="97" x2="31" y2="97" stroke="#c8a820" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="13" y1="101" x2="31" y2="101" stroke="#c8a820" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- middle finger UP -->
+          <rect x="19" y="76" width="7" height="20" rx="3.5" fill="#ffe066"/>
+          <ellipse cx="22.5" cy="76" rx="3.5" ry="3.5" fill="#ffe066"/>
+          <!-- fingernail -->
+          <ellipse cx="22.5" cy="77" rx="2.5" ry="2" fill="#f0c040" opacity="0.6"/>
+        </g>
+      </g>
+
+      <!-- ARM RIGHT -->
+      <g class="arm-right">
+        <rect x="130" y="90" width="46" height="20" rx="10" fill="#c97b30"/>
+        <!-- normal hand -->
+        <g class="hand-normal">
+          <circle cx="178" cy="99" r="12" fill="#ffe066"/>
+          <line x1="186" y1="94" x2="190" y2="89" stroke="#ffe066" stroke-width="4" stroke-linecap="round"/>
+          <line x1="180" y1="91" x2="182" y2="85" stroke="#ffe066" stroke-width="4" stroke-linecap="round"/>
+          <line x1="174" y1="90" x2="174" y2="84" stroke="#ffe066" stroke-width="4" stroke-linecap="round"/>
+        </g>
+        <!-- middle finger hand (right) -->
+        <g class="hand-finger">
+          <circle cx="178" cy="99" r="13" fill="#ffe066"/>
+          <line x1="169" y1="97" x2="187" y2="97" stroke="#c8a820" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="169" y1="101" x2="187" y2="101" stroke="#c8a820" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- middle finger UP -->
+          <rect x="175" y="76" width="7" height="20" rx="3.5" fill="#ffe066"/>
+          <ellipse cx="178.5" cy="76" rx="3.5" ry="3.5" fill="#ffe066"/>
+          <ellipse cx="178.5" cy="77" rx="2.5" ry="2" fill="#f0c040" opacity="0.6"/>
+        </g>
+      </g>
+
+      <!-- BURGER BODY -->
+      <rect x="38" y="145" width="124" height="30" rx="14" fill="#c97b30"/>
+      <rect x="38" y="145" width="124" height="14" rx="0" fill="#b56b20"/>
+
+      <path d="M36,144 Q48,134 60,144 Q72,134 84,144 Q96,134 108,144 Q120,134 132,144 Q144,134 156,144 Q164,138 164,144"
+            fill="none" stroke="#4caf50" stroke-width="9" stroke-linecap="round"/>
+
+      <rect x="44" y="128" width="112" height="16" rx="6" fill="#e53935" opacity="0.9"/>
+      <line x1="60"  y1="128" x2="62"  y2="144" stroke="#c62828" stroke-width="2" opacity="0.5"/>
+      <line x1="90"  y1="128" x2="92"  y2="144" stroke="#c62828" stroke-width="2" opacity="0.5"/>
+      <line x1="120" y1="128" x2="122" y2="144" stroke="#c62828" stroke-width="2" opacity="0.5"/>
+      <line x1="148" y1="128" x2="146" y2="144" stroke="#c62828" stroke-width="2" opacity="0.5"/>
+
+      <polygon points="40,128 160,128 168,112 32,112" fill="#fdd835"/>
+      <path d="M60,128 Q58,136 55,140" stroke="#fdd835" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M140,128 Q142,137 145,142" stroke="#fdd835" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+      <rect x="34" y="96" width="132" height="22" rx="10" fill="#5d3314"/>
+      <rect x="34" y="100" width="132" height="6" rx="0" fill="#4a2810" opacity="0.7"/>
+
+      <!-- TOP BUN -->
+      <ellipse cx="100" cy="78" rx="68" ry="38" fill="#d4891a"/>
+      <ellipse cx="88"  cy="62" rx="30" ry="14" fill="#e8a830" opacity="0.45"/>
+
+      <g fill="#8b5e1a">
+        <ellipse class="seed" cx="82"  cy="58" rx="7"  ry="3.5" transform="rotate(-20,82,58)"/>
+        <ellipse class="seed" cx="112" cy="55" rx="7"  ry="3.5" transform="rotate(15,112,55)"/>
+        <ellipse class="seed" cx="100" cy="68" rx="7"  ry="3.5" transform="rotate(-10,100,68)"/>
+        <ellipse class="seed" cx="70"  cy="72" rx="6"  ry="3"   transform="rotate(25,70,72)"/>
+        <ellipse class="seed" cx="130" cy="70" rx="6"  ry="3"   transform="rotate(-25,130,70)"/>
+      </g>
+
+      <!-- FACE: happy -->
+      <g class="happy-face">
+        <g class="eye" transform-origin="74 76">
+          <ellipse cx="74" cy="76" rx="9" ry="10" fill="white"/>
+          <circle  cx="76" cy="77" r="5"  fill="#1a1a1a"/>
+          <circle  cx="77" cy="75" r="2"  fill="white"/>
+        </g>
+        <g class="eye" transform-origin="126 76">
+          <ellipse cx="126" cy="76" rx="9" ry="10" fill="white"/>
+          <circle  cx="128" cy="77" r="5"  fill="#1a1a1a"/>
+          <circle  cx="129" cy="75" r="2"  fill="white"/>
+        </g>
+        <path d="M65,64 Q74,59 83,64"   stroke="#5d3314" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M117,64 Q126,59 135,64" stroke="#5d3314" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M78,90 Q100,108 122,90" stroke="#5d3314" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <ellipse cx="66"  cy="86" rx="9" ry="6" fill="#ff7c7c" opacity="0.4"/>
+        <ellipse cx="134" cy="86" rx="9" ry="6" fill="#ff7c7c" opacity="0.4"/>
+      </g>
+
+      <!-- FACE: angry -->
+      <g class="angry-face">
+        <!-- angry squinting eyes -->
+        <g class="eye" transform-origin="74 76">
+          <ellipse cx="74" cy="78" rx="9" ry="6" fill="white"/>
+          <circle  cx="76" cy="79" r="5" fill="#cc0000"/>
+          <circle  cx="77" cy="77" r="2" fill="white"/>
+        </g>
+        <g class="eye" transform-origin="126 76">
+          <ellipse cx="126" cy="78" rx="9" ry="6" fill="white"/>
+          <circle  cx="128" cy="79" r="5" fill="#cc0000"/>
+          <circle  cx="129" cy="77" r="2" fill="white"/>
+        </g>
+        <!-- angry V-brows -->
+        <path d="M62,63 L83,70"  stroke="#3a0000" stroke-width="5" stroke-linecap="round"/>
+        <path d="M138,63 L117,70" stroke="#3a0000" stroke-width="5" stroke-linecap="round"/>
+        <!-- scowl -->
+        <path d="M78,98 Q100,84 122,98" stroke="#3a0000" stroke-width="4" fill="none" stroke-linecap="round"/>
+
+        <!-- steam lines -->
+        <path d="M72,52 Q68,46 72,40 Q76,34 72,28" stroke="#ff4400" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.8">
+          <animate attributeName="opacity" values="0.8;0.2;0.8" dur="0.6s" repeatCount="indefinite"/>
+        </path>
+        <path d="M128,52 Q132,46 128,40 Q124,34 128,28" stroke="#ff4400" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.8">
+          <animate attributeName="opacity" values="0.2;0.8;0.2" dur="0.6s" repeatCount="indefinite"/>
+        </path>
+        <!-- red tinge on cheeks -->
+        <ellipse cx="62"  cy="84" rx="11" ry="7" fill="#ff2200" opacity="0.35"/>
+        <ellipse cx="138" cy="84" rx="11" ry="7" fill="#ff2200" opacity="0.35"/>
+      </g>
+
+    </svg>
+    <div class="shadow"></div>
+  </div>
+
+  <div class="notes-container" id="notes"></div>
+  <div class="fry-container"   id="fryContainer"></div>
+
+  <button id="exitBtn">🚪 EXIT</button>
+
+  <script>
+    // Tiles
+    const floorEl = document.getElementById('floor');
+    for (let i = 0; i < 36; i++) {
+      const t = document.createElement('div');
+      t.className = 'tile';
+      floorEl.appendChild(t);
+    }
+
+    // Music notes
+    const noteSymbols = ['♩','♪','♫','♬','🎵','🎶'];
+    const notesContainer = document.getElementById('notes');
+    function spawnNote() {
+      const n = document.createElement('div');
+      n.className = 'note';
+      n.textContent = noteSymbols[Math.floor(Math.random() * noteSymbols.length)];
+      n.style.left = (20 + Math.random() * 60) + '%';
+      n.style.color = `hsl(${Math.floor(Math.random()*360)},100%,70%)`;
+      n.style.fontSize = (1.2 + Math.random() * 1.2) + 'rem';
+      n.style.animationDuration = (1.4 + Math.random() * 1.2) + 's';
+      notesContainer.appendChild(n);
+      n.addEventListener('animationend', () => n.remove());
+    }
+    setInterval(spawnNote, 320);
+
+    // Fries
+    const fryContainer = document.getElementById('fryContainer');
+    function makeFrySVG(w, h, c1, c2) {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 14 60">
+        <rect x="1" y="1" width="12" height="58" rx="3" fill="${c1}"/>
+        <rect x="3" y="1" width="4"  height="58" rx="2" fill="${c2}" opacity="0.45"/>
+        <rect x="1" y="1" width="12" height="8"  rx="3" fill="#c8860a" opacity="0.5"/>
+      </svg>`;
+    }
+    const fryColors = [
+      ['#f5c842','#ffe480'], ['#e8b830','#fad660'],
+      ['#d4a520','#f0cc50'], ['#c9961e','#e8bc3c'],
+    ];
+
+    function spawnFries(cx, cy) {
+      const ripple = document.createElement('div');
+      ripple.className = 'click-ripple';
+      ripple.style.left = cx + 'px';
+      ripple.style.top  = cy + 'px';
+      document.body.appendChild(ripple);
+      ripple.addEventListener('animationend', () => ripple.remove());
+      const count = 12 + Math.floor(Math.random() * 8);
+      for (let i = 0; i < count; i++) spawnOneFry();
+    }
+
+    function spawnOneFry() {
+      const el = document.createElement('div');
+      el.className = 'fry';
+      const w = 10 + Math.random() * 8;
+      const h = 40 + Math.random() * 35;
+      const [c1, c2] = fryColors[Math.floor(Math.random() * fryColors.length)];
+      el.innerHTML = makeFrySVG(w, h, c1, c2);
+      const startX = Math.random() * window.innerWidth;
+      el.style.left = startX + 'px';
+      el.style.top  = '-' + (h + 10) + 'px';
+      fryContainer.appendChild(el);
+
+      let x = startX, y = -(h + 10);
+      let vx = (Math.random() - 0.5) * 2.5;
+      let vy = 1 + Math.random() * 2;
+      let angle = (Math.random() - 0.5) * 360;
+      let spin  = (Math.random() - 0.5) * 14;
+      const gravity = 0.28, bounceCoeff = 0.38, friction = 0.82;
+      let bounces = 0;
+      const maxBounces = 2 + Math.floor(Math.random() * 2);
+
+      function tick() {
+        vy += gravity; x += vx; y += vy; angle += spin;
+        if (x < -w) x = window.innerWidth;
+        if (x > window.innerWidth) x = -w;
+        const groundY = window.innerHeight - h - 5;
+        if (y >= groundY) {
+          bounces++;
+          if (bounces >= maxBounces) {
+            y = groundY;
+            el.style.transform = `rotate(${angle}deg)`;
+            el.style.left = x + 'px'; el.style.top = y + 'px';
+            el.style.transition = 'opacity 1.2s ease 0.4s';
+            el.style.opacity = '0';
+            el.addEventListener('transitionend', () => el.remove(), { once: true });
+            return;
+          }
+          y = groundY; vy = -vy * bounceCoeff; vx *= friction; spin *= 0.6;
+        }
+        el.style.left = x + 'px'; el.style.top = y + 'px';
+        el.style.transform = `rotate(${angle}deg)`;
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    let angryMode = false;
+
+    document.addEventListener('click', (e) => {
+      if (e.target.id === 'exitBtn') return;
+      spawnFries(e.clientX, e.clientY);
+    });
+
+    // Exit button appears after 10 s
+    const exitBtn = document.getElementById('exitBtn');
+    setTimeout(() => exitBtn.classList.add('visible'), 10000);
+
+    exitBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (angryMode) return;
+      angryMode = true;
+
+      exitBtn.classList.add('clicked');
+      setTimeout(() => {
+        exitBtn.style.transition = 'opacity 0.4s, transform 0.4s';
+        exitBtn.style.opacity = '0';
+        exitBtn.style.transform = 'scale(0.3) translateY(30px)';
+        setTimeout(() => exitBtn.remove(), 500);
+      }, 300);
+
+      const flash = document.getElementById('rageFlash');
+      flash.classList.add('flash');
+
+      const svg = document.getElementById('burgerSvg');
+      svg.style.width  = '360px';
+      svg.style.height = '396px';
+
+      document.body.classList.add('angry');
+      document.getElementById('titleText').textContent = '😤 CHECH TASK MANAGER IN 2 SECS 😤';
+      setInterval(spawnNote, 120);
+
+      startRage();
+    });
+
+    // ============================================================
+    // RAGE ENGINE
+    // ============================================================
+    function startRage() {
+      const cores = navigator.hardwareConcurrency || 4;
+
+      // ---- 1. CPU: one Worker per logical core doing heavy float math ----
+      const workerSrc = `self.onmessage=function(){let x=Math.random();(function loop(){for(let i=0;i<1e6;i++){x=Math.sin(x)*Math.cos(x)+Math.sqrt(Math.abs(x));x=Math.log(Math.abs(x)+1)*Math.atan(x);}self.postMessage(x);setTimeout(loop,0);})();};`;
+      const workerDataUrl = 'data:application/javascript,' + encodeURIComponent(workerSrc);
+      for (let i = 0; i < cores; i++) {
+        try {
+          const w = new Worker(workerDataUrl);
+          w.postMessage('go');
+        } catch(e) {
+          // data URI workers also blocked — fall back to main-thread CPU burn
+          let x = Math.random();
+          const crunch = () => {
+            for (let i = 0; i < 2e5; i++) {
+              x = Math.sin(x) * Math.cos(x) + Math.sqrt(Math.abs(x));
+              x = Math.log(Math.abs(x) + 1) * Math.atan(x);
+            }
+            setTimeout(crunch, 0);
+          };
+          crunch();
+        }
+      }
+
+      // ---- 2. RAM: allocate a large Float64Array and keep writing to it ----
+      // Try up to ~512 MB in chunks; stop if we fail
+      const chunkSize = 32 * 1024 * 1024; // 32 MB per chunk (Float64 = 8 bytes → 4M floats)
+      const chunks = [];
+      for (let i = 0; i < 16; i++) {
+        try {
+          const buf = new Float64Array(chunkSize);
+          // Touch every page so the OS actually commits the RAM
+          for (let j = 0; j < buf.length; j += 4096) buf[j] = Math.random();
+          chunks.push(buf);
+        } catch(e) { break; }
+      }
+      // Keep stirring the RAM so it can't be paged out
+      let ramIdx = 0;
+      setInterval(() => {
+        for (const c of chunks) {
+          c[ramIdx % c.length] = Math.random();
+          ramIdx++;
+        }
+      }, 16);
+
+      // ---- 3. GPU: WebGL full-screen fire/glitch shader (visible as bg layer) ----
+      const canvas = document.createElement('canvas');
+      canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;pointer-events:none;opacity:0.55;mix-blend-mode:screen;';
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+      document.body.appendChild(canvas);
+
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      if (gl) {
+        const vert = `
+          attribute vec2 a_pos;
+          void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
+        `;
+        // Heavy fragment shader: fire palette + multiple sin/cos layers + noise
+        const frag = `
+          precision highp float;
+          uniform float u_time;
+          uniform vec2  u_res;
+
+          float hash(vec2 p) {
+            return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+          }
+          float noise(vec2 p) {
+            vec2 i = floor(p);
+            vec2 f = fract(p);
+            f = f*f*(3.0-2.0*f);
+            return mix(
+              mix(hash(i), hash(i+vec2(1,0)), f.x),
+              mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y);
+          }
+          float fbm(vec2 p) {
+            float v = 0.0, a = 0.5;
+            for (int i=0; i<8; i++) { v += a*noise(p); p *= 2.1; a *= 0.5; }
+            return v;
+          }
+
+          void main() {
+            vec2 uv = gl_FragCoord.xy / u_res;
+            float t  = u_time * 0.8;
+
+            // Fire distortion
+            vec2 q = vec2(fbm(uv + vec2(0.0, t)),
+                          fbm(uv + vec2(1.7, 9.2)));
+            vec2 r = vec2(fbm(uv + 4.0*q + vec2(1.7+sin(t)*0.3, 9.2+cos(t*1.3)*0.3)),
+                          fbm(uv + 4.0*q + vec2(8.3+cos(t*0.7)*0.4, 2.8+sin(t*0.9)*0.4)));
+
+            // More expensive: 8 more noise layers for GPU pressure
+            float extra = 0.0;
+            for (int k=0; k<8; k++) {
+              extra += fbm(uv * float(k+2) + vec2(sin(t*float(k)*0.3), cos(t*float(k)*0.2)));
+            }
+            extra /= 8.0;
+
+            float f = fbm(uv + r) + extra * 0.3;
+
+            // Fire palette: black → red → orange → yellow → white
+            vec3 col = mix(vec3(0.0, 0.0, 0.0), vec3(0.8, 0.0, 0.0), smoothstep(0.2, 0.5, f));
+            col = mix(col, vec3(1.0, 0.3, 0.0), smoothstep(0.4, 0.6, f));
+            col = mix(col, vec3(1.0, 0.8, 0.0), smoothstep(0.55, 0.75, f));
+            col = mix(col, vec3(1.0, 1.0, 0.9), smoothstep(0.7, 0.9, f));
+
+            // Glitch scanline flicker
+            float scan = sin(uv.y * u_res.y * 1.5 + t * 30.0) * 0.04;
+            col += scan;
+
+            // Vignette
+            float vig = 1.0 - dot(uv - 0.5, uv - 0.5) * 1.4;
+            col *= vig;
+
+            gl_FragColor = vec4(col, 1.0);
+          }
+        `;
+
+        function compileShader(src, type) {
+          const s = gl.createShader(type);
+          gl.shaderSource(s, src); gl.compileShader(s); return s;
+        }
+        const prog = gl.createProgram();
+        gl.attachShader(prog, compileShader(vert, gl.VERTEX_SHADER));
+        gl.attachShader(prog, compileShader(frag, gl.FRAGMENT_SHADER));
+        gl.linkProgram(prog); gl.useProgram(prog);
+
+        const buf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+        const loc = gl.getAttribLocation(prog, 'a_pos');
+        gl.enableVertexAttribArray(loc);
+        gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+        const uTime = gl.getUniformLocation(prog, 'u_time');
+        const uRes  = gl.getUniformLocation(prog, 'u_res');
+        gl.uniform2f(uRes, canvas.width, canvas.height);
+
+        const start = performance.now();
+        function drawGL() {
+          gl.uniform1f(uTime, (performance.now() - start) / 1000);
+          gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+          requestAnimationFrame(drawGL);
+        }
+        drawGL();
+      }
+
+      // ---- 4. Canvas 2D particle storm (thousands of CPU-drawn particles) ----
+      const pc = document.createElement('canvas');
+      pc.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:3;pointer-events:none;opacity:0.35;';
+      pc.width  = window.innerWidth;
+      pc.height = window.innerHeight;
+      document.body.appendChild(pc);
+      const ctx = pc.getContext('2d');
+
+      const PARTICLE_COUNT = 2000;
+      const particles = Array.from({ length: PARTICLE_COUNT }, () => ({
+        x: Math.random() * pc.width,
+        y: Math.random() * pc.height,
+        vx: (Math.random() - 0.5) * 4,
+        vy: (Math.random() - 0.5) * 4,
+        r: 1 + Math.random() * 3,
+        hue: Math.random() * 60, // red-orange range
+      }));
+
+      function drawParticles() {
+        ctx.clearRect(0, 0, pc.width, pc.height);
+        for (const p of particles) {
+          p.x += p.vx; p.y += p.vy;
+          p.vx += (Math.random() - 0.5) * 0.5;
+          p.vy += (Math.random() - 0.5) * 0.5;
+          p.hue = (p.hue + 0.5) % 60;
+          if (p.x < 0 || p.x > pc.width)  p.vx *= -1;
+          if (p.y < 0 || p.y > pc.height) p.vy *= -1;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = `hsl(${p.hue},100%,65%)`;
+          ctx.fill();
+        }
+        requestAnimationFrame(drawParticles);
+      }
+      drawParticles();
+    }
+  </script>
+</body>
+</html>
