@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MAZE</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center;height:100vh}
+#w,#a,#a button{font-family:'Courier New',monospace}
+#w{text-align:center}
+#cv{display:block;image-rendering:pixelated}
+#hd{font-size:12px;color:#666;margin:6px 0 2px}
+#f{font-size:13px;color:#0f0;min-height:22px;margin:4px 0 0}
+#a{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#000d;color:#0f0;text-align:center;padding:1.5rem 2rem;border:1px solid #0f04;border-radius:6px;display:none;min-width:260px;z-index:10}
+#a h2{margin:0 0 8px;font-size:18px}
+#a p{margin:3px 0;font-size:12px;color:#0a0}
+#a button{margin-top:12px;background:#001a00;border:1px solid #0f0;color:#0f0;padding:7px 18px;cursor:pointer;border-radius:4px;font-size:12px}
+#a button:hover{background:#002a00}
+#r{position:relative;display:inline-block}
+</style>
+</head>
+<body>
+<div id="w">
+<div style="font-size:11px;color:#333;margin-bottom:6px">MAZE — FIND THE EXIT</div>
+<div id="r"><canvas id="cv" width="420" height="300"></canvas><div id="a"><h2 id="b"></h2><p id="c"></p><p id="d"></p><button id="e">try again</button></div></div>
+<div id="hd">WASD or arrows · <span id="g">distance: 0</span></div>
+<div id="f"></div>
+</div>
+<script>
+const k=cv.getContext('2d'),W=420,H=300,N=31,F=Math.floor,C=Math.cos,S=Math.sin,R=Math.random,Q=Math.sqrt,Mn=Math.min,Mx=Math.max,A=Math.abs,PI=Math.PI
+const $=i=>document.getElementById(i),sd=(i,v)=>$(i).style.display=v,tc=(i,v)=>$(i).textContent=v,sc=(i,v)=>$(i).style.color=v
+let Z,px,py,pA,td,ph,fe,re,lT,T;const K={}
+const cl=(x,y)=>(x<0||x>=N||y<0||y>=N)?1:Z[y*N+x],sZ=(x,y,v)=>Z[y*N+x]=v
+function gn(){Z=new Uint8Array(N*N).fill(1);const s=[[1,1]];sZ(1,1,0);const D=[[0,-2],[0,2],[-2,0],[2,0]]
+while(s.length){const[cx,cy]=s[s.length-1],sh=[...D].sort(()=>R()-.5);let m=0
+for(const[dx,dy]of sh){const nx=cx+dx,ny=cy+dy;if(nx>0&&nx<N-1&&ny>0&&ny<N-1&&cl(nx,ny)){sZ(nx,ny,0);sZ(cx+dx/2,cy+dy/2,0);s.push([nx,ny]);m=1;break}}
+if(!m)s.pop()}
+for(let i=0;i<N*N*.06;i++){const x=2+F(R()*(N-4)),y=2+F(R()*(N-4))
+if(cl(x,y)&&((!cl(x-1,y)&&!cl(x+1,y))||(!cl(x,y-1)&&!cl(x,y+1))))sZ(x,y,0)}}
+function pE(n){const c=[];for(let y=1;y<N-1;y++)for(let x=1;x<N-1;x++){if(cl(x,y))continue
+if(n){const d=A(x-1)+A(y-1);if(d>3&&d<9)c.push([x,y])}else if(x>N*.75&&y>N*.75)c.push([x,y])}
+return c[F(R()*c.length)]||(n?[3,3]:[N-2,N-2])}
+function I(){sd('a','none');gn();px=1.5;py=1.5;pA=0;td=0;ph=0;T=0;fe=pE(1);re=pE(0);sZ(...fe,0);sZ(...re,0)
+tc('f','');sc('f','#0f0');tc('g','distance: 0');lT=performance.now()}
+const cM=(x,y)=>{const r=.22;return!cl(F(x-r),F(y-r))&&!cl(F(x+r),F(y-r))&&!cl(F(x-r),F(y+r))&&!cl(F(x+r),F(y+r))}
+function up(dt){if($('a').style.display=='block')return
+pA+=((K.r?1:0)-(K.l?1:0))*2.6*dt
+const mv=(K.u?1:0)-(K.d?1:0)
+if(mv){const s=mv*2.4*dt,dx=C(pA)*s,dy=S(pA)*s;let X=0,Y=0
+if(cM(px+dx,py)){px+=dx;X=dx}if(cM(px,py+dy)){py+=dy;Y=dy}
+td+=Q(X*X+Y*Y);if(X||Y)tc('g','distance: '+td.toFixed(1))
+const cx=F(px),cy=F(py)
+if(ph==0&&cx==fe[0]&&cy==fe[1])ff();else if(ph==1&&cx==re[0]&&cy==re[1])rf()}}
+const sM=(x,c)=>{sc('f',c||'#0f0');tc('f',x)}
+function ff(){ph=.5;sd('a','block');tc('b','✓ EXIT FOUND');sc('b','#0f0');tc('c','you escaped in '+td.toFixed(1)+' distance.');tc('d','');sd('e','none')
+setTimeout(()=>{sd('a','none');rT()},2200)}
+function rT(){ph=1;sM('...wait.','#ff4444')
+setTimeout(()=>{sM('that exit was fake. you barely moved.','#ff4444')
+sd('a','block');tc('b','THAT WAS FAKE');sc('b','#ff4444')
+tc('c','you were near the start the whole time.')
+tc('d','the real exit pulses on the map. go.');sc('d','#ff6644')
+sd('e','inline-block');tc('e','keep going')
+$('e').onclick=()=>{sd('a','none');sM('find the REAL exit. good luck.','#ff6600')}},1400)}
+function rf(){sd('a','block');tc('b','YOU ACTUALLY DID IT');sc('b','#ff0')
+tc('c',td.toFixed(1)+' total distance. both exits found.')
+tc('d','genuinely impressive. or concerning.');sc('d','#aaa')
+sd('e','inline-block');tc('e','play again');$('e').onclick=I}
+const dc=(t,o)=>`hsl(${(t*140+o*6)%360},100%,${55+S(t*9+o*.3)*12}%)`
+function dMap(){const w=160,cw=w/N,o=10
+k.fillStyle='#050805';k.fillRect(o,o,w,w)
+const nX=Mx(0,F(px-3.4)),xX=Mn(N-1,Math.ceil(px+3.4)),nY=Mx(0,F(py-3.4)),xY=Mn(N-1,Math.ceil(py+3.4))
+for(let y=nY;y<=xY;y++)for(let x=nX;x<=xX;x++){const d=Q((x+.5-px)**2+(y+.5-py)**2);if(d>3.4)continue
+const f=1-d/3.4,b=F(f*180),g=F(b*.4),r=F(b*.15)
+k.fillStyle=cl(x,y)?`rgb(${g},${g},${g})`:`rgb(${r},${b},${F(b*.25)})`
+k.fillRect(o+x*cw,o+y*cw,cw+.5,cw+.5)}
+if(ph<1){k.fillStyle='rgba(0,255,100,.25)';k.fillRect(o+fe[0]*cw-2,o+fe[1]*cw-2,cw+4,cw+4)
+k.fillStyle='#00ff64';k.fillRect(o+fe[0]*cw-.5,o+fe[1]*cw-.5,cw+1,cw+1)}
+else{const p=.6+S(T*8)*.4;k.fillStyle=`rgba(255,0,200,${p*.4})`;k.fillRect(o+re[0]*cw-4,o+re[1]*cw-4,cw+8,cw+8)
+k.fillStyle=dc(T,0);k.fillRect(o+re[0]*cw-.5,o+re[1]*cw-.5,cw+1,cw+1)}
+k.fillStyle='#ffeb3b';k.beginPath();k.arc(o+px*cw,o+py*cw,2.5,0,PI*2);k.fill()
+k.strokeStyle='#ffeb3b';k.lineWidth=1;k.beginPath();k.moveTo(o+px*cw,o+py*cw);k.lineTo(o+(px+C(pA)*1.5)*cw,o+(py+S(pA)*1.5)*cw);k.stroke()
+k.strokeStyle='#1a3a1a';k.lineWidth=.5;k.strokeRect(o,o,w,w)
+k.fillStyle='#333';k.font='9px Courier New';k.textAlign='left';k.fillText('LAMP',o,o-2)}
+function ray(ra){const sx=C(ra)*.025,sy=S(ra)*.025;let rx=px,ry=py,d=0,pm=F(px),qm=F(py),sh=0
+while(d<16){rx+=sx;ry+=sy;d+=.025;const mx=F(rx),my=F(ry)
+if(mx!=pm||my!=qm){sh=my!=qm
+const iF=mx==fe[0]&&my==fe[1]&&ph==0,iR=mx==re[0]&&my==re[1]&&ph==1
+if(iF||iR||cl(mx,my))return{d,sh,iF,iR,X:rx,Y:ry}
+pm=mx;qm=my}}}
+function dFP(){const rx=185,rw=W-190,rh=H,FOV=PI/2.5,RY=96
+k.fillStyle='#080d08';k.fillRect(rx,0,rw,rh/2)
+const fg=k.createLinearGradient(0,rh/2,0,rh);fg.addColorStop(0,'#0a160a');fg.addColorStop(1,'#152015');k.fillStyle=fg;k.fillRect(rx,rh/2,rw,rh/2)
+const hs=[];for(let i=0;i<RY;i++)hs.push(ray(pA-FOV/2+i/RY*FOV))
+for(let i=0;i<RY;i++){const h=hs[i];if(!h||!h.iR)continue
+const ra=pA-FOV/2+i/RY*FOV,co=h.d*C(ra-pA),wH=Mn(rh*1.5,rh/(co+.001))
+const bx=rx+i/RY*rw,bw=rw/RY+1,br=Mx(.15,1-h.d/16),hu=(T*180+i*4)%360
+k.fillStyle=`hsla(${hu},100%,60%,${.15*br})`;k.fillRect(bx-bw*2,rh/2-wH*.7,bw*5,wH*1.4)
+k.fillStyle=`hsla(${hu},100%,65%,${.25*br})`;k.fillRect(bx-bw,rh/2-wH*1.15/2,bw*3,wH*1.15)}
+for(let i=0;i<RY;i++){const h=hs[i];if(!h)continue
+const ra=pA-FOV/2+i/RY*FOV,co=h.d*C(ra-pA),wH=Mn(rh*1.5,rh/(co+.001))
+const bx=rx+i/RY*rw,bw=rw/RY+1,wt=rh/2-wH/2,br=Mx(.08,1-h.d/16)
+if(h.iR){const bN=8,bH=wH/bN
+for(let b=0;b<bN;b++){const hu=(T*180+b*40+i*4)%360,li=50+S(T*10+b*.7+i*.05)*18
+k.fillStyle=`hsl(${hu},100%,${li}%)`;k.fillRect(bx,wt+b*bH,bw,bH+1)}
+k.fillStyle=`hsla(0,0%,100%,${.3*br})`;k.fillRect(bx,wt+wH*.45,bw,wH*.1)}
+else if(h.iF){const b1=F(br*220);k.fillStyle=`rgb(0,${b1},${F(b1*.4)})`;k.fillRect(bx,wt,bw,wH)}
+else{const ss=h.sh?.65:1,bN=6,bH=wH/bN,wU=h.sh?h.X:h.Y
+for(let b=0;b<bN;b++){const off=b%2?.5:0,bU=(wU*2+off)%1,mo=bU<.06||bU>.94
+const bt=br*ss*(mo?.35:1)*(.85+b*.04)*(.92+(F(wU*7)+b*31)%13/13*.15)
+k.fillStyle=`rgb(${F(bt*30)},${F(bt*115)},${F(bt*40)})`;k.fillRect(bx,wt+b*bH,bw,bH+1)}
+k.fillStyle=`rgba(0,0,0,${.5*br})`;for(let b=1;b<bN;b++)k.fillRect(bx,wt+b*bH-.5,bw,.7)}}
+k.fillStyle='rgba(255,235,80,.6)';k.fillRect(rx+rw/2-1,rh/2-5,1,10);k.fillRect(rx+rw/2-5,rh/2-1,10,1)
+k.fillStyle='#1a3a1a';k.font='9px Courier New';k.textAlign='left';k.fillText('VIEW',rx+4,12)}
+function lp(n){const dt=Mn(.05,(n-lT)/1000);lT=n;T+=dt;up(dt);k.fillStyle='#000';k.fillRect(0,0,W,H);dMap();dFP();requestAnimationFrame(lp)}
+const KM={ArrowLeft:'l',ArrowRight:'r',ArrowUp:'u',ArrowDown:'d',KeyA:'l',KeyD:'r',KeyW:'u',KeyS:'d'}
+onkeydown=e=>{if(KM[e.code]){K[KM[e.code]]=1;e.preventDefault()}}
+onkeyup=e=>K[KM[e.code]]=0
+function rz(){const sc=Mn(window.innerWidth/W,window.innerHeight/H);cv.style.width=W*sc+'px';cv.style.height=H*sc+'px'}
+window.onresize=rz;$('e').onclick=I;I();rz();requestAnimationFrame(lp)
+</script>
+</body>
+</html>
