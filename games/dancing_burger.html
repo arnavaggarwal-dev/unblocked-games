@@ -1,739 +1,4009 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Dancing Cheeseburger</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+<meta charset="UTF-8">
+<title>Burger Beat — Mountain Peak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Orbitron:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --beat: 500ms;
+    --lane-w: 90px;
+    --hit-y: 80vh;
+    --aurora-1: #00ffb3;
+    --aurora-2: #7c3fff;
+    --aurora-3: #00c8ff;
+    --aurora-4: #ff3d9a;
+    /* game-UI tokens */
+    --display: 'Orbitron', 'Arial Black', sans-serif;
+    --ui: 'Chakra Petch', 'Helvetica Neue', sans-serif;
+    --panel-bg: rgba(8, 10, 26, 0.72);
+    --panel-edge: rgba(0, 229, 255, 0.55);
+    --panel-edge-soft: rgba(124, 63, 255, 0.35);
+    --ink: #eaf6ff;
+    --ink-dim: rgba(234, 246, 255, 0.5);
+    --clip-tag: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  }
+  * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
+  html, body { height:100%; overflow:hidden; }
+  body {
+    background: linear-gradient(180deg,
+      #05061a 0%,
+      #0a0a2a 30%,
+      #1a0d3a 60%,
+      #2a1050 80%,
+      #4a1f5f 100%);
+    font-family: 'Arial Black', 'Helvetica', sans-serif;
+    color:#fff;
+    cursor: crosshair;
+  }
 
-    body {
-      background: #1a0a00;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      overflow: hidden;
-      font-family: 'Arial Black', sans-serif;
-    }
+  /* ==================================================================
+     STARS
+     ================================================================== */
+  .stars { position:fixed; inset:0; z-index:1; pointer-events:none; }
+  .star {
+    position:absolute;
+    background:#fff;
+    border-radius:50%;
+    animation: twinkle 3s ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%,100% { opacity: 0.3; transform: scale(1); }
+    50%     { opacity: 1;   transform: scale(1.3); }
+  }
 
-    .floor {
-      position: fixed; bottom: 0; left: 0;
-      width: 100%; height: 22%;
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      grid-template-rows: repeat(3, 1fr);
-      z-index: 0;
-    }
-    .tile { border: 1px solid rgba(0,0,0,0.4); animation: tileFlash 0.6s infinite alternate; }
-    .tile:nth-child(6n+1) { background:#ff3a6e; animation-delay:0s; }
-    .tile:nth-child(6n+2) { background:#ffcc00; animation-delay:0.1s; }
-    .tile:nth-child(6n+3) { background:#00e5ff; animation-delay:0.2s; }
-    .tile:nth-child(6n+4) { background:#7b2fff; animation-delay:0.3s; }
-    .tile:nth-child(6n+5) { background:#ff6a00; animation-delay:0.15s; }
-    .tile:nth-child(6n+6) { background:#00ff88; animation-delay:0.05s; }
-    @keyframes tileFlash { from{opacity:0.15} to{opacity:0.9} }
+  /* Shooting star */
+  .shooter {
+    position:absolute;
+    width:100px; height:1px;
+    background: linear-gradient(90deg, transparent, #fff, transparent);
+    opacity:0;
+    animation: shoot 8s linear infinite;
+  }
+  @keyframes shoot {
+    0%   { opacity:0; transform: translate(0,0) rotate(20deg); }
+    2%   { opacity:1; }
+    8%   { opacity:0; transform: translate(400px, 150px) rotate(20deg); }
+    100% { opacity:0; }
+  }
 
-    .spotlights { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; }
-    .beam { position:absolute; top:-10px; width:80px; height:75vh; transform-origin:top center; opacity:0.07; filter:blur(20px); animation:swing 3s ease-in-out infinite alternate; }
-    .beam-1 { left:20%; background:linear-gradient(to bottom,#ff3a6e,transparent); animation-duration:2.8s; }
-    .beam-2 { left:50%; background:linear-gradient(to bottom,#ffcc00,transparent); animation-duration:3.2s; animation-delay:-1s; }
-    .beam-3 { left:75%; background:linear-gradient(to bottom,#00e5ff,transparent); animation-duration:2.5s; animation-delay:-0.5s; }
-    @keyframes swing { from{transform:rotate(-18deg)} to{transform:rotate(18deg)} }
+  /* ==================================================================
+     MOON
+     ================================================================== */
+  .moon {
+    position:fixed;
+    top: 8%; right: 12%;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fff8dc, #d4c890 60%, #8b7d4d 100%);
+    box-shadow:
+      0 0 40px rgba(255,248,220,0.5),
+      0 0 100px rgba(255,248,220,0.25),
+      inset -12px -12px 30px rgba(80,60,30,0.4);
+    z-index:2;
+    animation: moonBreathe 4s ease-in-out infinite alternate;
+  }
+  .moon::before {
+    content:''; position:absolute;
+    top: 40%; left: 55%; width: 18px; height: 18px;
+    background: rgba(80,60,30,0.3); border-radius:50%;
+    box-shadow:
+      -22px 12px 0 -4px rgba(80,60,30,0.3),
+      -8px -18px 0 -6px rgba(80,60,30,0.3),
+      18px -8px 0 -8px rgba(80,60,30,0.3);
+  }
+  @keyframes moonBreathe {
+    from { box-shadow: 0 0 40px rgba(255,248,220,0.5), 0 0 100px rgba(255,248,220,0.25), inset -12px -12px 30px rgba(80,60,30,0.4); }
+    to   { box-shadow: 0 0 60px rgba(255,248,220,0.7), 0 0 150px rgba(255,248,220,0.4),  inset -12px -12px 30px rgba(80,60,30,0.4); }
+  }
 
-    /* ---- ANGRY MODE: faster/redder beams ---- */
-    body.angry .beam { opacity: 0.18; }
-    body.angry .beam-1 { animation-duration: 0.7s; background: linear-gradient(to bottom,#ff0000,transparent); }
-    body.angry .beam-2 { animation-duration: 0.9s; background: linear-gradient(to bottom,#ff4400,transparent); }
-    body.angry .beam-3 { animation-duration: 0.6s; background: linear-gradient(to bottom,#ff0066,transparent); }
-    body.angry .tile { animation-duration: 0.15s !important; }
+  /* ==================================================================
+     AURORA — layered ribbons behind mountains
+     ================================================================== */
+  .aurora {
+    position:fixed;
+    top: 15%; left: 0; right: 0;
+    height: 45%;
+    z-index: 2;
+    pointer-events:none;
+    filter: blur(18px);
+    opacity: 0.55;
+    transition: opacity 0.3s, filter 0.3s;
+  }
+  .aurora-band {
+    position:absolute;
+    left: -10%; right: -10%;
+    height: 120px;
+    mix-blend-mode: screen;
+    animation: auroraWave 8s ease-in-out infinite alternate;
+  }
+  .aurora-band-1 {
+    top: 10%;
+    background: linear-gradient(90deg, transparent, var(--aurora-1) 30%, var(--aurora-3) 60%, transparent);
+    animation-duration: 7s;
+  }
+  .aurora-band-2 {
+    top: 25%;
+    background: linear-gradient(90deg, transparent, var(--aurora-2) 40%, var(--aurora-4) 70%, transparent);
+    animation-duration: 9s;
+    animation-delay: -3s;
+  }
+  .aurora-band-3 {
+    top: 45%;
+    background: linear-gradient(90deg, transparent, var(--aurora-3) 20%, var(--aurora-1) 50%, var(--aurora-2) 80%, transparent);
+    animation-duration: 11s;
+    animation-delay: -5s;
+  }
+  @keyframes auroraWave {
+    0%   { transform: translateX(-8%) skewY(-3deg) scaleY(0.9); }
+    50%  { transform: translateX(4%)  skewY(2deg)  scaleY(1.1); }
+    100% { transform: translateX(-4%) skewY(-1deg) scaleY(1);   }
+  }
+  body.combo-hot .aurora { opacity: 0.85; filter: blur(12px); }
 
-    .stage {
-      position:relative; z-index:10;
-      display:flex; flex-direction:column; align-items:center;
-      margin-bottom:8vh;
-      transition: transform 0.8s cubic-bezier(.34,1.56,.64,1);
-    }
+  /* ==================================================================
+     MOUNTAINS
+     ================================================================== */
+  .mountains {
+    position:fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 55%;
+    z-index: 3;
+    pointer-events:none;
+  }
+  .mountain {
+    position:absolute;
+    bottom:0;
+    width: 0; height: 0;
+    border-style: solid;
+  }
+  .mountain::before {
+    content:''; position:absolute;
+    bottom: 0; left: 50%; transform:translateX(-50%);
+    width: 0; height: 0;
+    border-style: solid;
+  }
+  /* far range */
+  .m-far-1 {
+    left: 5%;
+    border-width: 0 180px 300px 180px;
+    border-color: transparent transparent #1a1440 transparent;
+    filter: drop-shadow(0 -2px 8px rgba(124,63,255,0.3));
+  }
+  .m-far-2 {
+    left: 30%;
+    border-width: 0 220px 380px 220px;
+    border-color: transparent transparent #1f1848 transparent;
+  }
+  .m-far-3 {
+    left: 55%;
+    border-width: 0 200px 340px 200px;
+    border-color: transparent transparent #1a1440 transparent;
+  }
+  .m-far-4 {
+    right: 5%;
+    border-width: 0 180px 290px 180px;
+    border-color: transparent transparent #1c1544 transparent;
+  }
+  /* mid range */
+  .m-mid-1 {
+    left: 15%;
+    border-width: 0 260px 420px 260px;
+    border-color: transparent transparent #0f0a2a transparent;
+  }
+  .m-mid-2 {
+    right: 12%;
+    border-width: 0 240px 400px 240px;
+    border-color: transparent transparent #120c30 transparent;
+  }
+  /* snow caps via ::before triangles on wrappers */
+  .snow-cap {
+    position:absolute;
+    width:0; height:0;
+    border-style: solid;
+    pointer-events:none;
+  }
 
-    .shadow {
-      width:120px; height:22px;
-      background:rgba(0,0,0,0.55); border-radius:50%;
-      margin-top:-10px;
-      animation:shadowPulse 0.5s ease-in-out infinite alternate;
-      filter:blur(6px);
-    }
-    @keyframes shadowPulse { from{transform:scaleX(0.75);opacity:0.4} to{transform:scaleX(1.0);opacity:0.7} }
+  /* CENTER PEAK — where burger sits */
+  .peak {
+    position:fixed;
+    bottom: 0; left: 50%; transform:translateX(-50%);
+    z-index: 4;
+    width: 0; height: 0;
+    border-style: solid;
+    border-width: 0 320px 520px 320px;
+    border-color: transparent transparent #050518 transparent;
+    filter: drop-shadow(0 0 30px rgba(0,255,179,0.15));
+  }
+  .peak-snow {
+    position:fixed;
+    bottom: 380px;
+    left: 50%; transform:translateX(-50%);
+    width: 0; height: 0;
+    border-style: solid;
+    border-width: 0 88px 140px 88px;
+    border-color: transparent transparent #e8f0ff transparent;
+    z-index: 5;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+  }
+  .peak-snow::before {
+    content:''; position:absolute;
+    bottom: -140px; left: -88px;
+    width: 176px; height: 20px;
+    background: linear-gradient(to bottom, #e8f0ff, transparent);
+    clip-path: polygon(20% 0, 40% 100%, 55% 20%, 75% 100%, 90% 0, 100% 30%, 100% 0, 0 0, 0 30%);
+  }
 
-    /* ---- NORMAL BURGER ANIMATIONS ---- */
-    .burger-wrap {
-      animation: bounce 0.5s ease-in-out infinite alternate,
-                 sway   1s   ease-in-out infinite alternate,
-                 spin360 10s linear      infinite;
-      transform-origin: center bottom;
-      filter: drop-shadow(0 0 18px rgba(255,200,0,0.55));
-      transition: width 0.8s cubic-bezier(.34,1.56,.64,1),
-                  height 0.8s cubic-bezier(.34,1.56,.64,1);
-    }
-    @keyframes bounce {
-      from { transform:translateY(0px) scaleY(1) scaleX(1); }
-      to   { transform:translateY(-28px) scaleY(1.06) scaleX(0.94); }
-    }
-    @keyframes sway {
-      from { transform:rotate(-12deg); }
-      to   { transform:rotate(12deg); }
-    }
-    @keyframes spin360 {
-      0%   { filter:drop-shadow(0 0 18px rgba(255,200,0,0.55)) hue-rotate(0deg); }
-      50%  { filter:drop-shadow(0 0 30px rgba(255,100,0,0.8))  hue-rotate(180deg); }
-      100% { filter:drop-shadow(0 0 18px rgba(255,200,0,0.55)) hue-rotate(360deg); }
-    }
+  /* ==================================================================
+     FOG at base of mountains
+     ================================================================== */
+  .fog {
+    position:fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 20%;
+    background: linear-gradient(to top, rgba(74,31,95,0.6), transparent);
+    z-index: 6;
+    pointer-events:none;
+  }
 
-    /* ---- ANGRY BURGER ANIMATIONS ---- */
-    body.angry .burger-wrap {
-      animation: angryBounce 0.18s ease-in-out infinite alternate,
-                 angrySway   0.22s ease-in-out infinite alternate,
-                 angryPulse  0.4s  ease-in-out infinite alternate;
-    }
-    @keyframes angryBounce {
-      from { transform:translateY(0px) scaleY(1) scaleX(1); }
-      to   { transform:translateY(-45px) scaleY(1.1) scaleX(0.88); }
-    }
-    @keyframes angrySway {
-      from { transform:rotate(-22deg); }
-      to   { transform:rotate(22deg); }
-    }
-    @keyframes angryPulse {
-      from { filter:drop-shadow(0 0 30px rgba(255,0,0,0.9)) hue-rotate(0deg); }
-      to   { filter:drop-shadow(0 0 60px rgba(255,80,0,1))  hue-rotate(20deg); }
-    }
+  /* ==================================================================
+     BURGER — back on the mountain peak
+     ================================================================== */
+  .stage {
+    position:fixed;
+    left: 50%; bottom: 40vh;
+    transform:translateX(-50%);
+    z-index: 15;
+    display:flex; flex-direction:column;
+    align-items:center;
+    transition: filter 0.3s;
+    pointer-events: none;
+  }
+  body.hit-flash .stage { filter: brightness(1.5) drop-shadow(0 0 30px var(--aurora-1)); }
+  body.miss-flash .stage { filter: brightness(0.6) saturate(0.5); }
 
-    /* ---- NORMAL ARM/LEG ---- */
-    .arm-left  { animation:armWiggleLeft  0.5s ease-in-out infinite alternate; transform-origin:60px 100px; }
-    .arm-right { animation:armWiggleRight 0.5s ease-in-out infinite alternate; transform-origin:140px 100px; }
-    @keyframes armWiggleLeft  { from{transform:rotate(-20deg)} to{transform:rotate(25deg)} }
-    @keyframes armWiggleRight { from{transform:rotate(20deg)}  to{transform:rotate(-25deg)} }
+  .burger-wrap {
+    transform-origin: center bottom;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.7));
+    will-change: transform;
+  }
+  /* Beat pulses — one-shot per beat, alternate left/right lean */
+  .burger-wrap.beat-a { animation: beatPulseL 0.42s cubic-bezier(.34,1.56,.64,1); }
+  .burger-wrap.beat-b { animation: beatPulseR 0.42s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes beatPulseL {
+    0%   { transform: translateY(0) rotate(0) scale(1); }
+    25%  { transform: translateY(-14px) rotate(-4deg) scaleY(1.05) scaleX(0.95); }
+    100% { transform: translateY(0) rotate(0) scale(1); }
+  }
+  @keyframes beatPulseR {
+    0%   { transform: translateY(0) rotate(0) scale(1); }
+    25%  { transform: translateY(-14px) rotate(4deg) scaleY(1.05) scaleX(0.95); }
+    100% { transform: translateY(0) rotate(0) scale(1); }
+  }
+  /* Combo hot — glow only, no motion change */
+  body.combo-hot .burger-wrap {
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.7)) drop-shadow(0 0 24px var(--aurora-1));
+  }
+  /* Perfect hit — extra big bounce */
+  .burger-wrap.hit-perfect { animation: perfectPop 0.5s cubic-bezier(.34,1.56,.64,1) !important; }
+  @keyframes perfectPop {
+    0%   { transform: translateY(0) scale(1); }
+    30%  { transform: translateY(-26px) scale(1.12); }
+    100% { transform: translateY(0) scale(1); }
+  }
+  /* Miss — angry shake, this overrides beat pulse */
+  body.face-state-angry .burger-wrap {
+    animation: angryShake 0.6s ease-in-out !important;
+  }
+  @keyframes angryShake {
+    0%   { transform: translateY(0)   rotate(0)    scale(1); }
+    12%  { transform: translateY(-6px) rotate(-6deg) scale(1.08); }
+    28%  { transform: translateY(-2px) rotate(5deg)  scale(1.05); }
+    45%  { transform: translateY(-4px) rotate(-4deg) scale(1.06); }
+    62%  { transform: translateY(0)   rotate(3deg)  scale(1.03); }
+    100% { transform: translateY(0)   rotate(0)    scale(1); }
+  }
 
-    .leg-left  { animation:legKickLeft  0.5s ease-in-out infinite alternate; transform-origin:80px 150px; }
-    .leg-right { animation:legKickRight 0.5s ease-in-out infinite alternate; transform-origin:120px 150px; }
-    @keyframes legKickLeft  { from{transform:rotate(-15deg)} to{transform:rotate(30deg)} }
-    @keyframes legKickRight { from{transform:rotate(15deg)}  to{transform:rotate(-30deg)} }
+  .shadow {
+    width: 130px; height: 18px;
+    background: radial-gradient(ellipse, rgba(0,0,0,0.6), transparent 70%);
+    border-radius:50%;
+    margin-top:-4px;
+    transform: scaleX(0.9);
+    opacity: 0.65;
+  }
+  .stage.beat-pulse .shadow { animation: shadowKick 0.42s ease-out; }
+  @keyframes shadowKick {
+    0%   { transform: scaleX(0.9);  opacity: 0.65; }
+    25%  { transform: scaleX(0.65); opacity: 0.4; }
+    100% { transform: scaleX(0.9);  opacity: 0.65; }
+  }
 
-    /* ---- ANGRY ARM/LEG ---- */
-    body.angry .arm-left  { animation:angryArmL 0.18s ease-in-out infinite alternate; }
-    body.angry .arm-right { animation:angryArmR 0.18s ease-in-out infinite alternate; }
-    @keyframes angryArmL { from{transform:rotate(-50deg)} to{transform:rotate(10deg)} }
-    @keyframes angryArmR { from{transform:rotate(50deg)}  to{transform:rotate(-10deg)} }
+  /* Mouth spit-flash on note spawn */
+  .mouth-flash {
+    position: fixed;
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    background: radial-gradient(circle,
+      rgba(255,255,255,1) 0%,
+      rgba(255,204,0,0.75) 25%,
+      rgba(255,45,149,0.35) 55%,
+      transparent 75%);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 22;
+    animation: mouthFlashAnim 0.55s ease-out forwards;
+    mix-blend-mode: screen;
+  }
+  @keyframes mouthFlashAnim {
+    0%   { opacity: 1;   transform: translate(-50%, -50%) scale(0.3); }
+    25%  { opacity: 1;   transform: translate(-50%, -50%) scale(1.3); }
+    100% { opacity: 0;   transform: translate(-50%, -50%) scale(3.2); }
+  }
+  /* Smoke ring behind the flash — signals "just launched from mouth" */
+  .mouth-ring {
+    position: fixed;
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    border: 3px solid rgba(255,220,120,0.9);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 21;
+    animation: mouthRingAnim 0.7s ease-out forwards;
+  }
+  @keyframes mouthRingAnim {
+    0%   { opacity: 1;   transform: translate(-50%, -50%) scale(0.4); border-width: 4px; }
+    100% { opacity: 0;   transform: translate(-50%, -50%) scale(3.5); border-width: 0.5px; }
+  }
 
-    body.angry .leg-left  { animation:angryLegL 0.18s ease-in-out infinite alternate; transform-origin:80px 168px; }
-    body.angry .leg-right { animation:angryLegR 0.18s ease-in-out infinite alternate; transform-origin:120px 168px; }
-    @keyframes angryLegL { from{transform:rotate(-55deg)} to{transform:rotate(20deg)} }
-    @keyframes angryLegR { from{transform:rotate(55deg)}  to{transform:rotate(-20deg)} }
+  /* Articulated limbs — shoulders/hips/knees/elbows */
+  .arm-left       { transform-origin: 66px 100px;  }
+  .arm-right      { transform-origin: 134px 100px; }
+  .forearm-left   { transform-origin: 42px 100px;  }
+  .forearm-right  { transform-origin: 158px 100px; }
+  .leg-left       { transform-origin: 81px 168px;  }
+  .leg-right      { transform-origin: 119px 168px; }
+  .shin-left      { transform-origin: 81px 188px;  }
+  .shin-right     { transform-origin: 119px 188px; }
 
-    /* Eye */
-    .eye { animation:blink 2.5s ease-in-out infinite; }
-    @keyframes blink { 0%,90%,100%{transform:scaleY(1)} 95%{transform:scaleY(0.08)} }
-    body.angry .eye { animation:angrySquint 0.3s ease-in-out infinite alternate; }
-    @keyframes angrySquint { from{transform:scaleY(0.4)} to{transform:scaleY(0.6)} }
+  /* Key-press strike animations */
+  .arm-left.strike      { animation: armStrikeL 0.34s cubic-bezier(.34,1.56,.64,1); }
+  .arm-right.strike     { animation: armStrikeR 0.34s cubic-bezier(.34,1.56,.64,1); }
+  .forearm-left.strike  { animation: forearmL   0.34s ease-out; }
+  .forearm-right.strike { animation: forearmR   0.34s ease-out; }
+  @keyframes armStrikeL {
+    0%   { transform: rotate(0); }
+    40%  { transform: rotate(-85deg); }
+    100% { transform: rotate(0); }
+  }
+  @keyframes armStrikeR {
+    0%   { transform: rotate(0); }
+    40%  { transform: rotate(85deg); }
+    100% { transform: rotate(0); }
+  }
+  @keyframes forearmL {
+    0%,100% { transform: rotate(0); }
+    40%     { transform: rotate(-35deg); }
+  }
+  @keyframes forearmR {
+    0%,100% { transform: rotate(0); }
+    40%     { transform: rotate(35deg); }
+  }
 
-    /* Seeds */
-    .seed { animation:seedBob 0.5s ease-in-out infinite alternate; }
-    .seed:nth-child(odd) { animation-delay:0.12s; }
-    @keyframes seedBob { from{transform:translateY(0)} to{transform:translateY(-3px)} }
+  .leg-left.kick   { animation: legKickL 0.36s cubic-bezier(.34,1.56,.64,1); }
+  .leg-right.kick  { animation: legKickR 0.36s cubic-bezier(.34,1.56,.64,1); }
+  .shin-left.kick  { animation: shinKickL 0.36s ease-out; }
+  .shin-right.kick { animation: shinKickR 0.36s ease-out; }
+  @keyframes legKickL {
+    0%   { transform: rotate(0); }
+    45%  { transform: rotate(-50deg); }
+    100% { transform: rotate(0); }
+  }
+  @keyframes legKickR {
+    0%   { transform: rotate(0); }
+    45%  { transform: rotate(50deg); }
+    100% { transform: rotate(0); }
+  }
+  @keyframes shinKickL {
+    0%   { transform: rotate(0); }
+    45%  { transform: rotate(75deg); }
+    100% { transform: rotate(0); }
+  }
+  @keyframes shinKickR {
+    0%   { transform: rotate(0); }
+    45%  { transform: rotate(-75deg); }
+    100% { transform: rotate(0); }
+  }
 
-    /* Hidden/shown elements for angry mode */
-    .happy-face  { }
-    .angry-face  { display:none; }
-    .hand-normal { }
-    .hand-finger { display:none; }
-    body.angry .happy-face  { display:none; }
-    body.angry .angry-face  { display:block; }
-    body.angry .hand-normal { display:none; }
-    body.angry .hand-finger { display:block; }
+  .eye { animation: blink 3s ease-in-out infinite; transform-origin: center; }
+  @keyframes blink { 0%,90%,100%{transform:scaleY(1)} 95%{transform:scaleY(0.08)} }
 
-    /* Title */
-    .title {
-      position:fixed; top:24px;
-      color:#ffcc00; font-size:1.5rem; letter-spacing:0.18em; text-transform:uppercase;
-      text-shadow:0 0 20px #ff6a00, 0 0 40px #ff3a6e;
-      animation:titlePulse 1s ease-in-out infinite alternate;
-      z-index:20; pointer-events:none;
-      transition: color 0.5s;
-    }
-    body.angry .title { color:#ff3333; text-shadow:0 0 20px #ff0000, 0 0 40px #ff4400; }
-    @keyframes titlePulse {
-      from{opacity:0.75;text-shadow:0 0 15px #ff6a00}
-      to  {opacity:1.00;text-shadow:0 0 35px #ffcc00, 0 0 60px #ff3a6e}
-    }
+  /* Face states */
+  .face-happy { display: block; }
+  .face-wow   { display: none; }
+  .face-sad   { display: none; }
+  .face-angry { display: none; }
+  .face-wtf   { display: none; }
+  body.face-state-wow   .face-happy { display:none; }
+  body.face-state-wow   .face-wow   { display:block; }
+  body.face-state-sad   .face-happy { display:none; }
+  body.face-state-sad   .face-sad   { display:block; }
+  body.face-state-angry .face-happy { display:none; }
+  body.face-state-angry .face-angry { display:block; }
+  body.face-state-wtf   .face-happy { display:none; }
+  body.face-state-wtf   .face-wtf   { display:block; }
 
-    /* Music notes */
-    .notes-container { position:fixed; bottom:25%; width:100%; pointer-events:none; z-index:5; }
-    .note { position:absolute; font-size:1.6rem; animation:floatNote 2s ease-in forwards; opacity:0; }
-    @keyframes floatNote {
-      0%  {opacity:0; transform:translateY(0) rotate(0deg);}
-      20% {opacity:1;}
-      100%{opacity:0; transform:translateY(-90px) rotate(25deg);}
-    }
+  /* Question marks bounce during WTF */
+  .qmark   { animation: qBounceA 0.4s ease-in-out infinite alternate; transform-origin: center; }
+  .qmark-2 { animation: qBounceB 0.4s ease-in-out infinite alternate; animation-delay: 0.15s; }
+  @keyframes qBounceA {
+    from { transform: translateY(0) rotate(-8deg); }
+    to   { transform: translateY(-4px) rotate(8deg); }
+  }
+  @keyframes qBounceB {
+    from { transform: translateY(0) rotate(10deg); }
+    to   { transform: translateY(-3px) rotate(-10deg); }
+  }
 
-    /* Fries */
-    .fry-container { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:30; }
-    .fry { position:absolute; top:-80px; pointer-events:none; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+  /* ==================================================================
+     WTF FACTOR — random burger gags mid-song
+     ================================================================== */
+  .burger-wrap.gag-flip     { animation: gagFlip     1.4s ease-in-out !important; }
+  .burger-wrap.gag-moonwalk { animation: gagMoonwalk 1.6s ease-in-out !important; }
+  .burger-wrap.gag-vibrate  { animation: gagVibrate  0.06s linear     infinite !important; }
+  .burger-wrap.gag-zoom     { animation: gagZoom     0.9s ease-in-out !important; }
+  .burger-wrap.gag-stretch  { animation: gagStretch  1.2s ease-in-out !important; }
+  .burger-wrap.gag-spin     { animation: gagSpin     1.2s ease-in-out !important; }
 
-    /* Click ripple */
-    .click-ripple {
-      position:fixed; border-radius:50%; border:3px solid #ffcc00;
-      width:10px; height:10px; transform:translate(-50%,-50%);
-      pointer-events:none; z-index:50; animation:rippleOut 0.5s ease-out forwards;
-    }
-    @keyframes rippleOut {
-      from{width:10px;height:10px;opacity:1}
-      to  {width:70px;height:70px;opacity:0}
-    }
+  @keyframes gagFlip {
+    0%,100% { transform: rotate(0); }
+    18%,82% { transform: rotate(180deg); }
+  }
+  @keyframes gagMoonwalk {
+    0%,100% { transform: translateX(0); }
+    20%     { transform: translateX(-60px) rotate(-8deg); }
+    50%     { transform: translateX(0)     rotate(0); }
+    80%     { transform: translateX(60px)  rotate(8deg); }
+  }
+  @keyframes gagVibrate {
+    0%   { transform: translate(0,0)      rotate(0); }
+    25%  { transform: translate(-5px,3px) rotate(-4deg); }
+    50%  { transform: translate(4px,-4px) rotate(3deg); }
+    75%  { transform: translate(-3px,-3px) rotate(-2deg); }
+    100% { transform: translate(4px,3px)  rotate(5deg); }
+  }
+  @keyframes gagZoom {
+    0%,100% { transform: scale(1); }
+    30%,70% { transform: scale(1.9); }
+  }
+  @keyframes gagStretch {
+    0%,100% { transform: scaleY(1) scaleX(1); }
+    25%     { transform: scaleY(1.6) scaleX(0.6); }
+    75%     { transform: scaleY(0.5) scaleX(1.5); }
+  }
+  @keyframes gagSpin {
+    0%   { transform: rotate(0)      scale(1); }
+    50%  { transform: rotate(360deg) scale(0.7); }
+    100% { transform: rotate(720deg) scale(1); }
+  }
 
-    /* Exit button */
-    #exitBtn {
-      position: fixed;
-      bottom: 28px;
-      right: 28px;
-      z-index: 100;
-      background: #ff3a3a;
-      color: #fff;
-      border: 3px solid #ff0000;
-      border-radius: 12px;
-      padding: 12px 28px;
-      font-family: 'Arial Black', sans-serif;
-      font-size: 1rem;
-      font-weight: 900;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      cursor: pointer;
-      box-shadow: 0 0 20px #ff0000, 0 0 40px #ff440088;
-      opacity: 0;
-      transform: scale(0.5) translateY(20px);
-      pointer-events: none;
-      transition: opacity 0.6s ease, transform 0.6s cubic-bezier(.34,1.56,.64,1);
-    }
-    #exitBtn.visible {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-      pointer-events: all;
-    }
-    #exitBtn:hover {
-      background: #ff0000;
-      box-shadow: 0 0 40px #ff0000, 0 0 80px #ff440099;
-      transform: scale(1.08);
-    }
-    #exitBtn.clicked {
-      animation: btnPanic 0.3s ease-in-out;
-    }
-    @keyframes btnPanic {
-      0%  { transform: scale(1); }
-      30% { transform: scale(1.3) rotate(-5deg); }
-      60% { transform: scale(0.9) rotate(3deg); }
-      100%{ transform: scale(1); }
-    }
+  /* Gag overlays — extras layered on top of the burger */
+  .gag-item {
+    position: absolute;
+    pointer-events: none;
+    z-index: 18;
+  }
+  .gag-sunglasses {
+    top: 32%; left: 50%;
+    width: 120px;
+    transform: translateX(-50%);
+    animation: gagPop 0.35s cubic-bezier(.34,1.56,.64,1);
+  }
+  .gag-mustache {
+    top: 44%; left: 50%;
+    width: 90px;
+    transform: translateX(-50%);
+    animation: gagPop 0.35s cubic-bezier(.34,1.56,.64,1);
+  }
+  .gag-halo {
+    top: -30px; left: 50%;
+    width: 130px; height: 40px;
+    transform: translateX(-50%);
+    border: 6px solid #ffd94a;
+    border-radius: 50%;
+    box-shadow: 0 0 24px #ffd94a, inset 0 0 12px #ffd94a;
+    background: transparent;
+    animation: gagHalo 2s linear infinite;
+  }
+  .gag-scream {
+    top: -40px; left: 50%;
+    transform: translateX(-50%);
+    color: #ff3355;
+    font-family: 'Impact', 'Arial Black', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 8px #ffcc00, 2px 2px 0 #000;
+    white-space: nowrap;
+    animation: gagScreamShake 0.09s ease-in-out infinite alternate;
+  }
+  .gag-question {
+    top: -50px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Georgia', serif;
+    font-style: italic;
+    color: white;
+    font-size: 1.4rem;
+    text-shadow: 0 0 12px rgba(255,255,255,0.6);
+    white-space: nowrap;
+    animation: gagFadeIn 0.3s ease-out;
+  }
+  @keyframes gagPop {
+    from { opacity: 0; transform: translateX(-50%) scale(0); }
+    to   { opacity: 1; transform: translateX(-50%) scale(1); }
+  }
+  @keyframes gagHalo {
+    from { transform: translateX(-50%) rotateY(0);   }
+    to   { transform: translateX(-50%) rotateY(360deg); }
+  }
+  @keyframes gagScreamShake {
+    from { transform: translateX(-50%) rotate(-3deg) scale(1); }
+    to   { transform: translateX(-50%) rotate(3deg)  scale(1.05); }
+  }
+  @keyframes gagFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
 
-    /* Rage flash overlay */
-    #rageFlash {
-      position: fixed; inset: 0;
-      background: #ff0000;
-      opacity: 0;
-      pointer-events: none;
-      z-index: 200;
-      animation: none;
-    }
-    #rageFlash.flash {
-      animation: rageIn 0.6s ease-out forwards;
-    }
-    @keyframes rageIn {
-      0%  { opacity: 0.8; }
-      100%{ opacity: 0; }
-    }
-  </style>
+  /* ==================================================================
+     BURGER TALKS DURING PLAY
+     ================================================================== */
+  .play-speech {
+    position: fixed;
+    bottom: 42vh;
+    left: 60%;
+    max-width: 220px;
+    z-index: 25;
+    background: rgba(255,253,240,0.96);
+    color: #2b2418;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-family: 'Georgia', serif;
+    font-style: italic;
+    font-size: 0.95rem;
+    line-height: 1.35;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.45);
+    pointer-events: none;
+    opacity: 0;
+    animation: playSpeechAnim 2.6s ease-out forwards;
+    transform-origin: left center;
+  }
+  .play-speech::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-right: 10px solid rgba(255,253,240,0.96);
+  }
+  @keyframes playSpeechAnim {
+    0%   { opacity: 0; transform: scale(0.65) translateY(6px); }
+    10%  { opacity: 1; transform: scale(1) translateY(0); }
+    88%  { opacity: 1; transform: scale(1) translateY(0); }
+    100% { opacity: 0; transform: scale(0.9) translateY(-6px); }
+  }
+
+  /* Hand states — flip the bird on miss */
+  .hand-normal { display: block; }
+  .hand-finger { display: none; }
+  body.face-state-angry .hand-normal { display: none; }
+  body.face-state-angry .hand-finger { display: block; }
+
+  /* Arms raise up during miss so the fingers actually point at the sky */
+  body.face-state-angry .arm-left  { animation: armRaiseL 0.6s ease-out forwards; }
+  body.face-state-angry .arm-right { animation: armRaiseR 0.6s ease-out forwards; }
+  @keyframes armRaiseL {
+    0%   { transform: rotate(0); }
+    40%  { transform: rotate(-70deg); }
+    100% { transform: rotate(-55deg); }
+  }
+  @keyframes armRaiseR {
+    0%   { transform: rotate(0); }
+    40%  { transform: rotate(70deg); }
+    100% { transform: rotate(55deg); }
+  }
+
+  /* ==================================================================
+     HUD — angular stat plates
+     ================================================================== */
+  .hud {
+    position:fixed;
+    top: 18px;
+    left: 18px; right: 18px;
+    z-index: 50;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    pointer-events:none;
+  }
+  .hud-panel {
+    position: relative;
+    background: var(--panel-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 9px 22px 10px;
+    clip-path: var(--clip-tag);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.45);
+  }
+  /* neon edge drawn via a pseudo underlay so the clip corners glow */
+  .hud-panel::before {
+    content: '';
+    position: absolute; inset: 0;
+    clip-path: var(--clip-tag);
+    padding: 1.5px;
+    background: linear-gradient(135deg, var(--panel-edge), var(--panel-edge-soft));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+  .hud-panel.right { text-align: right; }
+  .hud-label {
+    font-family: var(--ui);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.32em;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .hud-value {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.9rem;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    text-shadow: 0 0 14px currentColor;
+    font-variant-numeric: tabular-nums;
+  }
+  #score { color: var(--aurora-1); }
+  #combo { color: var(--aurora-4); }
+  /* the little × before the combo number */
+  #combo::before { content: '×'; opacity: 0.6; font-size: 0.75em; margin-right: 1px; }
+
+  .combo-flash { animation: comboPop 0.3s ease-out; }
+  @keyframes comboPop {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.4); }
+    100% { transform: scale(1); }
+  }
+
+  /* ==================================================================
+     LANES
+     ================================================================== */
+  .lanes {
+    position:fixed;
+    top:0; left:50%;
+    transform:translateX(-50%);
+    width: calc(var(--lane-w) * 4 + 24px);
+    height:100%;
+    z-index: 20;
+    display:flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 8px;
+    pointer-events:none;
+  }
+  .lane {
+    position:relative;
+    width: var(--lane-w);
+    background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.015) 55%, rgba(255,255,255,0.06) 100%);
+    border-left: 1px solid rgba(255,255,255,0.10);
+    border-right: 1px solid rgba(255,255,255,0.10);
+  }
+  .lane[data-color="0"] { box-shadow: inset 0 -120px 90px -90px rgba(0,255,179,0.28); }
+  .lane[data-color="1"] { box-shadow: inset 0 -120px 90px -90px rgba(0,200,255,0.28); }
+  .lane[data-color="2"] { box-shadow: inset 0 -120px 90px -90px rgba(255,61,154,0.28); }
+  .lane[data-color="3"] { box-shadow: inset 0 -120px 90px -90px rgba(124,63,255,0.28); }
+  .lane::before {
+    /* subtle vertical guide */
+    content:''; position:absolute;
+    top:0; bottom:0; left:50%;
+    width:1px;
+    background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.05), transparent);
+  }
+
+  /* Hit zone — a receptor pad */
+  .hit-zone {
+    position:absolute;
+    left:2px; right:2px;
+    top: var(--hit-y);
+    height: 70px;
+    border-radius: 12px;
+    border: 2px solid rgba(255,255,255,0.85);
+    background:
+      linear-gradient(to bottom, rgba(255,255,255,0.16), rgba(255,255,255,0.03) 55%, rgba(255,255,255,0.10));
+    box-shadow: 0 0 22px rgba(255,255,255,0.18), inset 0 0 18px rgba(255,255,255,0.08);
+  }
+  /* target chevrons hinting where to hit */
+  .hit-zone::after {
+    content: '';
+    position: absolute; left: 50%; top: 50%;
+    width: 20px; height: 20px;
+    transform: translate(-50%, -60%) rotate(45deg);
+    border-right: 3px solid rgba(255,255,255,0.55);
+    border-bottom: 3px solid rgba(255,255,255,0.55);
+    opacity: 0.7;
+  }
+  .lane[data-color="0"] .hit-zone { border-color: var(--aurora-1); box-shadow: 0 0 22px var(--aurora-1), inset 0 0 18px rgba(0,255,179,0.15); }
+  .lane[data-color="1"] .hit-zone { border-color: var(--aurora-3); box-shadow: 0 0 22px var(--aurora-3), inset 0 0 18px rgba(0,200,255,0.15); }
+  .lane[data-color="2"] .hit-zone { border-color: var(--aurora-4); box-shadow: 0 0 22px var(--aurora-4), inset 0 0 18px rgba(255,61,154,0.15); }
+  .lane[data-color="3"] .hit-zone { border-color: var(--aurora-2); box-shadow: 0 0 22px var(--aurora-2), inset 0 0 18px rgba(124,63,255,0.15); }
+
+  /* Key label — a physical keycap */
+  .key-label {
+    position:absolute;
+    top: calc(var(--hit-y) + 86px);
+    left: 50%; transform: translateX(-50%);
+    width: 46px; height: 46px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--display);
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    color: var(--ink);
+    background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02));
+    border: 2px solid rgba(255,255,255,0.30);
+    border-radius: 10px;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
+    text-shadow: 0 0 8px currentColor;
+    transition: transform 0.08s, box-shadow 0.08s, border-color 0.08s;
+  }
+  .lane[data-color="0"] .key-label { border-color: rgba(0,255,179,0.55); }
+  .lane[data-color="1"] .key-label { border-color: rgba(0,200,255,0.55); }
+  .lane[data-color="2"] .key-label { border-color: rgba(255,61,154,0.55); }
+  .lane[data-color="3"] .key-label { border-color: rgba(124,63,255,0.55); }
+  .lane.pressed .key-label {
+    transform: translateX(-50%) translateY(3px);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25), 0 0 18px currentColor;
+    color: #fff;
+    background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08));
+  }
+  .lane.pressed .hit-zone {
+    background: linear-gradient(to bottom, rgba(255,255,255,0.34), rgba(255,255,255,0.12));
+  }
+
+  /* Falling notes = burger ingredients, angled toward camera */
+  .note {
+    position:absolute;
+    left: 8px; right: 8px;
+    height: 42px;
+    will-change: transform;
+    transform-origin: center center;
+    pointer-events: none;
+  }
+  .note svg {
+    width: 100%; height: 100%;
+    display: block;
+    filter: drop-shadow(0 3px 5px rgba(0,0,0,0.5));
+  }
+  .note[data-color="0"] { color: #7cff5b; }  /* lettuce glow */
+  .note[data-color="1"] { color: #ffe066; }  /* cheese  glow */
+  .note[data-color="2"] { color: #ff6666; }  /* tomato  glow */
+  .note[data-color="3"] { color: #b26a3a; }  /* patty   glow */
+
+  /* HOLD notes — a long flowing ribbon (Magic Tiles style) that streams down
+     the lane; you hold the key while it passes through the hit line. */
+  .note.hold-note {
+    top: 0; height: 0;
+    left: 0; right: 0;
+    overflow: visible;
+  }
+  .hold-ribbon {
+    position: absolute;
+    left: 9px; right: 9px;
+    border-radius: 26px;
+    overflow: hidden;
+    border: 2px solid rgba(255,255,255,0.55);
+    box-shadow: 0 0 18px currentColor, inset 0 0 24px rgba(255,255,255,0.18);
+    will-change: transform, top;
+  }
+  .hold-ribbon .ribbon-fill {
+    position: absolute; inset: 0;
+    background: currentColor;
+    opacity: 0.55;
+  }
+  .hold-ribbon .flow {
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      -50deg,
+      rgba(255,255,255,0.30) 0 12px,
+      rgba(255,255,255,0.04) 12px 30px);
+    background-size: 160% 160%;
+    animation: ribbonFlow 0.85s linear infinite;
+  }
+  @keyframes ribbonFlow { from { background-position: 0 0; } to { background-position: 0 42px; } }
+  .hold-ribbon .head {
+    position: absolute; left: 0; right: 0; bottom: -2px;
+    height: 30px;
+    background: radial-gradient(ellipse at 50% 100%, #fff 0%, currentColor 75%);
+    border-radius: 26px;
+    box-shadow: 0 0 18px #fff;
+  }
+  .hold-ribbon .tail {
+    position: absolute; left: 0; right: 0; top: -2px;
+    height: 16px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.6), transparent);
+    border-radius: 26px 26px 0 0;
+  }
+  .hold-label {
+    position: absolute;
+    top: 14px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.8rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    color: #fff;
+    text-shadow: 0 0 6px currentColor;
+    pointer-events: none;
+  }
+  .hold-ribbon.holding {
+    border-color: #fff;
+    box-shadow: 0 0 34px currentColor, 0 0 60px currentColor, inset 0 0 24px rgba(255,255,255,0.35);
+  }
+  .hold-ribbon.holding .flow { animation-duration: 0.35s; }
+  .hold-ribbon.holding .ribbon-fill { opacity: 0.8; }
+  /* hit zone glows and pulses while a hold streams into it */
+  .lane.hold-active .hit-zone {
+    background: linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.2));
+    box-shadow: 0 0 40px #fff, inset 0 0 20px rgba(255,255,255,0.5);
+    animation: absorbPulse 0.25s ease-in-out infinite alternate;
+  }
+  @keyframes absorbPulse {
+    from { box-shadow: 0 0 30px #fff, inset 0 0 16px rgba(255,255,255,0.4); }
+    to   { box-shadow: 0 0 55px #fff, inset 0 0 24px rgba(255,255,255,0.65); }
+  }
+
+  /* Hit / miss feedback text */
+  .judge {
+    position:absolute;
+    top: calc(var(--hit-y) - 44px);
+    left:0; right:0;
+    text-align:center;
+    font-family: var(--display);
+    font-size: 1.25rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    font-style: italic;
+    pointer-events:none;
+    animation: judgePop 0.6s ease-out forwards;
+    text-shadow: 0 0 12px currentColor, 0 2px 0 rgba(0,0,0,0.4);
+  }
+  @keyframes judgePop {
+    0%   { opacity:0; transform: translateY(10px) scale(0.8); }
+    20%  { opacity:1; transform: translateY(0)    scale(1.1); }
+    80%  { opacity:1; transform: translateY(-20px) scale(1); }
+    100% { opacity:0; transform: translateY(-40px) scale(1); }
+  }
+  .judge.perfect { color: #ffcc00; }
+  .judge.good    { color: var(--aurora-1); }
+  .judge.miss    { color: #ff4466; }
+  .judge.empty   { color: rgba(255,255,255,0.55); font-size: 1rem; letter-spacing: 0.1em; text-shadow: 0 0 8px rgba(255,255,255,0.3); }
+
+  /* Hit burst particles */
+  .burst {
+    position:absolute;
+    top: var(--hit-y);
+    left: 50%;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    pointer-events:none;
+    animation: burstOut 0.5s ease-out forwards;
+  }
+  @keyframes burstOut {
+    from { transform: translate(-50%,-50%) scale(1);   opacity:1; }
+    to   { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.3); opacity:0; }
+  }
+
+  /* ==================================================================
+     START SCREEN
+     ================================================================== */
+  .overlay {
+    position:fixed;
+    inset:0;
+    z-index: 100;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 40%, rgba(20,10,45,0.55), transparent 70%),
+      rgba(4, 5, 20, 0.82);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display:flex;
+    flex-direction: column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding: 40px;
+    transition: opacity 0.5s;
+  }
+  .overlay.hidden {
+    opacity:0;
+    pointer-events:none;
+  }
+  /* small eyebrow above the title */
+  .overlay .eyebrow {
+    font-family: var(--ui);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.55em;
+    text-indent: 0.55em;
+    color: var(--aurora-3);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    opacity: 0.85;
+  }
+  .overlay h1 {
+    font-family: var(--display);
+    font-weight: 900;
+    font-size: clamp(2.6rem, 8vw, 4.4rem);
+    letter-spacing: 0.04em;
+    margin-bottom: 10px;
+    line-height: 0.95;
+    background: linear-gradient(100deg, var(--aurora-1), var(--aurora-3) 35%, var(--aurora-4) 70%, var(--aurora-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 22px rgba(0,200,255,0.35));
+    animation: titleGlow 3s ease-in-out infinite alternate;
+  }
+  @keyframes titleGlow {
+    from { filter: drop-shadow(0 0 16px rgba(0,200,255,0.25)); }
+    to   { filter: drop-shadow(0 0 30px rgba(255,61,154,0.4)); }
+  }
+  .overlay p {
+    color: var(--ink);
+    opacity: 0.82;
+    margin-bottom: 30px;
+    font-size: 0.98rem;
+    letter-spacing: 0.01em;
+    max-width: 460px;
+    line-height: 1.6;
+    font-family: var(--ui);
+    font-weight: 600;
+  }
+  .overlay p b { font-weight: 700; }
+  .key-guide {
+    display:flex; gap: 12px;
+    margin-bottom: 34px;
+  }
+  .key-guide .kg {
+    width: 58px; height: 58px;
+    border: 2px solid;
+    border-radius: 12px;
+    display:flex; align-items:center; justify-content:center;
+    font-family: var(--display);
+    font-size: 1.35rem; font-weight: 800;
+    background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.01));
+    box-shadow: 0 5px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+    text-shadow: 0 0 8px currentColor;
+  }
+  .kg:nth-child(1) { color: var(--aurora-1); border-color: var(--aurora-1); }
+  .kg:nth-child(2) { color: var(--aurora-3); border-color: var(--aurora-3); }
+  .kg:nth-child(3) { color: var(--aurora-4); border-color: var(--aurora-4); }
+  .kg:nth-child(4) { color: var(--aurora-2); border-color: var(--aurora-2); }
+
+  .start-btn {
+    position: relative;
+    padding: 16px 52px;
+    background: linear-gradient(180deg, rgba(0,255,179,0.16), rgba(0,255,179,0.04));
+    border: 2px solid var(--aurora-1);
+    color: #eafff8;
+    clip-path: var(--clip-tag);
+    font-family: var(--display);
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 0 0 24px rgba(0,255,179,0.35), inset 0 0 18px rgba(0,255,179,0.12);
+    text-shadow: 0 0 12px var(--aurora-1);
+    transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+  }
+  .start-btn:hover:not(.locked) {
+    background: linear-gradient(180deg, rgba(0,255,179,0.30), rgba(0,255,179,0.10));
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 0 44px rgba(0,255,179,0.6), inset 0 0 18px rgba(0,255,179,0.2);
+  }
+  .start-btn:active:not(.locked) { transform: translateY(1px) scale(1.0); }
+  .start-btn.locked {
+    border-color: rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.28);
+    background: rgba(255,255,255,0.03);
+    box-shadow: none;
+    text-shadow: none;
+    cursor: not-allowed;
+  }
+  .start-btn.locked::after {
+    content: '  🔒';
+    letter-spacing: normal;
+  }
+
+  .final-stats {
+    margin-bottom: 24px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    max-width: 500px;
+  }
+  .stat-block {
+    position: relative;
+    background: var(--panel-bg);
+    padding: 16px 20px;
+    clip-path: var(--clip-tag);
+  }
+  .stat-block::before {
+    content: '';
+    position: absolute; inset: 0;
+    clip-path: var(--clip-tag);
+    padding: 1.5px;
+    background: linear-gradient(135deg, var(--panel-edge), var(--panel-edge-soft));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    pointer-events: none;
+  }
+  .stat-block .lbl {
+    font-family: var(--ui);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .stat-block .val {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.7rem;
+    text-shadow: 0 0 10px currentColor;
+    font-variant-numeric: tabular-nums;
+  }
+  #finalScore   { color: var(--aurora-1); }
+  #finalCombo   { color: var(--aurora-4); }
+  #finalAccuracy{ color: var(--aurora-3); }
+
+  /* ==================================================================
+     BURGER'S VERDICT — persistent judgment gauge
+     ================================================================== */
+  .verdict {
+    position: relative;
+    width: 100%;
+    max-width: 540px;
+    margin-bottom: 22px;
+    padding: 18px 22px;
+    background: var(--panel-bg);
+    clip-path: var(--clip-tag);
+  }
+  .verdict::before {
+    content: '';
+    position: absolute; inset: 0;
+    clip-path: var(--clip-tag);
+    padding: 1.5px;
+    background: linear-gradient(135deg, var(--panel-edge), var(--panel-edge-soft));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    pointer-events: none;
+  }
+  .verdict-label {
+    font-family: var(--ui);
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .verdict-track {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .verdict-end {
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    min-width: 72px;
+  }
+  .verdict-end.reject { color: #ff4466; text-align: right; text-shadow: 0 0 8px #ff4466; }
+  .verdict-end.accept { color: var(--aurora-1); text-align: left; text-shadow: 0 0 8px var(--aurora-1); }
+  .verdict-bar {
+    flex: 1;
+    height: 16px;
+    background: linear-gradient(90deg, #ff4466 0%, #ffcc00 50%, var(--aurora-1) 100%);
+    border-radius: 8px;
+    position: relative;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.5), 0 0 12px rgba(255,255,255,0.06);
+  }
+  .verdict-needle {
+    position: absolute;
+    top: -8px;
+    bottom: -8px;
+    width: 5px;
+    background: #fff;
+    border-radius: 3px;
+    box-shadow: 0 0 12px #fff, 0 0 24px rgba(255,255,255,0.5);
+    left: 50%;
+    transform: translateX(-50%);
+    transition: left 1.6s cubic-bezier(.34,1.56,.64,1);
+  }
+  .verdict-message {
+    margin-top: 16px;
+    text-align: center;
+    font-family: 'Georgia', serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: rgba(255,255,255,0.92);
+    line-height: 1.5;
+    min-height: 26px;
+  }
+  .verdict-footer {
+    margin-top: 10px;
+    text-align: center;
+    font-family: 'Helvetica', sans-serif;
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.05em;
+  }
+  .verdict-footer button {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.55);
+    font-family: inherit;
+    font-size: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0 2px;
+  }
+  .verdict-footer button:hover { color: #ff8899; }
+
+  /* ==================================================================
+     SONG PICKER
+     ================================================================== */
+  .song-picker {
+    display:flex; gap:14px;
+    margin-bottom: 20px;
+    width: 100%; max-width: 520px;
+  }
+  .song-btn {
+    flex:1;
+    background: rgba(255,255,255,0.04);
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    color: rgba(255,255,255,0.85);
+    font-family: inherit;
+    font-weight: 400;
+    text-align: left;
+    transition: all 0.2s;
+    display:flex; flex-direction:column;
+    gap: 4px;
+  }
+  .song-btn:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.35);
+  }
+  .song-btn.selected {
+    border-color: var(--aurora-1);
+    background: rgba(0,255,179,0.10);
+    box-shadow: 0 0 20px rgba(0,255,179,0.3);
+  }
+  .song-btn-title {
+    font-family: var(--display);
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .song-btn-sub {
+    font-size: 0.75rem;
+    color: var(--ink-dim);
+    letter-spacing: 0.03em;
+    font-family: var(--ui);
+    font-weight: 600;
+  }
+  .analyzer-status {
+    font-family: var(--ui);
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: var(--aurora-3);
+    min-height: 22px;
+    margin-bottom: 20px;
+    text-align: center;
+    letter-spacing: 0.03em;
+  }
+  .analyzer-status.error { color: #ff6688; }
+
+  /* Speed slider block */
+  .speed-block {
+    position: relative;
+    width: 100%; max-width: 520px;
+    margin-bottom: 22px;
+    padding: 16px 20px;
+    background: var(--panel-bg);
+    clip-path: var(--clip-tag);
+  }
+  .speed-block::before {
+    content: '';
+    position: absolute; inset: 0;
+    clip-path: var(--clip-tag);
+    padding: 1.5px;
+    background: linear-gradient(135deg, var(--panel-edge), var(--panel-edge-soft));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    pointer-events: none;
+  }
+  .speed-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 8px;
+  }
+  .speed-label {
+    font-family: var(--ui);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+  .speed-value {
+    font-family: var(--display);
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--aurora-1);
+    text-shadow: 0 0 8px var(--aurora-1);
+    font-variant-numeric: tabular-nums;
+  }
+  #speedSlider {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: linear-gradient(90deg, #4444aa 0%, var(--aurora-3) 50%, #ff4466 100%);
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+    margin-bottom: 14px;
+  }
+  #speedSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px; height: 22px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 12px #fff, 0 2px 4px rgba(0,0,0,0.3);
+    cursor: grab;
+  }
+  #speedSlider::-webkit-slider-thumb:active { cursor: grabbing; }
+  #speedSlider::-moz-range-thumb {
+    width: 22px; height: 22px;
+    background: #fff;
+    border-radius: 50%;
+    border: none;
+    box-shadow: 0 0 12px #fff;
+    cursor: grab;
+  }
+  .opinion-row {
+    display: flex; align-items: center; gap: 12px;
+    min-height: 60px;
+  }
+  .mini-burger {
+    flex-shrink: 0;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+    transition: transform 0.25s cubic-bezier(.34,1.56,.64,1);
+  }
+  .mini-burger.bump { animation: miniBump 0.4s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes miniBump {
+    0%,100% { transform: translateY(0) rotate(0); }
+    30%     { transform: translateY(-6px) rotate(-5deg) scale(1.05); }
+    60%     { transform: translateY(0) rotate(5deg); }
+  }
+  .speech-bubble {
+    position: relative;
+    background: rgba(255, 253, 240, 0.96);
+    color: #2b2418;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-family: 'Georgia', serif;
+    font-style: italic;
+    font-size: 0.9rem;
+    line-height: 1.35;
+    flex: 1;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    transition: opacity 0.15s;
+  }
+  .speech-bubble::before {
+    content: '';
+    position: absolute;
+    left: -9px; top: 50%;
+    transform: translateY(-50%);
+    border-style: solid;
+    border-width: 8px 10px 8px 0;
+    border-color: transparent rgba(255,253,240,0.96) transparent transparent;
+  }
+  .speech-bubble.fade { opacity: 0.15; }
+
+  /* Now-playing indicator */
+  .now-playing {
+    position:fixed;
+    top: 96px; left: 50%;
+    transform:translateX(-50%);
+    z-index: 50;
+    background: rgba(10,10,30,0.65);
+    border: 1px solid rgba(124,63,255,0.4);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-radius: 10px;
+    padding: 8px 18px;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.75);
+    display: none;
+    align-items: center;
+    gap: 12px;
+    max-width: 60vw;
+  }
+  .now-playing.active { display: flex; }
+  #npText { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .np-bars { display:flex; gap:3px; align-items: flex-end; height: 16px; flex-shrink: 0; }
+  .np-bar {
+    width: 3px;
+    background: var(--aurora-1);
+    animation: npBounce var(--beat) ease-in-out infinite alternate;
+    border-radius: 1px;
+  }
+  .np-bar:nth-child(1) { height: 40%; animation-delay: 0.00s; }
+  .np-bar:nth-child(2) { height: 90%; animation-delay: 0.10s; }
+  .np-bar:nth-child(3) { height: 60%; animation-delay: 0.05s; }
+  .np-bar:nth-child(4) { height: 100%; animation-delay: 0.15s; }
+  .np-bar:nth-child(5) { height: 50%; animation-delay: 0.02s; }
+  @keyframes npBounce {
+    from { transform: scaleY(0.3); }
+    to   { transform: scaleY(1); }
+  }
+
+  /* ==================================================================
+     GEOMETRY DASH STYLE PROGRESS BAR
+     ================================================================== */
+  .progress-wrap {
+    position: fixed;
+    top: 60px; left: 50%;
+    transform: translateX(-50%);
+    width: min(560px, 82vw);
+    z-index: 50;
+    display: none;
+    align-items: center;
+    gap: 12px;
+  }
+  .progress-wrap.active { display: flex; }
+  .progress-bar {
+    position: relative;
+    flex: 1;
+    height: 18px;
+    background: rgba(2,4,14,0.7);
+    border: 2px solid rgba(255,255,255,0.9);
+    border-radius: 10px;
+    overflow: visible;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.6);
+  }
+  .progress-fill {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 0%;
+    background: linear-gradient(90deg, var(--aurora-3), var(--aurora-1) 55%, var(--aurora-4));
+    box-shadow: 0 0 14px var(--aurora-1);
+    border-radius: 8px 0 0 8px;
+    transition: width 0.12s linear;
+    overflow: hidden;
+  }
+  .progress-fill::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(115deg, rgba(255,255,255,0.22) 0 8px, transparent 8px 18px);
+    background-size: 26px 100%;
+    animation: progressSheen 0.7s linear infinite;
+  }
+  @keyframes progressSheen { from { background-position: 0 0; } to { background-position: 26px 0; } }
+  /* cursor knob rides the leading edge of the fill */
+  .progress-fill::before {
+    content: '';
+    position: absolute;
+    top: 50%; right: -3px;
+    width: 12px; height: 12px;
+    transform: translateY(-50%) rotate(45deg);
+    background: #fff;
+    box-shadow: 0 0 12px #fff, 0 0 20px var(--aurora-1);
+    border-radius: 2px;
+  }
+  .progress-pct {
+    font-family: var(--display);
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #fff;
+    text-shadow: 0 0 10px var(--aurora-1);
+    min-width: 46px;
+    text-align: left;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* now-playing text uses the UI font */
+  #npText { font-family: var(--ui); font-weight: 600; }
+</style>
 </head>
 <body>
 
-  <div id="rageFlash"></div>
+  <div class="stars" id="stars"></div>
+  <div class="moon"></div>
 
-  <div class="spotlights">
-    <div class="beam beam-1"></div>
-    <div class="beam beam-2"></div>
-    <div class="beam beam-3"></div>
+  <div class="aurora">
+    <div class="aurora-band aurora-band-1"></div>
+    <div class="aurora-band aurora-band-2"></div>
+    <div class="aurora-band aurora-band-3"></div>
   </div>
 
-  <div class="floor" id="floor"></div>
+  <div class="mountains">
+    <div class="mountain m-far-1"></div>
+    <div class="mountain m-far-2"></div>
+    <div class="mountain m-far-3"></div>
+    <div class="mountain m-far-4"></div>
+    <div class="mountain m-mid-1"></div>
+    <div class="mountain m-mid-2"></div>
+  </div>
+  <div class="peak"></div>
+  <div class="peak-snow"></div>
+  <div class="fog"></div>
 
-  <p class="title" id="titleText">🍔 Boogie Burger 🍔</p>
-
+  <!-- Burger -->
   <div class="stage" id="stage">
-    <svg class="burger-wrap" id="burgerSvg" viewBox="0 0 200 220" width="220" height="242"
-         xmlns="http://www.w3.org/2000/svg" aria-label="Dancing Cheeseburger">
+    <svg class="burger-wrap" id="burgerSvg"
+         viewBox="0 0 200 220" width="180" height="198"
+         xmlns="http://www.w3.org/2000/svg"
+         aria-label="Rhythm burger">
+      <defs>
+        <radialGradient id="seedGrad" cx="0.3" cy="0.3">
+          <stop offset="0%"  stop-color="#f7d98a"/>
+          <stop offset="70%" stop-color="#c99230"/>
+          <stop offset="100%" stop-color="#8b5e1a"/>
+        </radialGradient>
+        <radialGradient id="bunGrad" cx="0.35" cy="0.25">
+          <stop offset="0%"  stop-color="#f0b060"/>
+          <stop offset="55%" stop-color="#d4891a"/>
+          <stop offset="100%" stop-color="#a5620c"/>
+        </radialGradient>
+        <linearGradient id="bunBottomGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#d4891a"/>
+          <stop offset="100%" stop-color="#8f5910"/>
+        </linearGradient>
+        <linearGradient id="pattyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"  stop-color="#6d3a17"/>
+          <stop offset="60%" stop-color="#4a2810"/>
+          <stop offset="100%" stop-color="#2f1809"/>
+        </linearGradient>
+        <linearGradient id="cheeseGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"  stop-color="#ffdf3f"/>
+          <stop offset="100%" stop-color="#e6a900"/>
+        </linearGradient>
+        <linearGradient id="skinGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"  stop-color="#ffe580"/>
+          <stop offset="100%" stop-color="#e6b930"/>
+        </linearGradient>
+      </defs>
 
-      <!-- LEGS -->
       <g class="leg-left">
-        <rect x="68" y="168" width="26" height="38" rx="10" fill="#c97b30"/>
-        <ellipse cx="68" cy="208" rx="18" ry="8" fill="#3a1f0d"/>
+        <!-- thigh -->
+        <rect x="68" y="168" width="26" height="22" rx="10" fill="url(#bunBottomGrad)"/>
+        <rect x="68" y="168" width="8"  height="22" rx="4" fill="#c97b30" opacity="0.55"/>
+        <!-- knee -->
+        <circle cx="81" cy="190" r="10" fill="url(#bunBottomGrad)"/>
+        <circle cx="78" cy="188" r="3" fill="#f0b060" opacity="0.4"/>
+        <!-- shin + foot -->
+        <g class="shin-left">
+          <rect x="68" y="190" width="26" height="20" rx="10" fill="url(#bunBottomGrad)"/>
+          <rect x="68" y="190" width="8"  height="20" rx="4" fill="#c97b30" opacity="0.55"/>
+          <ellipse cx="68" cy="212" rx="18" ry="8" fill="#1a0d05"/>
+          <ellipse cx="63" cy="209" rx="6" ry="2" fill="#3a2010" opacity="0.7"/>
+        </g>
       </g>
       <g class="leg-right">
-        <rect x="106" y="168" width="26" height="38" rx="10" fill="#c97b30"/>
-        <ellipse cx="132" cy="208" rx="18" ry="8" fill="#3a1f0d"/>
+        <rect x="106" y="168" width="26" height="22" rx="10" fill="url(#bunBottomGrad)"/>
+        <rect x="106" y="168" width="8"  height="22" rx="4" fill="#c97b30" opacity="0.55"/>
+        <circle cx="119" cy="190" r="10" fill="url(#bunBottomGrad)"/>
+        <circle cx="116" cy="188" r="3" fill="#f0b060" opacity="0.4"/>
+        <g class="shin-right">
+          <rect x="106" y="190" width="26" height="20" rx="10" fill="url(#bunBottomGrad)"/>
+          <rect x="106" y="190" width="8"  height="20" rx="4" fill="#c97b30" opacity="0.55"/>
+          <ellipse cx="132" cy="212" rx="18" ry="8" fill="#1a0d05"/>
+          <ellipse cx="137" cy="209" rx="6" ry="2" fill="#3a2010" opacity="0.7"/>
+        </g>
       </g>
 
-      <!-- ARM LEFT -->
       <g class="arm-left">
-        <rect x="24" y="90" width="46" height="20" rx="10" fill="#c97b30"/>
-        <!-- normal hand -->
-        <g class="hand-normal">
-          <circle cx="22" cy="99" r="12" fill="#ffe066"/>
-          <line x1="14" y1="94" x2="10" y2="89" stroke="#ffe066" stroke-width="4" stroke-linecap="round"/>
-          <line x1="20" y1="91" x2="18" y2="85" stroke="#ffe066" stroke-width="4" stroke-linecap="round"/>
-          <line x1="26" y1="90" x2="26" y2="84" stroke="#ffe066" stroke-width="4" stroke-linecap="round"/>
-        </g>
-        <!-- middle finger hand (left) -->
-        <g class="hand-finger">
-          <circle cx="22" cy="99" r="13" fill="#ffe066"/>
-          <!-- closed fist lines -->
-          <line x1="13" y1="97" x2="31" y2="97" stroke="#c8a820" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="13" y1="101" x2="31" y2="101" stroke="#c8a820" stroke-width="2.5" stroke-linecap="round"/>
-          <!-- middle finger UP -->
-          <rect x="19" y="76" width="7" height="20" rx="3.5" fill="#ffe066"/>
-          <ellipse cx="22.5" cy="76" rx="3.5" ry="3.5" fill="#ffe066"/>
-          <!-- fingernail -->
-          <ellipse cx="22.5" cy="77" rx="2.5" ry="2" fill="#f0c040" opacity="0.6"/>
+        <!-- upper arm (shoulder → elbow) -->
+        <rect x="42" y="92" width="24" height="16" rx="8" fill="url(#skinGrad)"/>
+        <rect x="42" y="92" width="24" height="6" rx="6" fill="#fff2b8" opacity="0.4"/>
+        <!-- elbow joint -->
+        <circle cx="42" cy="100" r="8.5" fill="url(#skinGrad)"/>
+        <!-- forearm (elbow → hand) -->
+        <g class="forearm-left">
+          <rect x="20" y="92" width="22" height="16" rx="8" fill="url(#skinGrad)"/>
+          <rect x="20" y="92" width="22" height="6" rx="6" fill="#fff2b8" opacity="0.4"/>
+          <g class="hand-normal">
+            <circle cx="20" cy="100" r="12" fill="url(#skinGrad)"/>
+            <circle cx="17" cy="97" r="3.5" fill="#fff2b8" opacity="0.5"/>
+          </g>
+          <g class="hand-finger">
+            <circle cx="20" cy="100" r="13" fill="url(#skinGrad)"/>
+            <line x1="10" y1="98"  x2="30" y2="98"  stroke="#c8a820" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="10" y1="102" x2="30" y2="102" stroke="#c8a820" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="10" y1="106" x2="30" y2="106" stroke="#c8a820" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+            <!-- middle finger UP -->
+            <rect x="16.5" y="73" width="7" height="22" rx="3.5" fill="url(#skinGrad)"/>
+            <ellipse cx="20" cy="73" rx="3.5" ry="3.5" fill="#ffe580"/>
+            <ellipse cx="20" cy="74" rx="2.3" ry="1.8" fill="#f0c040" opacity="0.7"/>
+          </g>
         </g>
       </g>
 
-      <!-- ARM RIGHT -->
       <g class="arm-right">
-        <rect x="130" y="90" width="46" height="20" rx="10" fill="#c97b30"/>
-        <!-- normal hand -->
-        <g class="hand-normal">
-          <circle cx="178" cy="99" r="12" fill="#ffe066"/>
-          <line x1="186" y1="94" x2="190" y2="89" stroke="#ffe066" stroke-width="4" stroke-linecap="round"/>
-          <line x1="180" y1="91" x2="182" y2="85" stroke="#ffe066" stroke-width="4" stroke-linecap="round"/>
-          <line x1="174" y1="90" x2="174" y2="84" stroke="#ffe066" stroke-width="4" stroke-linecap="round"/>
-        </g>
-        <!-- middle finger hand (right) -->
-        <g class="hand-finger">
-          <circle cx="178" cy="99" r="13" fill="#ffe066"/>
-          <line x1="169" y1="97" x2="187" y2="97" stroke="#c8a820" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="169" y1="101" x2="187" y2="101" stroke="#c8a820" stroke-width="2.5" stroke-linecap="round"/>
-          <!-- middle finger UP -->
-          <rect x="175" y="76" width="7" height="20" rx="3.5" fill="#ffe066"/>
-          <ellipse cx="178.5" cy="76" rx="3.5" ry="3.5" fill="#ffe066"/>
-          <ellipse cx="178.5" cy="77" rx="2.5" ry="2" fill="#f0c040" opacity="0.6"/>
+        <!-- upper arm -->
+        <rect x="134" y="92" width="24" height="16" rx="8" fill="url(#skinGrad)"/>
+        <rect x="134" y="92" width="24" height="6" rx="6" fill="#fff2b8" opacity="0.4"/>
+        <!-- elbow -->
+        <circle cx="158" cy="100" r="8.5" fill="url(#skinGrad)"/>
+        <!-- forearm -->
+        <g class="forearm-right">
+          <rect x="158" y="92" width="22" height="16" rx="8" fill="url(#skinGrad)"/>
+          <rect x="158" y="92" width="22" height="6" rx="6" fill="#fff2b8" opacity="0.4"/>
+          <g class="hand-normal">
+            <circle cx="180" cy="100" r="12" fill="url(#skinGrad)"/>
+            <circle cx="183" cy="97" r="3.5" fill="#fff2b8" opacity="0.5"/>
+          </g>
+          <g class="hand-finger">
+            <circle cx="180" cy="100" r="13" fill="url(#skinGrad)"/>
+            <line x1="170" y1="98"  x2="190" y2="98"  stroke="#c8a820" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="170" y1="102" x2="190" y2="102" stroke="#c8a820" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="170" y1="106" x2="190" y2="106" stroke="#c8a820" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+            <rect x="176.5" y="73" width="7" height="22" rx="3.5" fill="url(#skinGrad)"/>
+            <ellipse cx="180" cy="73" rx="3.5" ry="3.5" fill="#ffe580"/>
+            <ellipse cx="180" cy="74" rx="2.3" ry="1.8" fill="#f0c040" opacity="0.7"/>
+          </g>
         </g>
       </g>
 
-      <!-- BURGER BODY -->
-      <rect x="38" y="145" width="124" height="30" rx="14" fill="#c97b30"/>
-      <rect x="38" y="145" width="124" height="14" rx="0" fill="#b56b20"/>
+      <rect x="38" y="145" width="124" height="30" rx="14" fill="url(#bunBottomGrad)"/>
 
-      <path d="M36,144 Q48,134 60,144 Q72,134 84,144 Q96,134 108,144 Q120,134 132,144 Q144,134 156,144 Q164,138 164,144"
-            fill="none" stroke="#4caf50" stroke-width="9" stroke-linecap="round"/>
+      <path d="M36,144 Q42,132 50,142 Q56,130 62,143 Q70,130 78,144 Q86,130 94,143
+               Q102,130 110,144 Q118,130 126,143 Q134,130 142,144 Q150,130 158,143
+               Q164,136 166,144" fill="#4caf50" stroke="#2e7d32" stroke-width="1"/>
 
-      <rect x="44" y="128" width="112" height="16" rx="6" fill="#e53935" opacity="0.9"/>
-      <line x1="60"  y1="128" x2="62"  y2="144" stroke="#c62828" stroke-width="2" opacity="0.5"/>
-      <line x1="90"  y1="128" x2="92"  y2="144" stroke="#c62828" stroke-width="2" opacity="0.5"/>
-      <line x1="120" y1="128" x2="122" y2="144" stroke="#c62828" stroke-width="2" opacity="0.5"/>
-      <line x1="148" y1="128" x2="146" y2="144" stroke="#c62828" stroke-width="2" opacity="0.5"/>
+      <rect x="44" y="126" width="112" height="18" rx="6" fill="#e53935"/>
 
-      <polygon points="40,128 160,128 168,112 32,112" fill="#fdd835"/>
-      <path d="M60,128 Q58,136 55,140" stroke="#fdd835" stroke-width="5" fill="none" stroke-linecap="round"/>
-      <path d="M140,128 Q142,137 145,142" stroke="#fdd835" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <polygon points="40,126 160,126 168,112 32,112" fill="url(#cheeseGrad)"/>
+      <path d="M52,126 Q50,138 46,142 Q44,146 48,148 Q52,146 54,142 Q56,136 54,126 Z" fill="url(#cheeseGrad)"/>
+      <path d="M96,126 Q94,140 90,144 Q88,148 92,150 Q96,148 98,144 Q100,138 98,126 Z" fill="url(#cheeseGrad)"/>
+      <path d="M140,126 Q138,138 134,142 Q132,146 136,148 Q140,146 142,142 Q144,136 142,126 Z" fill="url(#cheeseGrad)"/>
 
-      <rect x="34" y="96" width="132" height="22" rx="10" fill="#5d3314"/>
-      <rect x="34" y="100" width="132" height="6" rx="0" fill="#4a2810" opacity="0.7"/>
+      <rect x="34" y="96" width="132" height="22" rx="10" fill="url(#pattyGrad)"/>
 
-      <!-- TOP BUN -->
-      <ellipse cx="100" cy="78" rx="68" ry="38" fill="#d4891a"/>
-      <ellipse cx="88"  cy="62" rx="30" ry="14" fill="#e8a830" opacity="0.45"/>
+      <ellipse cx="100" cy="78" rx="70" ry="40" fill="url(#bunGrad)"/>
+      <ellipse cx="82"  cy="58" rx="34" ry="14" fill="#f5c078" opacity="0.55"/>
 
-      <g fill="#8b5e1a">
-        <ellipse class="seed" cx="82"  cy="58" rx="7"  ry="3.5" transform="rotate(-20,82,58)"/>
-        <ellipse class="seed" cx="112" cy="55" rx="7"  ry="3.5" transform="rotate(15,112,55)"/>
-        <ellipse class="seed" cx="100" cy="68" rx="7"  ry="3.5" transform="rotate(-10,100,68)"/>
-        <ellipse class="seed" cx="70"  cy="72" rx="6"  ry="3"   transform="rotate(25,70,72)"/>
-        <ellipse class="seed" cx="130" cy="70" rx="6"  ry="3"   transform="rotate(-25,130,70)"/>
+      <g>
+        <ellipse class="seed" cx="82"  cy="58" rx="7" ry="3.5" fill="url(#seedGrad)" transform="rotate(-20,82,58)"/>
+        <ellipse class="seed" cx="112" cy="55" rx="7" ry="3.5" fill="url(#seedGrad)" transform="rotate(15,112,55)"/>
+        <ellipse class="seed" cx="100" cy="68" rx="7" ry="3.5" fill="url(#seedGrad)" transform="rotate(-10,100,68)"/>
+        <ellipse class="seed" cx="70"  cy="72" rx="6" ry="3"   fill="url(#seedGrad)" transform="rotate(25,70,72)"/>
+        <ellipse class="seed" cx="130" cy="70" rx="6" ry="3"   fill="url(#seedGrad)" transform="rotate(-25,130,70)"/>
       </g>
 
-      <!-- FACE: happy -->
-      <g class="happy-face">
+      <!-- HAPPY face -->
+      <g class="face-happy">
         <g class="eye" transform-origin="74 76">
-          <ellipse cx="74" cy="76" rx="9" ry="10" fill="white"/>
-          <circle  cx="76" cy="77" r="5"  fill="#1a1a1a"/>
-          <circle  cx="77" cy="75" r="2"  fill="white"/>
+          <ellipse cx="74" cy="76" rx="10" ry="11" fill="white"/>
+          <circle  cx="76" cy="77" r="5.5" fill="#1a1a1a"/>
+          <circle  cx="77.5" cy="75" r="2" fill="white"/>
         </g>
         <g class="eye" transform-origin="126 76">
-          <ellipse cx="126" cy="76" rx="9" ry="10" fill="white"/>
-          <circle  cx="128" cy="77" r="5"  fill="#1a1a1a"/>
-          <circle  cx="129" cy="75" r="2"  fill="white"/>
+          <ellipse cx="126" cy="76" rx="10" ry="11" fill="white"/>
+          <circle  cx="128" cy="77" r="5.5" fill="#1a1a1a"/>
+          <circle  cx="129.5" cy="75" r="2" fill="white"/>
         </g>
-        <path d="M65,64 Q74,59 83,64"   stroke="#5d3314" stroke-width="4" fill="none" stroke-linecap="round"/>
-        <path d="M117,64 Q126,59 135,64" stroke="#5d3314" stroke-width="4" fill="none" stroke-linecap="round"/>
         <path d="M78,90 Q100,108 122,90" stroke="#5d3314" stroke-width="4" fill="none" stroke-linecap="round"/>
-        <ellipse cx="66"  cy="86" rx="9" ry="6" fill="#ff7c7c" opacity="0.4"/>
-        <ellipse cx="134" cy="86" rx="9" ry="6" fill="#ff7c7c" opacity="0.4"/>
+        <ellipse cx="66"  cy="88" rx="10" ry="6" fill="#ff7c7c" opacity="0.5"/>
+        <ellipse cx="134" cy="88" rx="10" ry="6" fill="#ff7c7c" opacity="0.5"/>
       </g>
 
-      <!-- FACE: angry -->
-      <g class="angry-face">
-        <!-- angry squinting eyes -->
-        <g class="eye" transform-origin="74 76">
-          <ellipse cx="74" cy="78" rx="9" ry="6" fill="white"/>
-          <circle  cx="76" cy="79" r="5" fill="#cc0000"/>
-          <circle  cx="77" cy="77" r="2" fill="white"/>
-        </g>
-        <g class="eye" transform-origin="126 76">
-          <ellipse cx="126" cy="78" rx="9" ry="6" fill="white"/>
-          <circle  cx="128" cy="79" r="5" fill="#cc0000"/>
-          <circle  cx="129" cy="77" r="2" fill="white"/>
-        </g>
-        <!-- angry V-brows -->
-        <path d="M62,63 L83,70"  stroke="#3a0000" stroke-width="5" stroke-linecap="round"/>
-        <path d="M138,63 L117,70" stroke="#3a0000" stroke-width="5" stroke-linecap="round"/>
-        <!-- scowl -->
-        <path d="M78,98 Q100,84 122,98" stroke="#3a0000" stroke-width="4" fill="none" stroke-linecap="round"/>
-
-        <!-- steam lines -->
-        <path d="M72,52 Q68,46 72,40 Q76,34 72,28" stroke="#ff4400" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.8">
-          <animate attributeName="opacity" values="0.8;0.2;0.8" dur="0.6s" repeatCount="indefinite"/>
-        </path>
-        <path d="M128,52 Q132,46 128,40 Q124,34 128,28" stroke="#ff4400" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.8">
-          <animate attributeName="opacity" values="0.2;0.8;0.2" dur="0.6s" repeatCount="indefinite"/>
-        </path>
-        <!-- red tinge on cheeks -->
-        <ellipse cx="62"  cy="84" rx="11" ry="7" fill="#ff2200" opacity="0.35"/>
-        <ellipse cx="138" cy="84" rx="11" ry="7" fill="#ff2200" opacity="0.35"/>
+      <!-- WOW face (perfect hit / combo hot) -->
+      <g class="face-wow">
+        <circle cx="74"  cy="76" r="9" fill="white"/>
+        <circle cx="76"  cy="76" r="6" fill="#00ffb3"/>
+        <circle cx="126" cy="76" r="9" fill="white"/>
+        <circle cx="128" cy="76" r="6" fill="#00ffb3"/>
+        <ellipse cx="100" cy="95" rx="14" ry="10" fill="#3a1810"/>
+        <ellipse cx="100" cy="98" rx="8"  ry="4"  fill="#ff5555"/>
+        <ellipse cx="66"  cy="88" rx="12" ry="7" fill="#ff9d9d" opacity="0.7"/>
+        <ellipse cx="134" cy="88" rx="12" ry="7" fill="#ff9d9d" opacity="0.7"/>
       </g>
 
+      <!-- SAD face (miss) -->
+      <g class="face-sad">
+        <ellipse cx="74"  cy="78" rx="9"  ry="4" fill="white"/>
+        <circle  cx="76"  cy="78" r="4"  fill="#1a1a1a"/>
+        <ellipse cx="126" cy="78" rx="9"  ry="4" fill="white"/>
+        <circle  cx="128" cy="78" r="4"  fill="#1a1a1a"/>
+        <path d="M60,66 L84,72"   stroke="#5d3314" stroke-width="4" stroke-linecap="round"/>
+        <path d="M140,66 L116,72" stroke="#5d3314" stroke-width="4" stroke-linecap="round"/>
+        <path d="M78,100 Q100,86 122,100" stroke="#5d3314" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <!-- tear -->
+        <path d="M72,90 Q68,96 70,102 Q74,96 72,90 Z" fill="#5ccfff"/>
+      </g>
+
+      <!-- ANGRY face (miss — flipping you off) -->
+      <g class="face-angry">
+        <!-- red squinting eyes -->
+        <ellipse cx="74"  cy="79" rx="10" ry="6" fill="white"/>
+        <circle  cx="76"  cy="80" r="5.5" fill="#cc0000"/>
+        <circle  cx="77"  cy="78" r="1.8" fill="white"/>
+        <ellipse cx="126" cy="79" rx="10" ry="6" fill="white"/>
+        <circle  cx="128" cy="80" r="5.5" fill="#cc0000"/>
+        <circle  cx="129" cy="78" r="1.8" fill="white"/>
+        <!-- V brows -->
+        <path d="M58,60 L86,72"   stroke="#3a0000" stroke-width="6" stroke-linecap="round"/>
+        <path d="M142,60 L114,72" stroke="#3a0000" stroke-width="6" stroke-linecap="round"/>
+        <!-- clenched mouth (no teeth) -->
+        <path d="M76,98 Q100,90 124,98" stroke="#3a0000" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <!-- steam from head -->
+        <path d="M72,50 Q68,44 72,38 Q76,32 72,26" stroke="#ff4400" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.9"/>
+        <path d="M128,50 Q132,44 128,38 Q124,32 128,26" stroke="#ff4400" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.9"/>
+        <!-- red cheeks -->
+        <ellipse cx="62"  cy="86" rx="11" ry="7" fill="#ff2200" opacity="0.5"/>
+        <ellipse cx="138" cy="86" rx="11" ry="7" fill="#ff2200" opacity="0.5"/>
+      </g>
+
+      <!-- WTF face (empty press / spam) -->
+      <g class="face-wtf">
+        <!-- huge shocked eyes -->
+        <circle cx="74"  cy="76" r="11" fill="white"/>
+        <circle cx="76"  cy="76" r="3.2" fill="#1a1a1a"/>
+        <circle cx="126" cy="76" r="11" fill="white"/>
+        <circle cx="128" cy="76" r="3.2" fill="#1a1a1a"/>
+        <!-- raised worried brows -->
+        <path d="M58,56 Q74,52 86,60"    stroke="#5d3314" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+        <path d="M114,60 Q126,52 142,56" stroke="#5d3314" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+        <!-- O mouth -->
+        <ellipse cx="100" cy="98" rx="7" ry="9" fill="#3a1810"/>
+        <ellipse cx="100" cy="100" rx="4" ry="5" fill="#1a0908"/>
+        <!-- floating question marks -->
+        <g class="qmark">
+          <text x="50" y="42" font-family="'Arial Black'" font-size="24" font-weight="900" fill="#ffcc00" stroke="#5d3314" stroke-width="1">?</text>
+        </g>
+        <g class="qmark qmark-2">
+          <text x="140" y="46" font-family="'Arial Black'" font-size="28" font-weight="900" fill="#ff8888" stroke="#5d3314" stroke-width="1">?</text>
+        </g>
+      </g>
     </svg>
     <div class="shadow"></div>
   </div>
 
-  <div class="notes-container" id="notes"></div>
-  <div class="fry-container"   id="fryContainer"></div>
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-panel">
+      <div class="hud-label">Score</div>
+      <div class="hud-value" id="score">0</div>
+    </div>
+    <div class="hud-panel right">
+      <div class="hud-label">Combo</div>
+      <div class="hud-value" id="combo">0</div>
+    </div>
+  </div>
 
-  <button id="exitBtn">🚪 EXIT</button>
+  <!-- Lanes -->
+  <div class="lanes" id="lanes">
+    <div class="lane" data-color="0" data-key="d">
+      <div class="hit-zone"></div>
+      <div class="key-label">D</div>
+    </div>
+    <div class="lane" data-color="1" data-key="f">
+      <div class="hit-zone"></div>
+      <div class="key-label">F</div>
+    </div>
+    <div class="lane" data-color="2" data-key="j">
+      <div class="hit-zone"></div>
+      <div class="key-label">J</div>
+    </div>
+    <div class="lane" data-color="3" data-key="k">
+      <div class="hit-zone"></div>
+      <div class="key-label">K</div>
+    </div>
+  </div>
+
+  <!-- Now playing -->
+  <!-- Geometry Dash style progress bar -->
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <span class="progress-pct" id="progressPct">0%</span>
+  </div>
+
+  <div class="now-playing" id="nowPlaying">
+    <div class="np-bars">
+      <div class="np-bar"></div>
+      <div class="np-bar"></div>
+      <div class="np-bar"></div>
+      <div class="np-bar"></div>
+      <div class="np-bar"></div>
+    </div>
+    <span id="npText">Now playing</span>
+  </div>
+
+  <!-- START overlay -->
+  <div class="overlay" id="startOverlay">
+    <div class="eyebrow">Rhythm · Mountain Peak</div>
+    <h1>Burger Beat</h1>
+    <p>The burger looms overhead and spits notes at you across four lanes. Each key drives a limb — <b style="color:var(--aurora-1)">D</b> left leg, <b style="color:var(--aurora-3)">F</b> left arm, <b style="color:var(--aurora-4)">J</b> right arm, <b style="color:var(--aurora-2)">K</b> right leg. Hit them as they land in the glowing bar. Mash empty air and the burger will let you know how it feels about that.</p>
+    <div class="key-guide">
+      <div class="kg">D</div>
+      <div class="kg">F</div>
+      <div class="kg">J</div>
+      <div class="kg">K</div>
+    </div>
+    <div class="song-picker">
+      <button class="song-btn selected" id="defaultBtn">
+        <div class="song-btn-title">Built-in track</div>
+        <div class="song-btn-sub" id="defaultSub">Synth · 128 BPM</div>
+      </button>
+      <label class="song-btn" id="uploadBtn">
+        <div class="song-btn-title">Your own song</div>
+        <div class="song-btn-sub" id="uploadSub">Click to pick a file</div>
+        <input type="file" id="fileInput" accept="audio/*" hidden>
+      </label>
+    </div>
+    <div class="analyzer-status" id="analyzerStatus"></div>
+
+    <!-- Speed slider with commentary -->
+    <div class="speed-block">
+      <div class="speed-header">
+        <span class="speed-label">Game speed</span>
+        <span class="speed-value" id="speedValue">1.00×</span>
+      </div>
+      <input type="range" id="speedSlider" min="0.5" max="2" step="0.05" value="1">
+      <div class="opinion-row">
+        <svg class="mini-burger" id="miniBurger" viewBox="0 0 100 100" width="60" height="60">
+          <defs>
+            <radialGradient id="mbBun" cx="0.35" cy="0.25">
+              <stop offset="0%"  stop-color="#f0b060"/>
+              <stop offset="60%" stop-color="#d4891a"/>
+              <stop offset="100%" stop-color="#a5620c"/>
+            </radialGradient>
+          </defs>
+          <!-- top bun -->
+          <ellipse cx="50" cy="34" rx="38" ry="22" fill="url(#mbBun)"/>
+          <ellipse cx="42" cy="24" rx="18" ry="6" fill="#f5c078" opacity="0.5"/>
+          <ellipse cx="38" cy="30" rx="3.5" ry="1.8" fill="#8b5e1a" transform="rotate(-15,38,30)"/>
+          <ellipse cx="56" cy="26" rx="3.5" ry="1.8" fill="#8b5e1a" transform="rotate(10,56,26)"/>
+          <ellipse cx="50" cy="38" rx="3" ry="1.5" fill="#8b5e1a"/>
+          <!-- patty -->
+          <rect x="12" y="52" width="76" height="10" rx="5" fill="#4a2810"/>
+          <!-- cheese -->
+          <polygon points="14,62 86,62 90,56 10,56" fill="#ffdf3f"/>
+          <path d="M22,62 Q20,68 24,70" stroke="#ffdf3f" stroke-width="3" fill="none"/>
+          <path d="M50,62 Q48,68 52,70" stroke="#ffdf3f" stroke-width="3" fill="none"/>
+          <path d="M76,62 Q74,68 78,70" stroke="#ffdf3f" stroke-width="3" fill="none"/>
+          <!-- lettuce -->
+          <path d="M10,70 Q16,64 22,70 Q28,64 34,70 Q40,64 46,70 Q52,64 58,70 Q64,64 70,70 Q76,64 82,70 Q88,66 90,70 Q88,76 50,78 Q10,76 10,70 Z" fill="#4caf50"/>
+          <!-- bottom bun -->
+          <rect x="12" y="76" width="76" height="14" rx="6" fill="#d4891a"/>
+          <!-- face -->
+          <circle cx="40" cy="34" r="4" fill="white"/>
+          <circle cx="41" cy="35" r="2.5" fill="#1a1a1a"/>
+          <circle cx="60" cy="34" r="4" fill="white"/>
+          <circle cx="61" cy="35" r="2.5" fill="#1a1a1a"/>
+          <path id="miniMouth" d="M42,42 Q50,46 58,42" stroke="#5d3314" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div class="speech-bubble" id="burgerOpinion">Not too slow, not too fast. Choose your fate.</div>
+      </div>
+    </div>
+    <button class="start-btn" id="startBtn">▶ Play</button>
+  </div>
+
+  <!-- END overlay -->
+  <div class="overlay hidden" id="endOverlay">
+    <div class="eyebrow">Round Complete</div>
+    <h1 id="endTitle">Nice run!</h1>
+    <div class="final-stats">
+      <div class="stat-block"><div class="lbl">Score</div>     <div class="val" id="finalScore">0</div></div>
+      <div class="stat-block"><div class="lbl">Max Combo</div> <div class="val" id="finalCombo">0</div></div>
+      <div class="stat-block"><div class="lbl">Accuracy</div>  <div class="val" id="finalAccuracy">0%</div></div>
+    </div>
+
+    <div class="verdict">
+      <div class="verdict-label">The burger's verdict</div>
+      <div class="verdict-track">
+        <span class="verdict-end reject">Rejected</span>
+        <div class="verdict-bar">
+          <div class="verdict-needle" id="verdictNeedle" style="left: 50%;"></div>
+        </div>
+        <span class="verdict-end accept">Accepted</span>
+      </div>
+      <div class="verdict-message" id="verdictMessage">The burger is deciding…</div>
+      <div class="verdict-footer">
+        <span id="verdictHistory"></span>
+        &nbsp;·&nbsp;
+        <button id="clearHistoryBtn" type="button">Reset the burger's opinion</button>
+      </div>
+    </div>
+
+    <!-- Next-round speed slider (burger will hijack it) -->
+    <div class="speed-block">
+      <div class="speed-header">
+        <span class="speed-label">Next round speed</span>
+        <span class="speed-value" id="endSpeedValue">1.00×</span>
+      </div>
+      <input type="range" id="endSpeedSlider" min="0.5" max="2" step="0.05" value="1">
+      <div class="opinion-row">
+        <svg class="mini-burger" id="endMiniBurger" viewBox="0 0 100 100" width="60" height="60">
+          <defs>
+            <radialGradient id="mbBun2" cx="0.35" cy="0.25">
+              <stop offset="0%"  stop-color="#f0b060"/>
+              <stop offset="60%" stop-color="#d4891a"/>
+              <stop offset="100%" stop-color="#a5620c"/>
+            </radialGradient>
+          </defs>
+          <ellipse cx="50" cy="34" rx="38" ry="22" fill="url(#mbBun2)"/>
+          <ellipse cx="42" cy="24" rx="18" ry="6" fill="#f5c078" opacity="0.5"/>
+          <ellipse cx="38" cy="30" rx="3.5" ry="1.8" fill="#8b5e1a" transform="rotate(-15,38,30)"/>
+          <ellipse cx="56" cy="26" rx="3.5" ry="1.8" fill="#8b5e1a" transform="rotate(10,56,26)"/>
+          <ellipse cx="50" cy="38" rx="3" ry="1.5" fill="#8b5e1a"/>
+          <rect x="12" y="52" width="76" height="10" rx="5" fill="#4a2810"/>
+          <polygon points="14,62 86,62 90,56 10,56" fill="#ffdf3f"/>
+          <path d="M22,62 Q20,68 24,70" stroke="#ffdf3f" stroke-width="3" fill="none"/>
+          <path d="M50,62 Q48,68 52,70" stroke="#ffdf3f" stroke-width="3" fill="none"/>
+          <path d="M76,62 Q74,68 78,70" stroke="#ffdf3f" stroke-width="3" fill="none"/>
+          <path d="M10,70 Q16,64 22,70 Q28,64 34,70 Q40,64 46,70 Q52,64 58,70 Q64,64 70,70 Q76,64 82,70 Q88,66 90,70 Q88,76 50,78 Q10,76 10,70 Z" fill="#4caf50"/>
+          <rect x="12" y="76" width="76" height="14" rx="6" fill="#d4891a"/>
+          <circle cx="40" cy="34" r="4" fill="white"/>
+          <circle cx="41" cy="35" r="2.5" fill="#1a1a1a"/>
+          <circle cx="60" cy="34" r="4" fill="white"/>
+          <circle cx="61" cy="35" r="2.5" fill="#1a1a1a"/>
+          <path id="endMiniMouth" d="M42,42 Q50,46 58,42" stroke="#5d3314" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div class="speech-bubble" id="endBurgerOpinion">Pick a pace. I'll weigh in.</div>
+      </div>
+    </div>
+
+    <button class="start-btn" id="againBtn">↻ Again</button>
+  </div>
 
   <script>
-    // Tiles
-    const floorEl = document.getElementById('floor');
-    for (let i = 0; i < 36; i++) {
-      const t = document.createElement('div');
-      t.className = 'tile';
-      floorEl.appendChild(t);
+    // ================================================================
+    // STARS
+    // ================================================================
+    const starsEl = document.getElementById('stars');
+    for (let i = 0; i < 120; i++) {
+      const s = document.createElement('div');
+      s.className = 'star';
+      const size = Math.random() * 2 + 0.5;
+      s.style.width  = size + 'px';
+      s.style.height = size + 'px';
+      s.style.left = Math.random() * 100 + '%';
+      s.style.top  = Math.random() * 70 + '%';
+      s.style.animationDelay = Math.random() * 3 + 's';
+      starsEl.appendChild(s);
+    }
+    // Shooting star
+    const shooter = document.createElement('div');
+    shooter.className = 'shooter';
+    shooter.style.top = '15%';
+    shooter.style.left = '10%';
+    starsEl.appendChild(shooter);
+
+    // ================================================================
+    // RHYTHM ENGINE — BPM is set at game start
+    // ================================================================
+    let BEAT_MS = 500;                   // recomputed from song BPM
+    let NOTE_FALL_MS = 1600;             // recomputed as 3.2 beats
+    const PERFECT_MS = 80;
+    const GOOD_MS = 160;
+
+    function setBPM(bpm) {
+      BEAT_MS = 60000 / bpm;
+      NOTE_FALL_MS = BEAT_MS * 3.2;
+      document.documentElement.style.setProperty('--beat', BEAT_MS + 'ms');
     }
 
-    // Music notes
-    const noteSymbols = ['♩','♪','♫','♬','🎵','🎶'];
-    const notesContainer = document.getElementById('notes');
-    function spawnNote() {
-      const n = document.createElement('div');
-      n.className = 'note';
-      n.textContent = noteSymbols[Math.floor(Math.random() * noteSymbols.length)];
-      n.style.left = (20 + Math.random() * 60) + '%';
-      n.style.color = `hsl(${Math.floor(Math.random()*360)},100%,70%)`;
-      n.style.fontSize = (1.2 + Math.random() * 1.2) + 'rem';
-      n.style.animationDuration = (1.4 + Math.random() * 1.2) + 's';
-      notesContainer.appendChild(n);
-      n.addEventListener('animationend', () => n.remove());
-    }
-    setInterval(spawnNote, 320);
+    const lanes = Array.from(document.querySelectorAll('.lane'));
+    const keyMap = { d: 0, f: 1, j: 2, k: 3 };
+    const KEYS = ['D','F','J','K'];
 
-    // Fries
-    const fryContainer = document.getElementById('fryContainer');
-    function makeFrySVG(w, h, c1, c2) {
-      return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 14 60">
-        <rect x="1" y="1" width="12" height="58" rx="3" fill="${c1}"/>
-        <rect x="3" y="1" width="4"  height="58" rx="2" fill="${c2}" opacity="0.45"/>
-        <rect x="1" y="1" width="12" height="8"  rx="3" fill="#c8860a" opacity="0.5"/>
-      </svg>`;
+    // ================================================================
+    // CHART GENERATOR — the pattern evolves as the song progresses.
+    // Notes per beat scale from sparse (intro) to dense (climax), with
+    // section-specific flavors: rolls, chord stabs, syncopation, etc.
+    // Deterministic per beat (seeded) so a given song always plays the same.
+    // ================================================================
+
+    // Small seeded RNG so the generated chart is stable across the song
+    function beatRng(seed) {
+      let x = (seed * 1103515245 + 12345) & 0x7fffffff;
+      x ^= x << 13; x ^= x >> 17; x ^= x << 5;
+      return ((x & 0x7fffffff) / 0x7fffffff);
     }
-    const fryColors = [
-      ['#f5c842','#ffe480'], ['#e8b830','#fad660'],
-      ['#d4a520','#f0cc50'], ['#c9961e','#e8bc3c'],
+
+    // The four base "riffs" — reused and layered by the generator
+    const RIFF_BASE = [ [0], [], [2], [], [1], [], [3], [] ];       // steady alternating
+    const RIFF_ROLL = [ [0], [1], [2], [3], [3], [2], [1], [0] ];   // ascending/descending roll
+    const RIFF_SYNC = [ [0], [], [], [2], [1], [], [], [3] ];       // syncopated / off-beat
+    const RIFF_STAB = [ [0,3], [], [], [], [1,2], [], [], [] ];     // chord stabs
+
+    // Returns array of lane indices to spawn on a given absolute beat.
+    // `progress` (0..1) drives intensity; higher = busier.
+    // Hold-blocking state — a lane is occupied by a hold's tail until laneBlockedUntil[lane]
+    let laneBlockedUntil = [0, 0, 0, 0];
+    let holdCooldownUntil = 0;   // no new hold before this beat (keeps them spaced)
+
+    function resetChartState() {
+      laneBlockedUntil = [0, 0, 0, 0];
+      holdCooldownUntil = 0;
+    }
+
+    // Returns { notes: [laneIdx...], hold: {lane, lenBeats} | null }
+    // NOTE: must be called for beats strictly in increasing order (scheduler guarantees this).
+    function generateBeat(beat, progress) {
+      const bar16 = beat % 16;
+      const phrase = Math.floor(beat / 16);
+      const r = beatRng(beat + 7);
+
+      const phraseWave = 0.5 + 0.5 * Math.sin(phrase * 0.9);
+      const intensity = Math.min(1, progress * 0.75 + phraseWave * 0.25);
+
+      // ---- HOLD DECISION (checked first so it can claim the beat/lane) ----
+      // Holds start at phrase boundaries, get more likely mid/late song, and are
+      // spaced out by a cooldown. Only one hold at a time.
+      const anyLaneBlocked = laneBlockedUntil.some(u => beat < u);
+      let hold = null;
+      if (!anyLaneBlocked && beat >= holdCooldownUntil && bar16 === 8 &&
+          progress > 0.18 && progress < 0.94) {
+        // probability climbs with intensity
+        if (beatRng(beat * 13 + 9) < 0.35 + intensity * 0.35) {
+          const holdLane = Math.floor(beatRng(beat * 17 + 5) * 4);
+          const lenBeats = 2 + Math.floor(beatRng(beat * 19 + 6) * (intensity > 0.6 ? 3 : 2)); // 2–4
+          hold = { lane: holdLane, lenBeats };
+          laneBlockedUntil[holdLane] = beat + lenBeats;   // block that lane for the tail
+          holdCooldownUntil = beat + lenBeats + 6;        // breather after a hold
+          // A hold beat is just the hold — no simultaneous tap in other lanes,
+          // so the sustain reads cleanly.
+          return { notes: [], hold };
+        }
+      }
+
+      // ---- REGULAR NOTES ----
+      let riff;
+      const flavorPick = (phrase + Math.floor(intensity * 3)) % 4;
+      if      (flavorPick === 0) riff = RIFF_BASE;
+      else if (flavorPick === 1) riff = RIFF_SYNC;
+      else if (flavorPick === 2) riff = RIFF_STAB;
+      else                        riff = RIFF_ROLL;
+
+      let lanes = (riff[bar16 % 8] || []).slice();
+
+      // Density layering
+      if (lanes.length === 0) {
+        if (r < intensity * 0.55) lanes = [Math.floor(beatRng(beat * 3 + 1) * 4)];
+      } else {
+        // MORE CHORDS as we ramp: chord chance grows steeply with intensity,
+        // and at peak intensity a third stab can sneak in (still capped to 2 playable).
+        const chordChance = intensity > 0.4 ? (intensity - 0.4) * 1.15 : 0;
+        if (r < chordChance) {
+          let extra = Math.floor(beatRng(beat * 5 + 2) * 4);
+          if (!lanes.includes(extra)) lanes.push(extra);
+        }
+      }
+
+      // Phrase-end flourish
+      if (bar16 === 15 && intensity > 0.4) {
+        const fillLane = Math.floor(beatRng(beat * 7 + 3) * 4);
+        if (!lanes.includes(fillLane)) lanes.push(fillLane);
+      }
+
+      // Climax rolls
+      if (progress > 0.82) {
+        const rollLane = (beat % 4);
+        if (!lanes.includes(rollLane) && beatRng(beat * 11 + 4) < 0.5) lanes.push(rollLane);
+      }
+
+      // Remove any lane currently blocked by an active hold's tail
+      lanes = lanes.filter(l => beat >= laneBlockedUntil[l]);
+
+      // Cap at 2 simultaneous
+      if (lanes.length > 2) lanes = lanes.slice(0, 2);
+      return { notes: lanes, hold: null };
+    }
+    const DEFAULT_TOTAL_BEATS = 160; // ~75s built-in — long enough for the full intensity ramp
+    let TOTAL_BEATS = DEFAULT_TOTAL_BEATS;  // recomputed per-song at start
+
+    // ================================================================
+    // MUSIC-DRIVEN BEATMAP
+    // Instead of placing a note on every beat, notes follow the actual
+    // rhythm: real onsets (attacks) in the audio, with rests where the
+    // music rests. Built at 16th-note resolution (4 slots per beat).
+    //   beatmap: Map<slotIndex, { notes:[lane...], hold:{lane,lenSlots}|null }>
+    //   slotIndex = beat*4 + sixteenth(0..3);  hitTime = songStart + slot*(BEAT_MS/4)
+    // ================================================================
+    const SLOTS_PER_BEAT = 4;
+    let beatmap = null;
+
+    // --- Built-in track: map the synth's own kick/snare/bass/lead events ---
+    function buildBeatmapBuiltin(totalBeats) {
+      const map = new Map();
+      const totalSlots = totalBeats * SLOTS_PER_BEAT;   // 16th slots
+      const laneBlocked = [0, 0, 0, 0];
+
+      // median lead pitch → split melody across the two inner lanes
+      const leadVals = leadPattern.filter(v => v > 0).sort((a, b) => a - b);
+      const leadMed = leadVals.length ? leadVals[Math.floor(leadVals.length / 2)] : 400;
+      const bassVals = bassPattern.filter(v => v > 0).sort((a, b) => a - b);
+      const bassMed = bassVals.length ? bassVals[Math.floor(bassVals.length / 2)] : 90;
+
+      for (let s = 0; s < totalSlots; s++) {
+        const step = s % 64;             // synth loops every 64 sixteenths (16 beats)
+        const notes = [];
+        let hold = null;
+
+        const beatInBar = Math.floor(step / 4) % 4;   // 0..3 within the bar
+        const kick    = (step % 4 === 0);
+        const snare   = (step % 8 === 4);
+        const openHat = (step % 16 === 14);
+        const bassF   = bassPattern[step] || 0;
+        const leadF   = leadPattern[step] || 0;
+
+        // KICK → left outer lane (D=0), but skip beat 3's kick so it's not
+        // a relentless four-on-the-floor wall — gives the pulse some breath.
+        if (kick && beatInBar !== 2) notes.push(0);
+        // SNARE (backbeat) → right outer lane (K=3): strong backbeat
+        if (snare && !notes.includes(3)) notes.push(3);
+        // Off-kick BASS notes → outer lane by pitch
+        if (bassF && !kick && !notes.includes(3) && !notes.includes(0)) {
+          notes.push(bassF >= bassMed ? 3 : 0);
+        }
+        // LEAD melody → inner lanes, pitch decides which (low=F/1, high=J/2)
+        if (leadF) {
+          const lane = leadF >= leadMed ? 2 : 1;
+          if (!notes.includes(lane)) notes.push(lane);
+          // Sustained lead note (followed by rests, wrapping the loop) → a HOLD
+          let restRun = 0;
+          for (let k = 1; k < 12; k++) { if (leadPattern[(step + k) % 64]) break; restRun++; }
+          if (restRun >= 3 && laneBlocked[lane] <= s) {
+            const lenSlots = Math.min(restRun + 1, 8);
+            hold = { lane, lenSlots };
+            laneBlocked[lane] = s + lenSlots;
+          }
+        }
+        // occasional open-hat texture on a free inner lane
+        if (openHat && notes.length < 2 && !notes.includes(1) && !notes.includes(2)) {
+          notes.push(2);
+        }
+
+        // respect active holds — drop notes in a blocked lane
+        const filtered = notes.filter(l => laneBlocked[l] <= s || (hold && hold.lane === l));
+
+        if (hold) {
+          map.set(s, { notes: [], hold });
+        } else if (filtered.length) {
+          map.set(s, { notes: filtered.slice(0, 2), hold: null });
+        }
+      }
+      return map;
+    }
+
+    // --- Uploaded track: place notes where real onsets occur ---
+    function buildBeatmapFromAudio(analysis, rawBPM, phaseSec, totalBeats) {
+      const { onsetLow, onsetHigh, envFPS, nFrames } = analysis;
+      const map = new Map();
+      const totalSlots = totalBeats * SLOTS_PER_BEAT;
+      const periodRaw = 60 / rawBPM;              // seconds per beat (raw)
+      const slotRaw = periodRaw / SLOTS_PER_BEAT; // seconds per 16th
+
+      // Gather onset strength at each slot (max flux in a small window)
+      const lo = new Float32Array(totalSlots);
+      const hi = new Float32Array(totalSlots);
+      for (let s = 0; s < totalSlots; s++) {
+        const tRaw = phaseSec + s * slotRaw;
+        const f = Math.round(tRaw * envFPS);
+        if (f < 0 || f >= nFrames) continue;
+        let ml = 0, mh = 0;
+        for (let w = -1; w <= 2; w++) {
+          const fi = f + w;
+          if (fi < 0 || fi >= nFrames) continue;
+          if (onsetLow[fi]  > ml) ml = onsetLow[fi];
+          if (onsetHigh[fi] > mh) mh = onsetHigh[fi];
+        }
+        lo[s] = ml; hi[s] = mh;
+      }
+
+      // Adaptive thresholds per band (mean + k·std over non-zero slots)
+      function thresh(arr) {
+        let n = 0, sum = 0, sum2 = 0, mx = 0;
+        for (let i = 0; i < arr.length; i++) {
+          const v = arr[i];
+          if (v > 0) { n++; sum += v; sum2 += v * v; if (v > mx) mx = v; }
+        }
+        if (n === 0) return Infinity;
+        const mean = sum / n;
+        const std = Math.sqrt(Math.max(0, sum2 / n - mean * mean));
+        return Math.max(mean + 0.45 * std, 0.06 * mx);
+      }
+      const tLo = thresh(lo), tHi = thresh(hi);
+
+      const laneBlocked = [0, 0, 0, 0];
+      let outerToggle = 0, innerToggle = 0;
+      let lastSlotFired = -99;
+
+      for (let s = 0; s < totalSlots; s++) {
+        const loHit = lo[s] >= tLo;
+        const hiHit = hi[s] >= tHi;
+        if (!loHit && !hiHit) continue;
+
+        // Playability: avoid firing on immediately adjacent 16ths too often
+        // (keeps machine-gun fills readable) — allow if it's a strong onset.
+        const strong = (lo[s] >= tLo * 1.6) || (hi[s] >= tHi * 1.6);
+        if (s - lastSlotFired < 1 && !strong) continue;
+
+        const notes = [];
+        // low-band onset → outer lanes (bass/kick), alternate L/R
+        if (loHit) {
+          const lane = (outerToggle++ % 2) ? 3 : 0;
+          if (laneBlocked[lane] <= s) notes.push(lane);
+        }
+        // high-band onset → inner lanes (snare/hats/melody), alternate
+        if (hiHit) {
+          const lane = (innerToggle++ % 2) ? 2 : 1;
+          if (laneBlocked[lane] <= s && !notes.includes(lane)) notes.push(lane);
+        }
+        if (!notes.length) continue;
+
+        // Sustained high-energy with no fresh onsets ahead in this lane → HOLD.
+        // Detect a run of slots where the band stays quiet (no new attack) but
+        // we just had a strong hit: turn it into a hold ribbon occasionally.
+        let hold = null;
+        if (notes.length === 1 && strong) {
+          const lane = notes[0];
+          const band = (lane === 0 || lane === 3) ? lo : hi;
+          const th = (lane === 0 || lane === 3) ? tLo : tHi;
+          let run = 0;
+          for (let k = s + 1; k < totalSlots && band[k] < th * 0.8; k++) run++;
+          if (run >= 5 && laneBlocked[lane] <= s) {
+            const lenSlots = Math.min(run + 1, 10);
+            hold = { lane, lenSlots };
+            laneBlocked[lane] = s + lenSlots;
+          }
+        }
+
+        if (hold) {
+          map.set(s, { notes: [], hold });
+        } else {
+          map.set(s, { notes: notes.slice(0, 2), hold: null });
+        }
+        lastSlotFired = s;
+      }
+      return map;
+    }
+
+    // --- Fallback: convert the old procedural generator into a beatmap ---
+    // (used only if an uploaded song has no usable analysis)
+    function buildBeatmapProcedural(totalBeats) {
+      resetChartState();
+      const map = new Map();
+      for (let b = 0; b < totalBeats; b++) {
+        const cell = generateBeat(b, totalBeats ? b / totalBeats : 0);
+        const slot = b * SLOTS_PER_BEAT;   // procedural chart is on integer beats
+        if (cell.hold) {
+          map.set(slot, { notes: [], hold: { lane: cell.hold.lane, lenSlots: cell.hold.lenBeats * SLOTS_PER_BEAT } });
+        } else if (cell.notes && cell.notes.length) {
+          map.set(slot, { notes: cell.notes, hold: null });
+        }
+      }
+      return map;
+    }
+
+    let songStart = 0;
+    let scheduled = new Set();
+    let activeNotes = []; // {el, lane, hitAt}
+    let score = 0, combo = 0, maxCombo = 0;
+    let hits = 0, perfects = 0, total = 0;
+    let running = false;
+    let faceTimer = null;
+
+    const scoreEl = document.getElementById('score');
+    const comboEl = document.getElementById('combo');
+
+    function setFace(state) {
+      document.body.classList.remove('face-state-wow', 'face-state-sad', 'face-state-angry', 'face-state-wtf');
+      if (state === 'wow')   document.body.classList.add('face-state-wow');
+      if (state === 'sad')   document.body.classList.add('face-state-sad');
+      if (state === 'angry') document.body.classList.add('face-state-angry');
+      if (state === 'wtf')   document.body.classList.add('face-state-wtf');
+      clearTimeout(faceTimer);
+      const dur = state === 'angry' ? 700 : state === 'wtf' ? 500 : 500;
+      faceTimer = setTimeout(() => {
+        document.body.classList.remove('face-state-wow', 'face-state-sad', 'face-state-angry', 'face-state-wtf');
+      }, dur);
+    }
+
+    // ================================================================
+    // PERFORMANCE — cache geometry so the tick loop never queries layout
+    // ================================================================
+    const stageEl     = document.getElementById('stage');
+    const burgerSvgEl = document.getElementById('burgerSvg');
+
+    let vHeight = window.innerHeight;
+    let laneCache = null;   // [{cx, top}, ...]
+    let mouthCache = null;  // {x, y}
+    let hitGeomCache = null;
+
+    function invalidateGeometry() {
+      vHeight = window.innerHeight;
+      laneCache = null;
+      mouthCache = null;
+      // hit zone geometry is derived from vHeight
+      hitGeomCache = {
+        top:    vHeight * 0.8,
+        center: vHeight * 0.8 + 35,
+        target: vHeight * 0.8 + 35 - 20,
+      };
+    }
+    invalidateGeometry();
+    window.addEventListener('resize', invalidateGeometry);
+
+    function getLaneGeom(idx) {
+      if (!laneCache) {
+        laneCache = lanes.map(l => {
+          const r = l.getBoundingClientRect();
+          return { cx: r.left + r.width / 2, top: r.top };
+        });
+      }
+      return laneCache[idx];
+    }
+    function getMouthScreenPos() {
+      if (!mouthCache) {
+        const r = stageEl.getBoundingClientRect();
+        // Mouth is ~42% down the stage (SVG mouth path center is at viewBox y≈100 of 220)
+        mouthCache = { x: r.left + r.width / 2, y: r.top + r.height * 0.42 };
+      }
+      return mouthCache;
+    }
+    // Invalidate when the burger's DOM position changes (start/end overlay open/close briefly shifts layout)
+    function refreshMouthOnNextFrame() {
+      mouthCache = null;
+      laneCache = null;
+    }
+
+    function spawnMouthFlash() {
+      const { x, y } = getMouthScreenPos();
+      const ring = document.createElement('div');
+      ring.className = 'mouth-ring';
+      ring.style.left = x + 'px';
+      ring.style.top  = y + 'px';
+      document.body.appendChild(ring);
+      setTimeout(() => ring.remove(), 720);
+      const flash = document.createElement('div');
+      flash.className = 'mouth-flash';
+      flash.style.left = x + 'px';
+      flash.style.top  = y + 'px';
+      document.body.appendChild(flash);
+      setTimeout(() => flash.remove(), 570);
+    }
+
+    // Burger ingredient SVGs — one per lane
+    const INGREDIENT_SVGS = [
+      // Lane 0 — LETTUCE (green wavy leaf)
+      `<svg viewBox="0 0 80 40" xmlns="http://www.w3.org/2000/svg">
+         <path d="M2,22 Q10,6 20,20 Q30,4 40,20 Q50,4 60,20 Q70,6 78,22 Q78,34 60,36 Q40,38 20,36 Q2,34 2,22 Z"
+               fill="#4caf50" stroke="#1b5e20" stroke-width="1.5"/>
+         <path d="M6,18 Q20,14 40,16 Q60,14 74,18" stroke="#66bb6a" stroke-width="1.5" fill="none" opacity="0.9"/>
+         <path d="M10,26 Q40,30 70,26" stroke="#2e7d32" stroke-width="1" fill="none" opacity="0.6"/>
+       </svg>`,
+      // Lane 1 — CHEESE (yellow slice with drips)
+      `<svg viewBox="0 0 80 40" xmlns="http://www.w3.org/2000/svg">
+         <polygon points="4,10 76,10 78,4 2,4" fill="#e6a900"/>
+         <rect x="2" y="10" width="76" height="18" rx="3" fill="#ffdf3f"/>
+         <rect x="2" y="10" width="76" height="6"  rx="3" fill="#fff" opacity="0.35"/>
+         <path d="M12,28 Q10,36 14,38 Q16,36 14,28" fill="#ffdf3f"/>
+         <path d="M40,28 Q38,36 42,38 Q44,36 42,28" fill="#ffdf3f"/>
+         <path d="M64,28 Q62,36 66,38 Q68,36 66,28" fill="#ffdf3f"/>
+       </svg>`,
+      // Lane 2 — TOMATO (red slice with seeds)
+      `<svg viewBox="0 0 80 40" xmlns="http://www.w3.org/2000/svg">
+         <rect x="2" y="8" width="76" height="24" rx="12" fill="#e53935"/>
+         <rect x="2" y="8" width="76" height="8"  rx="4"  fill="#f44336" opacity="0.7"/>
+         <ellipse cx="16" cy="20" rx="3" ry="1.6" fill="#fff8dc" opacity="0.85"/>
+         <ellipse cx="32" cy="22" rx="3" ry="1.6" fill="#fff8dc" opacity="0.85"/>
+         <ellipse cx="48" cy="19" rx="3" ry="1.6" fill="#fff8dc" opacity="0.85"/>
+         <ellipse cx="64" cy="21" rx="3" ry="1.6" fill="#fff8dc" opacity="0.85"/>
+       </svg>`,
+      // Lane 3 — PATTY (brown with grill marks)
+      `<svg viewBox="0 0 80 40" xmlns="http://www.w3.org/2000/svg">
+         <rect x="2" y="4" width="76" height="30" rx="14" fill="#4a2810"/>
+         <rect x="2" y="4" width="76" height="10" rx="10" fill="#6d3a17" opacity="0.6"/>
+         <rect x="2" y="24" width="76" height="8" rx="8"  fill="#2f1809" opacity="0.7"/>
+         <ellipse cx="16" cy="18" rx="4" ry="2" fill="#7a4520" opacity="0.75"/>
+         <ellipse cx="34" cy="20" rx="3" ry="1.6" fill="#7a4520" opacity="0.75"/>
+         <ellipse cx="52" cy="17" rx="4" ry="2" fill="#7a4520" opacity="0.75"/>
+         <ellipse cx="66" cy="21" rx="3" ry="1.6" fill="#7a4520" opacity="0.75"/>
+       </svg>`,
     ];
 
-    function spawnFries(cx, cy) {
-      const ripple = document.createElement('div');
-      ripple.className = 'click-ripple';
-      ripple.style.left = cx + 'px';
-      ripple.style.top  = cy + 'px';
-      document.body.appendChild(ripple);
-      ripple.addEventListener('animationend', () => ripple.remove());
-      const count = 12 + Math.floor(Math.random() * 8);
-      for (let i = 0; i < count; i++) spawnOneFry();
+    // Pre-parse ingredient SVGs once — clone into notes on each spawn
+    const INGREDIENT_TEMPLATES = INGREDIENT_SVGS.map(html => {
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = html;
+      return wrapper.firstElementChild;
+    });
+
+    function spawnNote(laneIdx, hitTime) {
+      const lane = lanes[laneIdx];
+      const el = document.createElement('div');
+      el.className = 'note';
+      el.dataset.color = laneIdx;
+      el.appendChild(INGREDIENT_TEMPLATES[laneIdx].cloneNode(true));
+      lane.appendChild(el);
+
+      // Cached lane geom + mouth position — no layout thrash
+      const laneG = getLaneGeom(laneIdx);
+      const mouth = getMouthScreenPos();
+      const spread = (laneIdx - 1.5) * 8;
+
+      activeNotes.push({
+        el, lane: laneIdx, hitAt: hitTime, hit: false,
+        spawnAt: hitTime - NOTE_FALL_MS,
+        mouthDx: mouth.x - laneG.cx + spread,
+        mouthDy: mouth.y - laneG.top,
+      });
     }
 
-    function spawnOneFry() {
+    function spawnHoldNote(laneIdx, hitTime, holdMs) {
+      const lane = lanes[laneIdx];
       const el = document.createElement('div');
-      el.className = 'fry';
-      const w = 10 + Math.random() * 8;
-      const h = 40 + Math.random() * 35;
-      const [c1, c2] = fryColors[Math.floor(Math.random() * fryColors.length)];
-      el.innerHTML = makeFrySVG(w, h, c1, c2);
-      const startX = Math.random() * window.innerWidth;
-      el.style.left = startX + 'px';
-      el.style.top  = '-' + (h + 10) + 'px';
-      fryContainer.appendChild(el);
+      el.className = 'note hold-note';
+      el.dataset.color = laneIdx;
 
-      let x = startX, y = -(h + 10);
-      let vx = (Math.random() - 0.5) * 2.5;
-      let vy = 1 + Math.random() * 2;
-      let angle = (Math.random() - 0.5) * 360;
-      let spin  = (Math.random() - 0.5) * 14;
-      const gravity = 0.28, bounceCoeff = 0.38, friction = 0.82;
-      let bounces = 0;
-      const maxBounces = 2 + Math.floor(Math.random() * 2);
+      const ribbon = document.createElement('div');
+      ribbon.className = 'hold-ribbon';
+      ribbon.innerHTML =
+        '<div class="ribbon-fill"></div>' +
+        '<div class="flow"></div>' +
+        '<div class="tail"></div>' +
+        '<div class="head"></div>' +
+        '<div class="hold-label">HOLD</div>';
+      el.appendChild(ribbon);
+      lane.appendChild(el);
 
-      function tick() {
-        vy += gravity; x += vx; y += vy; angle += spin;
-        if (x < -w) x = window.innerWidth;
-        if (x > window.innerWidth) x = -w;
-        const groundY = window.innerHeight - h - 5;
-        if (y >= groundY) {
-          bounces++;
-          if (bounces >= maxBounces) {
-            y = groundY;
-            el.style.transform = `rotate(${angle}deg)`;
-            el.style.left = x + 'px'; el.style.top = y + 'px';
-            el.style.transition = 'opacity 1.2s ease 0.4s';
-            el.style.opacity = '0';
-            el.addEventListener('transitionend', () => el.remove(), { once: true });
-            return;
-          }
-          y = groundY; vy = -vy * bounceCoeff; vx *= friction; spin *= 0.6;
-        }
-        el.style.left = x + 'px'; el.style.top = y + 'px';
-        el.style.transform = `rotate(${angle}deg)`;
-        requestAnimationFrame(tick);
+      // Straight-fall geometry (Magic Tiles style), computed once.
+      // Head (bottom edge) reaches the hit line at hitTime; tail reaches it holdMs later.
+      const HITY = hitGeomCache.center;
+      const startHeadY = -60;
+      const v = (HITY - startHeadY) / NOTE_FALL_MS;   // px per ms
+      const H = v * holdMs;
+      ribbon.style.height = H + 'px';
+
+      activeNotes.push({
+        el, ribbonEl: ribbon, lane: laneIdx, hitAt: hitTime, hit: false,
+        spawnAt: hitTime - NOTE_FALL_MS,
+        isHold: true, holdMs, holding: false, holdStart: 0, completed: false,
+        fallV: v, ribbonH: H, startHeadY,
+      });
+    }
+
+    function judge(delta) {
+      const abs = Math.abs(delta);
+      if (abs <= PERFECT_MS) return 'perfect';
+      if (abs <= GOOD_MS)    return 'good';
+      return null;
+    }
+
+    function showJudge(laneIdx, kind) {
+      const lane = lanes[laneIdx];
+      const j = document.createElement('div');
+      j.className = 'judge ' + kind;
+      j.textContent = kind === 'perfect' ? 'PERFECT' : kind === 'good' ? 'GOOD' : 'MISS';
+      lane.appendChild(j);
+      setTimeout(() => j.remove(), 600);
+    }
+
+    function spawnBurst(laneIdx, color) {
+      const lane = lanes[laneIdx];
+      for (let i = 0; i < 8; i++) {
+        const b = document.createElement('div');
+        b.className = 'burst';
+        b.style.background = color;
+        b.style.boxShadow = `0 0 8px ${color}`;
+        const angle = (i / 8) * Math.PI * 2;
+        b.style.setProperty('--dx', Math.cos(angle) * 60 + 'px');
+        b.style.setProperty('--dy', Math.sin(angle) * 60 + 'px');
+        lane.appendChild(b);
+        setTimeout(() => b.remove(), 500);
       }
+    }
+
+    function registerHit(kind) {
+      const prevCombo = combo;
+      total++;
+      if (kind === 'perfect') { score += 100; combo++; hits++; perfects++; }
+      else if (kind === 'good') { score += 50; combo++; hits++; }
+      else { combo = 0; }
+      if (combo > maxCombo) maxCombo = combo;
+
+      scoreEl.textContent = score;
+      comboEl.textContent = combo;
+      comboEl.classList.remove('combo-flash');
+      void comboEl.offsetWidth;
+      comboEl.classList.add('combo-flash');
+
+      document.body.classList.remove('hit-flash', 'miss-flash');
+      void document.body.offsetWidth;
+      if (kind === 'perfect') {
+        document.body.classList.add('hit-flash');
+        setFace('wow');
+        // extra pop
+        burgerSvgEl.classList.remove('beat-a', 'beat-b', 'hit-perfect');
+        void burgerSvgEl.offsetWidth;
+        burgerSvgEl.classList.add('hit-perfect');
+      } else if (kind === 'good') {
+        document.body.classList.add('hit-flash');
+      } else {
+        // MISS — burger flips you off
+        document.body.classList.add('miss-flash');
+        setFace('angry');
+        burgerSvgEl.classList.remove('beat-a', 'beat-b', 'hit-perfect');
+      }
+      setTimeout(() => {
+        document.body.classList.remove('hit-flash', 'miss-flash');
+      }, 150);
+
+      // combo-hot toggle
+      if (combo >= 10) document.body.classList.add('combo-hot');
+      else             document.body.classList.remove('combo-hot');
+
+      // Speech triggers
+      if (kind === 'perfect') saySomething(PLAY_LINES.perfect, 0.14);
+      else if (kind === 'miss') {
+        if (prevCombo >= 5) saySomething(PLAY_LINES.comboBreak, 0.55);
+        else saySomething(PLAY_LINES.miss, 0.25);
+      }
+      // Combo milestone
+      if (kind !== 'miss') {
+        if (combo === 10)      saySomething(PLAY_LINES.combo10);
+        else if (combo === 25) saySomething(PLAY_LINES.combo25);
+        else if (combo === 50) saySomething(PLAY_LINES.combo50);
+      }
+    }
+
+    // Key handling
+    const laneColors = [
+      getComputedStyle(document.documentElement).getPropertyValue('--aurora-1').trim(),
+      getComputedStyle(document.documentElement).getPropertyValue('--aurora-3').trim(),
+      getComputedStyle(document.documentElement).getPropertyValue('--aurora-4').trim(),
+      getComputedStyle(document.documentElement).getPropertyValue('--aurora-2').trim(),
+    ];
+
+    // ---- Limb mapping: D=leg-L, F=arm-L, J=arm-R, K=leg-R ----
+    // Also enforce a per-lane press cooldown so mashing is throttled fairly.
+    const LANE_COOLDOWN_MS = 90;
+    const lastLanePress = [0, 0, 0, 0];
+    let lastSpamAngry = 0;
+
+    // Pre-cache limb refs and animation class per lane
+    const LIMB_TARGETS = [
+      { upper: burgerSvgEl.querySelector('.leg-left'),  lower: burgerSvgEl.querySelector('.shin-left'),    cls: 'kick'   }, // D
+      { upper: burgerSvgEl.querySelector('.arm-left'),  lower: burgerSvgEl.querySelector('.forearm-left'), cls: 'strike' }, // F
+      { upper: burgerSvgEl.querySelector('.arm-right'), lower: burgerSvgEl.querySelector('.forearm-right'),cls: 'strike' }, // J
+      { upper: burgerSvgEl.querySelector('.leg-right'), lower: burgerSvgEl.querySelector('.shin-right'),   cls: 'kick'   }, // K
+    ];
+
+    function triggerLimb(laneIdx) {
+      const t = LIMB_TARGETS[laneIdx];
+      if (!t) return;
+      // Skip if angry-state animation is running — arms/legs are locked to the miss pose
+      if (document.body.classList.contains('face-state-angry')) return;
+      const { upper, lower, cls } = t;
+      if (upper) {
+        upper.classList.remove(cls);
+        void upper.getBoundingClientRect();
+        upper.classList.add(cls);
+      }
+      if (lower) {
+        lower.classList.remove(cls);
+        void lower.getBoundingClientRect();
+        lower.classList.add(cls);
+      }
+    }
+
+    function showEmpty(laneIdx) {
+      const lane = lanes[laneIdx];
+      const j = document.createElement('div');
+      j.className = 'judge empty';
+      j.textContent = 'WTF?';
+      lane.appendChild(j);
+      setTimeout(() => j.remove(), 500);
+    }
+
+    function handleEmptyPress(laneIdx) {
+      // Break combo (but don't count as a note-miss toward accuracy)
+      if (combo > 0) {
+        combo = 0;
+        comboEl.textContent = 0;
+        document.body.classList.remove('combo-hot');
+        comboEl.classList.remove('combo-flash');
+        void comboEl.offsetWidth;
+        comboEl.classList.add('combo-flash');
+      }
+      showEmpty(laneIdx);
+      const now = performance.now();
+      if (now - lastSpamAngry > 550) {
+        lastSpamAngry = now;
+        setFace('wtf');
+      }
+    }
+
+    // ---- HOLD ribbon completion / failure ----
+    function completeHold(n, full) {
+      lanes[n.lane].classList.remove('hold-active');
+      n.el.style.transition = 'opacity 0.25s, transform 0.2s';
+      n.el.style.opacity = '0';
+      if (n.ribbonEl) {
+        n.ribbonEl.style.transition = 'transform 0.2s, box-shadow 0.2s';
+        n.ribbonEl.style.transform = 'scaleX(1.3)';
+      }
+      setTimeout(() => n.el.remove(), 260);
+      showJudge(n.lane, full ? 'perfect' : 'good');
+      spawnBurst(n.lane, laneColors[n.lane]);
+      registerHit(full ? 'perfect' : 'good');
+      if (full) saySomething(PLAY_LINES.holdGreat, 0.5);
+    }
+    function failHold(n) {
+      lanes[n.lane].classList.remove('hold-active');
+      n.el.style.transition = 'opacity 0.3s';
+      n.el.style.opacity = '0';
+      setTimeout(() => n.el.remove(), 300);
+      showJudge(n.lane, 'miss');
+      registerHit('miss');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (!running || e.repeat) return;
+      const k = e.key.toLowerCase();
+      if (!(k in keyMap)) return;
+      const laneIdx = keyMap[k];
+      const now = performance.now();
+
+      // Cooldown — drop presses coming faster than LANE_COOLDOWN_MS
+      if (now - lastLanePress[laneIdx] < LANE_COOLDOWN_MS) return;
+      lastLanePress[laneIdx] = now;
+
+      lanes[laneIdx].classList.add('pressed');
+      triggerLimb(laneIdx);
+
+      // Find nearest un-hit note in this lane
+      let best = null, bestDelta = Infinity;
+      for (const n of activeNotes) {
+        if (n.hit || n.lane !== laneIdx) continue;
+        const d = now - n.hitAt;
+        if (Math.abs(d) < Math.abs(bestDelta)) {
+          bestDelta = d;
+          best = n;
+        }
+      }
+      if (best && Math.abs(bestDelta) <= GOOD_MS) {
+        if (best.isHold) {
+          // Begin the hold — ribbon streams through, hold the key
+          best.holding = true;
+          best.holdStart = now;
+          if (best.ribbonEl) best.ribbonEl.classList.add('holding');
+          lanes[laneIdx].classList.add('hold-active');
+        } else {
+          const kind = judge(bestDelta);
+          best.hit = true;
+          best.el.style.opacity = '0';
+          best.el.style.transform = 'scale(1.6)';
+          best.el.style.transition = 'opacity 0.2s, transform 0.2s';
+          setTimeout(() => best.el.remove(), 200);
+          showJudge(laneIdx, kind);
+          spawnBurst(laneIdx, laneColors[laneIdx]);
+          registerHit(kind);
+        }
+      } else {
+        // Empty press — spam response
+        handleEmptyPress(laneIdx);
+      }
+    });
+
+    document.addEventListener('keyup', (e) => {
+      const k = e.key.toLowerCase();
+      if (!(k in keyMap)) return;
+      const laneIdx = keyMap[k];
+      lanes[laneIdx].classList.remove('pressed');
+
+      // Releasing a hold ribbon in progress → evaluate against the tail line
+      for (let i = activeNotes.length - 1; i >= 0; i--) {
+        const n = activeNotes[i];
+        if (n.isHold && n.holding && !n.hit && n.lane === laneIdx) {
+          const now = performance.now();
+          const tailTime = n.hitAt + n.holdMs;      // when the tail reaches the line
+          n.hit = true;
+          lanes[laneIdx].classList.remove('hold-active');
+          if (now >= tailTime - GOOD_MS) {
+            // Released right as (or after) the ribbon finished — clean hold
+            completeHold(n, now >= tailTime - PERFECT_MS);
+          } else {
+            const heldFrac = (now - n.hitAt) / n.holdMs;
+            if (heldFrac >= 0.5) completeHold(n, false);  // partial credit
+            else                 failHold(n);             // let go way too early
+          }
+          activeNotes.splice(i, 1);
+          break;
+        }
+      }
+    });
+
+    // ================================================================
+    // BURGER TALKS DURING PLAY — event-driven speech bubbles
+    // ================================================================
+
+    // In-game speech bubbles
+    const PLAY_LINES = {
+      gameStart: [
+        "Let's go.", "Here we go.", "Begin.", "Show me.",
+        "Prove yourself.", "Impress me.", "Try not to embarrass me.",
+        "Don't disappoint me.",
+      ],
+      perfect: [
+        "Correct.", "Fine.", "Adequate.", "Barely.", "Passable.",
+        "Show-off.", "One point.", "Sure. Yes.",
+      ],
+      miss: [
+        "Predictable.", "Miss.", "Wow.", "Really?", "Come on.",
+        "Amateur.", "That was there.", "It was RIGHT there.",
+        "Are you even trying.",
+      ],
+      combo10: [
+        "Ten. Fine.", "Ten in a row. Interesting.",
+        "10. Not bad. For you.",
+      ],
+      combo25: [
+        "25. Getting real.", "Twenty-five. Impressive-ish.",
+        "The burger is watching now.",
+      ],
+      combo50: [
+        "50 in a row. Terrifying.",
+        "Fifty! The burger is shaken.",
+        "I am re-evaluating my opinion of you.",
+      ],
+      comboBreak: [
+        "There it is.", "Combo's dead.", "Oh no.",
+        "And… gone.", "Called it.",
+        "Was fun while it lasted.",
+      ],
+      holdGreat: [
+        "Ooh. Held it.", "Nice sustain.", "You held on. Impressive.",
+        "The burger felt that one.",
+      ],
+      idle: [
+        "Mmm.", "Hm.", "Yes.", "Uh-huh.", "Sure.",
+        "Continue.", "Right.", "OK.", "Fine.", "This is fine.",
+        "The burger observes.", "I am watching.",
+        "Interesting choice.", "Bold.",
+      ],
+    };
+
+    let lastBurgerSpokeAt = 0;
+    const MIN_SPEECH_INTERVAL = 1800;
+    let idleSpeechTimer = null;
+
+    function burgerSay(text) {
+      const now = performance.now();
+      if (now - lastBurgerSpokeAt < MIN_SPEECH_INTERVAL) return;
+      lastBurgerSpokeAt = now;
+      // Clear any lingering bubble so they don't stack
+      document.querySelectorAll('.play-speech').forEach(el => el.remove());
+      const el = document.createElement('div');
+      el.className = 'play-speech';
+      el.textContent = text;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 2650);
+    }
+
+    function saySomething(pool, chance = 1) {
+      if (!pool || pool.length === 0) return;
+      if (Math.random() > chance) return;
+      burgerSay(pool[Math.floor(Math.random() * pool.length)]);
+    }
+
+    function scheduleIdleSpeech() {
+      clearTimeout(idleSpeechTimer);
+      const delay = 8000 + Math.random() * 10000;   // 8–18s
+      idleSpeechTimer = setTimeout(() => {
+        if (running) saySomething(PLAY_LINES.idle, 0.55);
+        if (running) scheduleIdleSpeech();
+      }, delay);
+    }
+
+    function stopBurgerSpeech() {
+      clearTimeout(idleSpeechTimer);
+      idleSpeechTimer = null;
+      document.querySelectorAll('.play-speech').forEach(el => el.remove());
+    }
+
+    // ================================================================
+    // WTF FACTOR — the burger occasionally does something absurd
+    // ================================================================
+    let gagActive = false;
+    let gagTimer  = null;
+    let activeGagOverlays = [];
+
+    const GAGS = [
+      { name: 'flip',       duration: 1400 },
+      { name: 'moonwalk',   duration: 1600 },
+      { name: 'vibrate',    duration: 1000 },
+      { name: 'zoom',       duration: 900  },
+      { name: 'stretch',    duration: 1200 },
+      { name: 'spin',       duration: 1200 },
+      { name: 'sunglasses', duration: 2400, overlay: 'sunglasses' },
+      { name: 'mustache',   duration: 2400, overlay: 'mustache'   },
+      { name: 'halo',       duration: 2600, overlay: 'halo'       },
+      { name: 'scream',     duration: 1400, overlay: 'scream', extra: 'vibrate' },
+      { name: 'question',   duration: 1800, overlay: 'question' },
+    ];
+
+    const GAG_TEXTS = {
+      scream:   ['AAAAAA', 'NOOOOO', 'REEEEE', 'AIIEEEE'],
+      question: ['wait what.', 'did you see that?', 'nope.', 'this is fine.', 'why am I here.'],
+    };
+
+    function makeGagOverlay(kind) {
+      const el = document.createElement('div');
+      el.className = 'gag-item gag-' + kind;
+      if (kind === 'sunglasses') {
+        el.innerHTML = `
+          <svg viewBox="0 0 120 30" xmlns="http://www.w3.org/2000/svg">
+            <rect x="4"  y="4" width="46" height="22" rx="6" fill="#000"/>
+            <rect x="70" y="4" width="46" height="22" rx="6" fill="#000"/>
+            <rect x="46" y="12" width="28" height="4" fill="#000"/>
+            <path d="M10,10 L26,20" stroke="#fff" stroke-width="1.5" opacity="0.35"/>
+            <path d="M76,10 L92,20" stroke="#fff" stroke-width="1.5" opacity="0.35"/>
+          </svg>`;
+      } else if (kind === 'mustache') {
+        el.innerHTML = `
+          <svg viewBox="0 0 90 30" xmlns="http://www.w3.org/2000/svg">
+            <path d="M45,10 C30,4 8,4 4,18 C10,14 22,14 32,20
+                     C36,22 42,22 45,20
+                     C48,22 54,22 58,20 C68,14 80,14 86,18
+                     C82,4 60,4 45,10 Z" fill="#1a1006"/>
+            <path d="M20,12 Q10,12 6,16" stroke="#000" stroke-width="1" fill="none" opacity="0.6"/>
+          </svg>`;
+      } else if (kind === 'halo') {
+        // halo is styled purely with CSS
+      } else if (kind === 'scream') {
+        el.textContent = GAG_TEXTS.scream[Math.floor(Math.random() * GAG_TEXTS.scream.length)];
+      } else if (kind === 'question') {
+        el.textContent = GAG_TEXTS.question[Math.floor(Math.random() * GAG_TEXTS.question.length)];
+      }
+      return el;
+    }
+
+    function runGag() {
+      if (!running || gagActive) return;
+      gagActive = true;
+      const gag = GAGS[Math.floor(Math.random() * GAGS.length)];
+
+      // Clear any beat-pulse anim so gag animation owns the burger
+      burgerSvgEl.classList.remove('beat-a', 'beat-b', 'hit-perfect');
+      // Apply transform gag if any
+      const primary = gag.overlay ? (gag.extra || null) : gag.name;
+      if (primary) burgerSvgEl.classList.add('gag-' + primary);
+      // Apply overlay if any
+      if (gag.overlay) {
+        const el = makeGagOverlay(gag.overlay);
+        stageEl.appendChild(el);
+        activeGagOverlays.push(el);
+      }
+
+      setTimeout(endGag, gag.duration);
+    }
+
+    function endGag() {
+      burgerSvgEl.classList.remove('gag-flip', 'gag-moonwalk', 'gag-vibrate',
+                                    'gag-zoom', 'gag-stretch', 'gag-spin');
+      activeGagOverlays.forEach(el => {
+        el.style.transition = 'opacity 0.2s';
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 220);
+      });
+      activeGagOverlays = [];
+      gagActive = false;
+      if (running) scheduleNextGag();
+    }
+
+    function scheduleNextGag() {
+      clearTimeout(gagTimer);
+      // Random interval — 15s to 30s between gags
+      const delay = 15000 + Math.random() * 15000;
+      gagTimer = setTimeout(runGag, delay);
+    }
+
+    function stopGags() {
+      clearTimeout(gagTimer);
+      gagTimer = null;
+      endGag();
+      gagActive = false;
+    }
+
+    // ================================================================
+    // MAIN LOOP
+    // ================================================================
+    let lastBeat = -1;
+    let beatToggle = false;
+
+    function pulseBurger() {
+      // Skip if angry state is active — angry shake owns the animation
+      if (document.body.classList.contains('face-state-angry')) return;
+      // Skip if a WTF gag is running — the gag animation owns the burger
+      if (gagActive) return;
+      burgerSvgEl.classList.remove('beat-a', 'beat-b', 'hit-perfect');
+      stageEl.classList.remove('beat-pulse');
+      void burgerSvgEl.offsetWidth;
+      beatToggle = !beatToggle;
+      burgerSvgEl.classList.add(beatToggle ? 'beat-a' : 'beat-b');
+      stageEl.classList.add('beat-pulse');
+    }
+
+    function tick() {
+      if (!running) return;
+      const now = performance.now();
+      const elapsed = now - songStart;
+      const SLOT_MS = BEAT_MS / SLOTS_PER_BEAT;   // 16th-note duration
+
+      // Schedule slots coming up in the next NOTE_FALL_MS window
+      const currentBeat = Math.floor(elapsed / BEAT_MS);
+      const currentSlot = Math.floor(elapsed / SLOT_MS);
+      const lookaheadSlots = Math.ceil((elapsed + NOTE_FALL_MS + 50) / SLOT_MS);
+      const TOTAL_SLOTS = TOTAL_BEATS * SLOTS_PER_BEAT;
+
+      // Trigger burger pulse on new beat (only for beats within song)
+      if (currentBeat !== lastBeat && currentBeat >= 0 && currentBeat < TOTAL_BEATS) {
+        lastBeat = currentBeat;
+        pulseBurger();
+      }
+
+      // Geometry Dash progress bar
+      const prog = Math.min(1, Math.max(0, elapsed / (TOTAL_BEATS * BEAT_MS)));
+      progressFill.style.width = (prog * 100).toFixed(1) + '%';
+      progressPct.textContent = Math.round(prog * 100) + '%';
+
+      for (let s = currentSlot; s <= lookaheadSlots && s < TOTAL_SLOTS; s++) {
+        if (s < 0 || scheduled.has(s)) continue;
+        scheduled.add(s);
+        const cell = beatmap ? beatmap.get(s) : null;
+        if (!cell) continue;
+        const hitTime = songStart + s * SLOT_MS;
+
+        if (cell.hold) {
+          spawnHoldNote(cell.hold.lane, hitTime, cell.hold.lenSlots * SLOT_MS);
+          const spawnTime = hitTime - NOTE_FALL_MS;
+          const delayMs = Math.max(0, spawnTime - performance.now());
+          setTimeout(spawnMouthFlash, delayMs);
+          continue;
+        }
+
+        if (!cell.notes || cell.notes.length === 0) continue;
+        for (const laneIdx of cell.notes) {
+          spawnNote(laneIdx, hitTime);
+        }
+        // Fire the muzzle flash at the moment the note "leaves" the burger's mouth
+        const spawnTime = hitTime - NOTE_FALL_MS;
+        const delayMs = Math.max(0, spawnTime - performance.now());
+        setTimeout(spawnMouthFlash, delayMs);
+      }
+
+      // Move active notes — arc: burger tosses ingredients UP then they FALL down to hit zone
+      const laneTargetY = hitGeomCache.target;   // pre-cached
+      const apexY = 40;                          // apex near the top of the screen
+      const TOSS_FRAC = 0.28;                    // 28% of travel is the upward toss
+
+      for (let i = activeNotes.length - 1; i >= 0; i--) {
+        const n = activeNotes[i];
+        if (n.hit) { activeNotes.splice(i, 1); continue; }
+
+        // ---- HOLD RIBBON: streams down; while held it is absorbed at the hit line ----
+        if (n.isHold) {
+          const HITY = hitGeomCache.center;
+          const headY = n.startHeadY + n.fallV * (now - n.spawnAt);
+          const topY  = headY - n.ribbonH;
+          n.ribbonEl.style.top = topY + 'px';
+          n.ribbonEl.style.opacity = Math.min(1, (now - n.spawnAt) / 120);
+
+          if (n.holding) {
+            lanes[n.lane].classList.add('hold-active');
+            // ABSORB: clip the ribbon's bottom at the hit line so it doesn't fall
+            // through — the held portion is "eaten" into the block.
+            const clipBottomPx = Math.max(0, headY - HITY);   // how far head is below line
+            n.ribbonEl.style.clipPath = `inset(0 0 ${clipBottomPx}px 0)`;
+            // A little suction glow at the hit line
+            n.ribbonEl.style.filter = 'brightness(1.15)';
+
+            // Tail (top edge) reaching the line completes the hold
+            if (topY >= HITY && !n.completed) {
+              n.completed = true;
+              n.hit = true;
+              lanes[n.lane].classList.remove('hold-active');
+              completeHold(n, true);
+              activeNotes.splice(i, 1);
+              continue;
+            }
+          } else {
+            // Head passed the line without a press → whole hold missed
+            const msUntilHit = n.hitAt - now;
+            if (msUntilHit < -GOOD_MS) {
+              n.hit = true;
+              n.el.style.transition = 'opacity 0.3s';
+              n.el.style.opacity = '0';
+              setTimeout(() => n.el.remove(), 300);
+              showJudge(n.lane, 'miss');
+              registerHit('miss');
+              activeNotes.splice(i, 1);
+              continue;
+            }
+          }
+          // Clean up if it has fully streamed off the bottom (only when not being absorbed)
+          if (!n.holding && topY > vHeight + 40) {
+            lanes[n.lane].classList.remove('hold-active');
+            n.hit = true;
+            n.el.remove();
+            activeNotes.splice(i, 1);
+          }
+          continue;
+        }
+
+        const age = now - n.spawnAt;
+        const t   = Math.min(1, Math.max(0, age / NOTE_FALL_MS));
+
+        // X: curves quickly from mouth into its lane (first 35% of travel), ease-out cubic
+        const xT = Math.min(1, Math.max(0, age / (NOTE_FALL_MS * 0.35)));
+        const xEased = 1 - Math.pow(1 - xT, 3);
+        const x = n.mouthDx * (1 - xEased);
+
+        // Y: two-phase arc — toss up fast (ease-out), then fall with gravity (ease-in)
+        let y;
+        const tossEnd = NOTE_FALL_MS * TOSS_FRAC;
+        if (age < tossEnd) {
+          const tt = age / tossEnd;
+          const eased = 1 - Math.pow(1 - tt, 2);    // decelerating rise
+          y = n.mouthDy + (apexY - n.mouthDy) * eased;
+        } else {
+          const tt = (age - tossEnd) / (NOTE_FALL_MS - tossEnd);
+          const eased = tt * tt;                    // accelerating fall (gravity feel)
+          y = apexY + (laneTargetY - apexY) * eased;
+        }
+
+        // BEAT-PUNCHY POP — quick punch-in with a slight overshoot, so the
+        // ingredient CLEARLY appears on its beat. Fixed-time (not fraction of
+        // NOTE_FALL_MS) so the punch reads the same at any tempo.
+        const opacity = Math.min(1, Math.max(0, age / 60));   // 60ms fade-in
+        const popT    = Math.min(1, Math.max(0, age / 220));  // 220ms pop total
+        let scale;
+        if (popT <= 0)      scale = 0.2;
+        else if (popT < 0.55) scale = 0.2 + (popT / 0.55) * 1.10;         // 0.2 → 1.30 (overshoot)
+        else if (popT < 1)  scale = 1.30 - ((popT - 0.55) / 0.45) * 0.30; // 1.30 → 1.0
+        else                scale = 1;
+
+        // Ingredient tumbles as it flies — full rotation across the trajectory
+        const spin = t * 340 * ((n.lane % 2) ? 1 : -1);
+        // rotateX(+30) tilts the top edge BACK toward the burger — reads as depth
+        n.el.style.transform =
+          `translate(${x}px, ${y}px) ` +
+          `perspective(600px) rotateX(30deg) rotateZ(${spin}deg) scale(${scale})`;
+        n.el.style.opacity = opacity;
+
+        // Missed? (note passed the hit zone by more than GOOD_MS, and not being held)
+        const msUntilHit = n.hitAt - now;
+        if (msUntilHit < -GOOD_MS) {
+          n.hit = true;
+          n.el.style.opacity = '0';
+          n.el.style.transition = 'opacity 0.3s';
+          setTimeout(() => n.el.remove(), 300);
+          showJudge(n.lane, 'miss');
+          registerHit('miss');
+          activeNotes.splice(i, 1);
+        }
+      }
+
+      // End?
+      if (currentBeat >= TOTAL_BEATS && activeNotes.length === 0) {
+        endGame();
+        return;
+      }
+
       requestAnimationFrame(tick);
     }
 
-    let angryMode = false;
+    // ================================================================
+    // AUDIO SYSTEM
+    // ================================================================
+    let audioCtx = null;
+    let masterGain = null;
 
-    document.addEventListener('click', (e) => {
-      if (e.target.id === 'exitBtn') return;
-      spawnFries(e.clientX, e.clientY);
+    function initAudio() {
+      if (audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = 0.6;
+      masterGain.connect(audioCtx.destination);
+    }
+
+    // ---- Default synth song (128 BPM, 4-bar loop) ----
+    const DEFAULT_BPM = 128;
+    let synthScheduler = null;
+    let synthStartTime = 0;
+
+    // helper: noise buffer
+    function makeNoiseBuffer(ctx, seconds) {
+      const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * seconds), ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      return buf;
+    }
+
+    function playKick(t) {
+      const osc = audioCtx.createOscillator();
+      const g   = audioCtx.createGain();
+      osc.frequency.setValueAtTime(160, t);
+      osc.frequency.exponentialRampToValueAtTime(35, t + 0.15);
+      g.gain.setValueAtTime(0.9, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+      osc.connect(g); g.connect(masterGain);
+      osc.start(t); osc.stop(t + 0.3);
+    }
+    function playSnare(t) {
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = makeNoiseBuffer(audioCtx, 0.18);
+      const hp = audioCtx.createBiquadFilter();
+      hp.type = 'highpass'; hp.frequency.value = 1500;
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.5, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+      noise.connect(hp); hp.connect(g); g.connect(masterGain);
+      noise.start(t); noise.stop(t + 0.15);
+      // tonal component
+      const osc = audioCtx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.value = 200;
+      const og = audioCtx.createGain();
+      og.gain.setValueAtTime(0.2, t);
+      og.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+      osc.connect(og); og.connect(masterGain);
+      osc.start(t); osc.stop(t + 0.1);
+    }
+    function playHat(t, open = false) {
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = makeNoiseBuffer(audioCtx, 0.1);
+      const hp = audioCtx.createBiquadFilter();
+      hp.type = 'highpass'; hp.frequency.value = 7000;
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.18, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + (open ? 0.15 : 0.04));
+      noise.connect(hp); hp.connect(g); g.connect(masterGain);
+      noise.start(t); noise.stop(t + 0.2);
+    }
+    function playBass(t, freq, dur) {
+      const osc = audioCtx.createOscillator();
+      osc.type = 'sawtooth'; osc.frequency.value = freq;
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(500, t);
+      filter.frequency.exponentialRampToValueAtTime(1400, t + 0.05);
+      filter.frequency.exponentialRampToValueAtTime(300, t + dur);
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.35, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      osc.connect(filter); filter.connect(g); g.connect(masterGain);
+      osc.start(t); osc.stop(t + dur + 0.05);
+    }
+    function playLead(t, freq, dur) {
+      const osc = audioCtx.createOscillator();
+      osc.type = 'square'; osc.frequency.value = freq;
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.14, t + 0.02);
+      g.gain.setValueAtTime(0.14, t + dur * 0.5);
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass'; filter.frequency.value = 2500;
+      osc.connect(filter); filter.connect(g); g.connect(masterGain);
+      osc.start(t); osc.stop(t + dur + 0.05);
+    }
+
+    // C minor pentatonic-ish melody in Hz. 4 bars of 16 steps = 64 steps.
+    // C=261.63, Eb=311.13, F=349.23, G=392, Bb=466.16
+    const C4 = 261.63, Eb4 = 311.13, F4 = 349.23, G4 = 392.00, Bb4 = 466.16;
+    const C5 = 523.25, Eb5 = 622.25, F5 = 698.46, G5 = 783.99;
+    const C2 = 65.41,  G2 = 98.00,  Ab2 = 103.83, Bb2 = 116.54, Eb2 = 77.78;
+
+    // bassSteps: 16 steps per bar, 4 bars
+    const bassPattern = [
+      C2, 0, 0, C2, 0, 0, C2, 0,  C2, 0, 0, C2, 0, C2, 0, 0, // bar 1: C
+      Ab2, 0, 0, Ab2, 0, 0, Ab2, 0,  Ab2, 0, 0, Ab2, 0, Ab2, 0, 0, // bar 2: Ab
+      Bb2, 0, 0, Bb2, 0, 0, Bb2, 0,  Bb2, 0, 0, Bb2, 0, Bb2, 0, 0, // bar 3: Bb
+      G2, 0, 0, G2, 0, 0, G2, 0,  G2, 0, 0, G2, 0, G2, Bb2, C2  // bar 4: G, walk-up
+    ];
+
+    const leadPattern = [
+      // bar 1
+      G4, 0, C5, 0, Eb5, 0, C5, 0,  G4, 0, Bb4, 0, C5, 0, 0, 0,
+      // bar 2
+      G4, 0, Bb4, 0, C5, 0, Eb5, 0,  C5, 0, Bb4, 0, G4, 0, 0, 0,
+      // bar 3
+      F4, 0, Bb4, 0, C5, 0, F5, 0,  Eb5, 0, C5, 0, Bb4, 0, 0, 0,
+      // bar 4
+      G4, 0, Bb4, 0, C5, Eb5, F5, G5,  F5, Eb5, C5, Bb4, G4, F4, Eb4, 0
+    ];
+
+    function scheduleSynthStep(step, t) {
+      // kick on every beat (step % 4 === 0)
+      if (step % 4 === 0) playKick(t);
+      // snare on 2 and 4 (step % 8 === 4)
+      if (step % 8 === 4) playSnare(t);
+      // closed hat on all off-16ths
+      if (step % 2 === 0 && step % 4 !== 0) playHat(t, false);
+      // open hat on the "and" of 3 (step 10 of each 16)
+      if (step % 16 === 14) playHat(t, true);
+      // bass
+      const bf = bassPattern[step];
+      if (bf) playBass(t, bf, 60/DEFAULT_BPM * 0.9);
+      // lead (only after first 2 bars for build)
+      if (step >= 32) {
+        const lf = leadPattern[step];
+        if (lf) playLead(t, lf, 60/DEFAULT_BPM * 0.5);
+      }
+    }
+
+    function startSynthSong() {
+      const sixteenth = (60 / (DEFAULT_BPM * speedMultiplier)) / 4; // sec per 16th
+      synthStartTime = audioCtx.currentTime + 0.1;
+      let nextStepTime = synthStartTime;
+      let currentStep = 0;
+      const LOOP_STEPS = 64;
+
+      synthScheduler = setInterval(() => {
+        if (!running) return;
+        while (nextStepTime < audioCtx.currentTime + 0.15) {
+          scheduleSynthStep(currentStep % LOOP_STEPS, nextStepTime);
+          nextStepTime += sixteenth;
+          currentStep++;
+        }
+      }, 25);
+      return synthStartTime;
+    }
+
+    function stopSynthSong() {
+      if (synthScheduler) { clearInterval(synthScheduler); synthScheduler = null; }
+    }
+
+    // ---- Uploaded song playback ----
+    let uploadedBuffer = null;
+    let uploadedBPM = null;
+    let uploadedPhase = 0;   // seconds into raw audio where the beat grid sits
+    let uploadedAnalysis = null;   // {onsetLow, onsetHigh, envFPS, ...} for chart building
+    let uploadedSource = null;
+
+    function playUploadedSong() {
+      uploadedSource = audioCtx.createBufferSource();
+      uploadedSource.buffer = uploadedBuffer;
+      uploadedSource.loop = false;
+      uploadedSource.playbackRate.value = speedMultiplier;
+      uploadedSource.connect(masterGain);
+      const startAt = audioCtx.currentTime + 0.1;
+      uploadedSource.start(startAt);
+      // When the audio finishes, end the game (unless we already stopped it)
+      uploadedSource.onended = () => {
+        if (running && songSource === 'upload') endGame();
+      };
+      return startAt;
+    }
+    function stopUploadedSong() {
+      if (uploadedSource) {
+        uploadedSource.onended = null;   // prevent manual stop from triggering endGame
+        try { uploadedSource.stop(); } catch(e) {}
+        uploadedSource = null;
+      }
+    }
+
+    // ================================================================
+    // BPM DETECTION — autocorrelation on onset envelope
+    // ================================================================
+    async function detectBPM(buffer) {
+      // Mono-mix
+      const nCh = buffer.numberOfChannels;
+      const len = buffer.length;
+      const sr  = buffer.sampleRate;
+      const mono = new Float32Array(len);
+      for (let c = 0; c < nCh; c++) {
+        const d = buffer.getChannelData(c);
+        for (let i = 0; i < len; i++) mono[i] += d[i] / nCh;
+      }
+
+      // One-pole lowpass split → low band (bass/kick) and high band (snare/hats/melody)
+      // Cutoff ~ 250 Hz. alpha for a simple RC lowpass.
+      const cutoff = 250;
+      const rc = 1 / (2 * Math.PI * cutoff);
+      const dt = 1 / sr;
+      const alpha = dt / (rc + dt);
+      const low = new Float32Array(len);
+      let lp = 0;
+      for (let i = 0; i < len; i++) {
+        lp += alpha * (mono[i] - lp);
+        low[i] = lp;
+      }
+      // high band = full - low  (computed on the fly below)
+
+      // RMS energy per hop, per band
+      const hop = 512;
+      const nFrames = Math.floor(len / hop);
+      const eLow  = new Float32Array(nFrames);
+      const eHigh = new Float32Array(nFrames);
+      const energy = new Float32Array(nFrames);   // combined, for tempo
+      for (let i = 0; i < nFrames; i++) {
+        let sl = 0, sh = 0;
+        for (let j = 0; j < hop; j++) {
+          const idx = i * hop + j;
+          const lo = low[idx];
+          const hi = mono[idx] - lo;
+          sl += lo * lo;
+          sh += hi * hi;
+        }
+        eLow[i]  = Math.sqrt(sl / hop);
+        eHigh[i] = Math.sqrt(sh / hop);
+        energy[i] = eLow[i] + eHigh[i];
+      }
+
+      // Onset (positive flux) per band + combined
+      const onset     = new Float32Array(nFrames);
+      const onsetLow  = new Float32Array(nFrames);
+      const onsetHigh = new Float32Array(nFrames);
+      for (let i = 1; i < nFrames; i++) {
+        onset[i]     = Math.max(0, energy[i] - energy[i - 1]);
+        onsetLow[i]  = Math.max(0, eLow[i]  - eLow[i - 1]);
+        onsetHigh[i] = Math.max(0, eHigh[i] - eHigh[i - 1]);
+      }
+
+      // Normalize combined onset (used for tempo/phase)
+      let max = 0;
+      for (let i = 0; i < nFrames; i++) if (onset[i] > max) max = onset[i];
+      if (max > 0) for (let i = 0; i < nFrames; i++) onset[i] /= max;
+
+      // Autocorrelate over BPM range 60-200
+      const envFPS = sr / hop;
+      const minLag = Math.floor(envFPS * 60 / 200);
+      const maxLag = Math.floor(envFPS * 60 / 60);
+
+      // Only use up to ~30 sec of audio for speed
+      const analyzeLen = Math.min(nFrames, Math.floor(envFPS * 30));
+
+      let bestLag = minLag;
+      let bestVal = -Infinity;
+      for (let lag = minLag; lag <= maxLag; lag++) {
+        let sum = 0;
+        for (let i = 0; i < analyzeLen - lag; i++) {
+          sum += onset[i] * onset[i + lag];
+        }
+        // Bias toward middle tempos (weak prior) — avoids half/double confusion
+        const bpmHere = 60 * envFPS / lag;
+        const bias = 1 - Math.abs(bpmHere - 120) / 200;
+        sum *= bias;
+        if (sum > bestVal) { bestVal = sum; bestLag = lag; }
+      }
+
+      let bpm = 60 * envFPS / bestLag;
+
+      // Normalize to a danceable range 85-170 (track the lag so phase stays consistent)
+      let periodFrames = bestLag;
+      while (bpm < 85)  { bpm *= 2; periodFrames /= 2; }
+      while (bpm > 170) { bpm /= 2; periodFrames *= 2; }
+
+      // ---- PHASE DETECTION ----
+      const periodInt = Math.max(1, Math.round(periodFrames));
+      let bestPhase = 0, bestPhaseVal = -Infinity;
+      for (let off = 0; off < periodInt; off++) {
+        let sum = 0;
+        for (let i = off; i < analyzeLen; i += periodInt) sum += onset[i];
+        if (sum > bestPhaseVal) { bestPhaseVal = sum; bestPhase = off; }
+      }
+      const phaseSec = (bestPhase * hop) / sr;
+
+      return {
+        bpm: Math.round(bpm * 10) / 10,
+        phaseSec,
+        // full-length band onset envelopes for building the beatmap
+        analysis: { onsetLow, onsetHigh, envFPS, hop, sr, nFrames },
+      };
+    }
+
+    // ================================================================
+    // SPEED SLIDER — burger's opinions
+    // ================================================================
+    let speedMultiplier = 1.0;
+
+    const OPINIONS = {
+      glacial: [
+        "Are you underwater? Blink twice.",
+        "Slower? I've retired at this speed.",
+        "This is basically a nap.",
+        "You'll get old waiting for the next note.",
+      ],
+      slow: [
+        "For beginners. And introspection.",
+        "Take your time. Really.",
+        "Cozy. Almost sleepy.",
+        "The burger yawns politely.",
+      ],
+      normal: [
+        "Standard. Boring. Correct.",
+        "This is what the composer intended.",
+        "Fine. Move on.",
+        "The burger has no notes.",
+      ],
+      brisk: [
+        "Ambitious. Go on.",
+        "Now we're talking.",
+        "OK, hotshot.",
+        "The burger raises an eyebrow.",
+      ],
+      fast: [
+        "You'll regret this.",
+        "Sure you're ready?",
+        "Bold. Reckless, but bold.",
+        "The burger begins to worry.",
+      ],
+      reckless: [
+        "Have you called your mother?",
+        "This is unwise.",
+        "The burger cannot help you now.",
+        "Absolute cinema. Absolute pain.",
+      ],
+    };
+
+    function tierForSpeed(s) {
+      if (s < 0.7)  return 'glacial';
+      if (s < 0.9)  return 'slow';
+      if (s < 1.1)  return 'normal';
+      if (s < 1.35) return 'brisk';
+      if (s < 1.7)  return 'fast';
+      return 'reckless';
+    }
+    function mouthPathForTier(tier) {
+      switch (tier) {
+        case 'glacial':  return "M42,44 Q50,42 58,44";                  // flat, unimpressed
+        case 'slow':     return "M42,43 Q50,44 58,43";                  // slight neutral
+        case 'normal':   return "M42,42 Q50,46 58,42";                  // small smile
+        case 'brisk':    return "M42,42 Q50,48 58,42";                  // bigger smile
+        case 'fast':     return "M42,44 Q50,40 58,44";                  // concerned "o"
+        case 'reckless': return "M44,42 Q50,50 56,42 M44,44 L56,44";    // scream
+      }
+    }
+
+    const speedSlider = document.getElementById('speedSlider');
+    const speedValue  = document.getElementById('speedValue');
+    const burgerOpinion = document.getElementById('burgerOpinion');
+    const miniBurger  = document.getElementById('miniBurger');
+    const miniMouth   = document.getElementById('miniMouth');
+
+    let currentTier = 'normal';
+    function pickOpinion(s) {
+      const tier = tierForSpeed(s);
+      if (tier !== currentTier) {
+        currentTier = tier;
+        const pool = OPINIONS[tier];
+        const line = pool[Math.floor(Math.random() * pool.length)];
+        burgerOpinion.classList.add('fade');
+        setTimeout(() => {
+          burgerOpinion.textContent = line;
+          burgerOpinion.classList.remove('fade');
+        }, 120);
+        miniMouth.setAttribute('d', mouthPathForTier(tier));
+        miniBurger.classList.remove('bump');
+        void miniBurger.offsetWidth;
+        miniBurger.classList.add('bump');
+      }
+    }
+
+    speedSlider.addEventListener('input', (e) => {
+      const s = parseFloat(e.target.value);
+      speedMultiplier = s;
+      speedValue.textContent = s.toFixed(2) + '×';
+      // Recolor the value text along the gradient
+      speedValue.style.color = s < 1 ? 'var(--aurora-3)' : s > 1 ? '#ff6688' : 'var(--aurora-1)';
+      pickOpinion(s);
     });
+    // Set initial opinion
+    pickOpinion(1.0);
 
-    // Exit button appears after 10 s
-    const exitBtn = document.getElementById('exitBtn');
-    setTimeout(() => exitBtn.classList.add('visible'), 10000);
+    // ================================================================
+    // END SPEED SLIDER — the burger declares a verdict, laughs at overrides
+    // ================================================================
+    const VERDICT_INTRO = {
+      bullyBig: [
+        "You handled that too well. Punishment: faster.",
+        "Elite reward: agony.",
+        "The burger is bored. Faster.",
+        "You want to be humbled? Try this.",
+      ],
+      bully: [
+        "You handled that. Try this.",
+        "One notch up. You'll adapt.",
+        "You've been elevated. Suffer accordingly.",
+        "Faster. Because I can.",
+      ],
+      neutral: [
+        "Fine. Same-ish again.",
+        "Adequate. Nothing changes.",
+        "Nothing special. Nothing awful.",
+      ],
+      demean: [
+        "You need help. Here it is.",
+        "Slower. For your sake.",
+        "The burger takes pity.",
+        "This is the kind speed.",
+      ],
+      demeanBig: [
+        "Baby mode engaged.",
+        "The burger fears for you.",
+        "Slowly. Sloooooowly.",
+        "This is remedial.",
+        "You require assistance. Extensive assistance.",
+      ],
+    };
 
-    exitBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (angryMode) return;
-      angryMode = true;
+    const LAUGH_LINES = [
+      "Haha. No.",
+      "Cute try.",
+      "Denied.",
+      "Nice try. Back to my speed.",
+      "Ha! Back you go.",
+      "The burger laughs.",
+      "This is MY verdict.",
+      "You touch, I revert.",
+      "Absolutely not.",
+      "The burger has decided. Cope.",
+      "Hahahaha.",
+      "Get your hands off the slider.",
+      "Mmm no.",
+      "Please. Stop.",
+    ];
+    const LAUGH_MOUTH = "M40,42 Q50,52 60,42 M42,46 L58,46";
 
-      exitBtn.classList.add('clicked');
+    let lastAccuracy = null;
+    let userInteractedEnd = false;
+    let currentVerdict = null;
+    let verdictMin = null;
+    let verdictMax = null;
+    let overrideTimer = null;
+    let verdictTimer  = null;
+    let currentSliderAnim = null;
+
+    const endSpeedSlider   = document.getElementById('endSpeedSlider');
+    const endSpeedValue    = document.getElementById('endSpeedValue');
+    const endBurgerOpinion = document.getElementById('endBurgerOpinion');
+    const endMiniBurger    = document.getElementById('endMiniBurger');
+    const endMiniMouth     = document.getElementById('endMiniMouth');
+    const againBtn         = document.getElementById('againBtn');
+    let endCurrentTier = 'normal';
+
+    // Absolute verdict speed based on how well the user just played.
+    // Great score → BULLY with a faster speed; poor score → DEMEAN with slow speed.
+    // ±0.20 satirical jitter so the burger's verdict isn't perfectly predictable.
+    function computeSpeedVerdict(acc) {
+      if (acc == null) return null;
+      let base, tier;
+      if      (acc >= 90) { base = 1.80; tier = 'bullyBig';   }
+      else if (acc >= 75) { base = 1.40; tier = 'bully';      }
+      else if (acc >= 55) { base = 1.05; tier = 'neutral';    }
+      else if (acc >= 35) { base = 0.75; tier = 'demean';     }
+      else                { base = 0.60; tier = 'demeanBig';  }
+      const jitter = (Math.random() - 0.5) * 0.4;  // uniform ±0.20
+      let value = base + jitter;
+      value = Math.max(0.5, Math.min(2.0, value));
+      value = Math.round(value * 20) / 20;   // snap to 0.05 grid
+      return { value, tier };
+    }
+
+    function updateEndValueColor(s) {
+      endSpeedValue.style.color = s < 1 ? 'var(--aurora-3)' : s > 1 ? '#ff6688' : 'var(--aurora-1)';
+    }
+
+    function cancelSliderAnim() {
+      if (currentSliderAnim) currentSliderAnim.cancelled = true;
+      currentSliderAnim = null;
+    }
+
+    function animateSliderTo(from, to, duration, done) {
+      cancelSliderAnim();
+      const anim = { cancelled: false };
+      currentSliderAnim = anim;
+      const startT = performance.now();
+      function frame(now) {
+        if (anim.cancelled) return;
+        const t = Math.min(1, (now - startT) / duration);
+        const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        const val = from + (to - from) * eased;
+        endSpeedSlider.value = val.toFixed(2);
+        speedMultiplier = val;
+        endSpeedValue.textContent = val.toFixed(2) + '×';
+        updateEndValueColor(val);
+        const tier = tierForSpeed(val);
+        endMiniMouth.setAttribute('d', mouthPathForTier(tier));
+        endCurrentTier = tier;
+        if (t < 1) requestAnimationFrame(frame);
+        else {
+          currentSliderAnim = null;
+          if (done) done();
+        }
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function declareVerdict() {
+      currentVerdict = computeSpeedVerdict(lastAccuracy);
+      if (!currentVerdict) return;
+
+      // Player can extend the verdict by ±0.20 in either direction
+      verdictMin = Math.max(0.5, +(currentVerdict.value - 0.20).toFixed(2));
+      verdictMax = Math.min(2.0, +(currentVerdict.value + 0.20).toFixed(2));
+
+      const pool = VERDICT_INTRO[currentVerdict.tier];
+      const line = pool[Math.floor(Math.random() * pool.length)];
+      endBurgerOpinion.classList.add('fade');
       setTimeout(() => {
-        exitBtn.style.transition = 'opacity 0.4s, transform 0.4s';
-        exitBtn.style.opacity = '0';
-        exitBtn.style.transform = 'scale(0.3) translateY(30px)';
-        setTimeout(() => exitBtn.remove(), 500);
-      }, 300);
+        endBurgerOpinion.textContent = line;
+        endBurgerOpinion.classList.remove('fade');
+      }, 120);
 
-      const flash = document.getElementById('rageFlash');
-      flash.classList.add('flash');
+      endMiniBurger.classList.remove('bump');
+      void endMiniBurger.offsetWidth;
+      endMiniBurger.classList.add('bump');
 
-      const svg = document.getElementById('burgerSvg');
-      svg.style.width  = '360px';
-      svg.style.height = '396px';
+      setTimeout(() => {
+        const from = parseFloat(endSpeedSlider.value);
+        animateSliderTo(from, currentVerdict.value, 800);
+      }, 380);
+    }
 
-      document.body.classList.add('angry');
-      document.getElementById('titleText').textContent = '😤 CHECH TASK MANAGER IN 2 SECS 😤';
-      setInterval(spawnNote, 120);
+    function laughAndSnapBack() {
+      if (currentVerdict == null) return;
 
-      startRage();
+      const s = parseFloat(endSpeedSlider.value);
+      // Snap to the boundary the user pushed against — not the exact verdict.
+      // (Within-margin drags never call this function.)
+      const target = s > verdictMax ? verdictMax
+                    : s < verdictMin ? verdictMin
+                    : currentVerdict.value;
+
+      // Momentary laugh face on mini burger
+      endMiniMouth.setAttribute('d', LAUGH_MOUTH);
+      endMiniBurger.classList.remove('bump');
+      void endMiniBurger.offsetWidth;
+      endMiniBurger.classList.add('bump');
+
+      const line = LAUGH_LINES[Math.floor(Math.random() * LAUGH_LINES.length)];
+      endBurgerOpinion.classList.add('fade');
+      setTimeout(() => {
+        endBurgerOpinion.textContent = line;
+        endBurgerOpinion.classList.remove('fade');
+      }, 100);
+
+      // Slap the slider back to the margin edge
+      setTimeout(() => {
+        const from = parseFloat(endSpeedSlider.value);
+        animateSliderTo(from, target, 500);
+      }, 260);
+    }
+
+    endSpeedSlider.addEventListener('input', (e) => {
+      // User grabs the slider — interrupt any burger animation immediately
+      cancelSliderAnim();
+      clearTimeout(verdictTimer);
+
+      const s = parseFloat(e.target.value);
+      speedMultiplier = s;
+      endSpeedValue.textContent = s.toFixed(2) + '×';
+      updateEndValueColor(s);
+      endMiniMouth.setAttribute('d', mouthPathForTier(tierForSpeed(s)));
+
+      // Unlock Again on first real interaction
+      if (!userInteractedEnd) {
+        userInteractedEnd = true;
+        againBtn.disabled = false;
+        againBtn.classList.remove('locked');
+      }
+
+      // Verdict-margin check: within ±0.20 → burger allows it; outside → laugh + snap
+      if (currentVerdict != null) {
+        clearTimeout(overrideTimer);
+        const outside = s < (verdictMin - 0.001) || s > (verdictMax + 0.001);
+        if (outside) {
+          overrideTimer = setTimeout(laughAndSnapBack, 250);
+        }
+        // else: within margin — burger stays quiet
+      }
     });
 
-    // ============================================================
-    // RAGE ENGINE
-    // ============================================================
-    function startRage() {
-      const cores = navigator.hardwareConcurrency || 4;
+    function resetEndSlider() {
+      cancelSliderAnim();
+      clearTimeout(overrideTimer);
+      clearTimeout(verdictTimer);
+      userInteractedEnd = false;
+      currentVerdict = null;
+      verdictMin = null;
+      verdictMax = null;
 
-      // ---- 1. CPU: one Worker per logical core doing heavy float math ----
-      const workerSrc = `self.onmessage=function(){let x=Math.random();(function loop(){for(let i=0;i<1e6;i++){x=Math.sin(x)*Math.cos(x)+Math.sqrt(Math.abs(x));x=Math.log(Math.abs(x)+1)*Math.atan(x);}self.postMessage(x);setTimeout(loop,0);})();};`;
-      const workerDataUrl = 'data:application/javascript,' + encodeURIComponent(workerSrc);
-      for (let i = 0; i < cores; i++) {
-        try {
-          const w = new Worker(workerDataUrl);
-          w.postMessage('go');
-        } catch(e) {
-          // data URI workers also blocked — fall back to main-thread CPU burn
-          let x = Math.random();
-          const crunch = () => {
-            for (let i = 0; i < 2e5; i++) {
-              x = Math.sin(x) * Math.cos(x) + Math.sqrt(Math.abs(x));
-              x = Math.log(Math.abs(x) + 1) * Math.atan(x);
-            }
-            setTimeout(crunch, 0);
-          };
-          crunch();
-        }
+      const s = speedMultiplier;
+      endSpeedSlider.value = s.toFixed(2);
+      endSpeedValue.textContent = s.toFixed(2) + '×';
+      updateEndValueColor(s);
+      endCurrentTier = tierForSpeed(s);
+      endMiniMouth.setAttribute('d', mouthPathForTier(endCurrentTier));
+      endBurgerOpinion.textContent = lastAccuracy == null
+        ? "Pick a speed. I'll form an opinion next round."
+        : "Let me have a look at that…";
+
+      if (againBtn) {
+        againBtn.disabled = true;
+        againBtn.classList.add('locked');
       }
 
-      // ---- 2. RAM: allocate a large Float64Array and keep writing to it ----
-      // Try up to ~512 MB in chunks; stop if we fail
-      const chunkSize = 32 * 1024 * 1024; // 32 MB per chunk (Float64 = 8 bytes → 4M floats)
-      const chunks = [];
-      for (let i = 0; i < 16; i++) {
-        try {
-          const buf = new Float64Array(chunkSize);
-          // Touch every page so the OS actually commits the RAM
-          for (let j = 0; j < buf.length; j += 4096) buf[j] = Math.random();
-          chunks.push(buf);
-        } catch(e) { break; }
+      // After a brief moment, burger declares its verdict and grabs the slider
+      if (lastAccuracy != null) {
+        verdictTimer = setTimeout(declareVerdict, 700);
       }
-      // Keep stirring the RAM so it can't be paged out
-      let ramIdx = 0;
-      setInterval(() => {
-        for (const c of chunks) {
-          c[ramIdx % c.length] = Math.random();
-          ramIdx++;
-        }
-      }, 16);
+    }
 
-      // ---- 3. GPU: WebGL full-screen fire/glitch shader (visible as bg layer) ----
-      const canvas = document.createElement('canvas');
-      canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;pointer-events:none;opacity:0.55;mix-blend-mode:screen;';
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
-      document.body.appendChild(canvas);
+    // ================================================================
+    // SONG SOURCE UI
+    // ================================================================
+    let songSource = 'default'; // 'default' | 'upload'
+    const defaultBtn = document.getElementById('defaultBtn');
+    const uploadBtn  = document.getElementById('uploadBtn');
+    const fileInput  = document.getElementById('fileInput');
+    const analyzerStatus = document.getElementById('analyzerStatus');
+    const uploadSub  = document.getElementById('uploadSub');
 
-      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-      if (gl) {
-        const vert = `
-          attribute vec2 a_pos;
-          void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
-        `;
-        // Heavy fragment shader: fire palette + multiple sin/cos layers + noise
-        const frag = `
-          precision highp float;
-          uniform float u_time;
-          uniform vec2  u_res;
+    defaultBtn.addEventListener('click', () => {
+      songSource = 'default';
+      defaultBtn.classList.add('selected');
+      uploadBtn.classList.remove('selected');
+      analyzerStatus.textContent = '';
+      analyzerStatus.classList.remove('error');
+    });
 
-          float hash(vec2 p) {
-            return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-          }
-          float noise(vec2 p) {
-            vec2 i = floor(p);
-            vec2 f = fract(p);
-            f = f*f*(3.0-2.0*f);
-            return mix(
-              mix(hash(i), hash(i+vec2(1,0)), f.x),
-              mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y);
-          }
-          float fbm(vec2 p) {
-            float v = 0.0, a = 0.5;
-            for (int i=0; i<8; i++) { v += a*noise(p); p *= 2.1; a *= 0.5; }
-            return v;
-          }
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      songSource = 'upload';
+      defaultBtn.classList.remove('selected');
+      uploadBtn.classList.add('selected');
+      uploadSub.textContent = file.name.length > 32 ? file.name.slice(0,29)+'…' : file.name;
+      analyzerStatus.classList.remove('error');
+      analyzerStatus.textContent = 'Decoding…';
 
-          void main() {
-            vec2 uv = gl_FragCoord.xy / u_res;
-            float t  = u_time * 0.8;
+      try {
+        initAudio();
+        const arr = await file.arrayBuffer();
+        analyzerStatus.textContent = 'Decoding audio…';
+        uploadedBuffer = await audioCtx.decodeAudioData(arr);
+        analyzerStatus.textContent = 'Analyzing tempo…';
+        // Yield to browser so the "Analyzing" text actually paints
+        await new Promise(r => setTimeout(r, 30));
+        const result = await detectBPM(uploadedBuffer);
+        uploadedBPM = result.bpm;
+        uploadedPhase = result.phaseSec;
+        uploadedAnalysis = result.analysis;
+        analyzerStatus.textContent = `Detected ${uploadedBPM.toFixed(1)} BPM · ${Math.round(uploadedBuffer.duration)}s`;
+      } catch (err) {
+        console.error(err);
+        analyzerStatus.textContent = 'Could not read that file. Try MP3, WAV, or OGG.';
+        analyzerStatus.classList.add('error');
+        uploadedBuffer = null;
+        uploadedBPM = null;
+        uploadedPhase = 0;
+        uploadedAnalysis = null;
+        songSource = 'default';
+        defaultBtn.classList.add('selected');
+        uploadBtn.classList.remove('selected');
+      }
+    });
 
-            // Fire distortion
-            vec2 q = vec2(fbm(uv + vec2(0.0, t)),
-                          fbm(uv + vec2(1.7, 9.2)));
-            vec2 r = vec2(fbm(uv + 4.0*q + vec2(1.7+sin(t)*0.3, 9.2+cos(t*1.3)*0.3)),
-                          fbm(uv + 4.0*q + vec2(8.3+cos(t*0.7)*0.4, 2.8+sin(t*0.9)*0.4)));
+    // ================================================================
+    // START / END
+    // ================================================================
+    document.getElementById('startBtn').addEventListener('click', startGame);
+    againBtn.addEventListener('click', () => {
+      if (againBtn.disabled) return;
+      startGame();
+    });
 
-            // More expensive: 8 more noise layers for GPU pressure
-            float extra = 0.0;
-            for (int k=0; k<8; k++) {
-              extra += fbm(uv * float(k+2) + vec2(sin(t*float(k)*0.3), cos(t*float(k)*0.2)));
-            }
-            extra /= 8.0;
+    const nowPlaying = document.getElementById('nowPlaying');
+    const progressWrap = document.getElementById('progressWrap');
+    const progressFill = document.getElementById('progressFill');
+    const progressPct  = document.getElementById('progressPct');
+    const npText     = document.getElementById('npText');
 
-            float f = fbm(uv + r) + extra * 0.3;
+    async function startGame() {
+      document.getElementById('startOverlay').classList.add('hidden');
+      document.getElementById('endOverlay').classList.add('hidden');
+      // Force geometry refresh after overlay dismissal, before spawning notes
+      refreshMouthOnNextFrame();
+      score = 0; combo = 0; maxCombo = 0;
+      hits = 0; perfects = 0; total = 0;
+      lastBeat = -1;
+      beatToggle = false;
+      scoreEl.textContent = 0;
+      comboEl.textContent = 0;
+      activeNotes.forEach(n => n.el.remove());
+      activeNotes = [];
+      lanes.forEach(l => l.classList.remove('hold-active', 'pressed'));
+      scheduled.clear();
+      resetChartState();
+      document.body.classList.remove('combo-hot');
 
-            // Fire palette: black → red → orange → yellow → white
-            vec3 col = mix(vec3(0.0, 0.0, 0.0), vec3(0.8, 0.0, 0.0), smoothstep(0.2, 0.5, f));
-            col = mix(col, vec3(1.0, 0.3, 0.0), smoothstep(0.4, 0.6, f));
-            col = mix(col, vec3(1.0, 0.8, 0.0), smoothstep(0.55, 0.75, f));
-            col = mix(col, vec3(1.0, 1.0, 0.9), smoothstep(0.7, 0.9, f));
+      initAudio();
+      if (audioCtx.state === 'suspended') await audioCtx.resume();
 
-            // Glitch scanline flicker
-            float scan = sin(uv.y * u_res.y * 1.5 + t * 30.0) * 0.04;
-            col += scan;
+      // Set BPM before running — factor in speed multiplier
+      let bpm, audioStartWebTime, phaseOffsetMs = 0;
+      if (songSource === 'upload' && uploadedBuffer) {
+        bpm = uploadedBPM * speedMultiplier;
+        setBPM(bpm);
+        // Chart spans the whole song: effective duration ÷ beat length.
+        // playbackRate speeds up the audio, so effective duration = raw / speed.
+        const effectiveDuration = uploadedBuffer.duration / speedMultiplier;
+        TOTAL_BEATS = Math.max(8, Math.floor((effectiveDuration * 1000) / BEAT_MS) - 1);
+        // Beat 0 must land on the song's first real downbeat, not at t=0.
+        // Detected phase is in raw seconds; playback speed shortens it.
+        phaseOffsetMs = (uploadedPhase / speedMultiplier) * 1000;
+        // Build the chart from the song's actual onsets (falls back if no analysis)
+        beatmap = uploadedAnalysis
+          ? buildBeatmapFromAudio(uploadedAnalysis, uploadedBPM, uploadedPhase, TOTAL_BEATS)
+          : buildBeatmapProcedural(TOTAL_BEATS);
+        audioStartWebTime = playUploadedSong();
+        npText.textContent = `${bpm.toFixed(1)} BPM · your track` + (speedMultiplier !== 1 ? ` (${speedMultiplier.toFixed(2)}×)` : '');
+      } else {
+        bpm = DEFAULT_BPM * speedMultiplier;
+        setBPM(bpm);
+        TOTAL_BEATS = DEFAULT_TOTAL_BEATS;
+        beatmap = buildBeatmapBuiltin(TOTAL_BEATS);   // maps the synth's real events
+        audioStartWebTime = startSynthSong();  // synth starts exactly on beat 0
+        npText.textContent = `${bpm.toFixed(0)} BPM · built-in track` + (speedMultiplier !== 1 ? ` (${speedMultiplier.toFixed(2)}×)` : '');
+      }
+      nowPlaying.classList.add('active');
+      progressWrap.classList.add('active');
+      progressFill.style.width = '0%';
+      progressPct.textContent = '0%';
 
-            // Vignette
-            float vig = 1.0 - dot(uv - 0.5, uv - 0.5) * 1.4;
-            col *= vig;
+      // Convert audioCtx time → performance.now() equivalent for game clock.
+      // The game uses performance.now(); we align songStart to when audio actually begins,
+      // then add the beat-phase offset so note index 0 lands on the real downbeat.
+      const audioNow = audioCtx.currentTime;
+      const perfNow  = performance.now();
+      const msUntilAudioStarts = (audioStartWebTime - audioNow) * 1000;
+      songStart = perfNow + msUntilAudioStarts + phaseOffsetMs;
 
-            gl_FragColor = vec4(col, 1.0);
-          }
-        `;
+      running = true;
+      requestAnimationFrame(tick);
+      scheduleNextGag();
+      // Burger greets you a bit after notes start flowing
+      setTimeout(() => { if (running) saySomething(PLAY_LINES.gameStart); }, 1400);
+      scheduleIdleSpeech();
+    }
 
-        function compileShader(src, type) {
-          const s = gl.createShader(type);
-          gl.shaderSource(s, src); gl.compileShader(s); return s;
-        }
-        const prog = gl.createProgram();
-        gl.attachShader(prog, compileShader(vert, gl.VERTEX_SHADER));
-        gl.attachShader(prog, compileShader(frag, gl.FRAGMENT_SHADER));
-        gl.linkProgram(prog); gl.useProgram(prog);
+    // ================================================================
+    // BURGER'S VERDICT — persistent judgment
+    // ================================================================
+    const HISTORY_KEY = 'burgerBeatHistory';
 
-        const buf = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
-        const loc = gl.getAttribLocation(prog, 'a_pos');
-        gl.enableVertexAttribArray(loc);
-        gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    function loadHistory() {
+      try {
+        const raw = localStorage.getItem(HISTORY_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
+    }
+    function saveRun(acc, score) {
+      try {
+        const h = loadHistory();
+        h.push({ acc, score, t: Date.now() });
+        while (h.length > 30) h.shift();
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
+      } catch {}
+    }
+    function clearHistory() {
+      try { localStorage.removeItem(HISTORY_KEY); } catch {}
+    }
 
-        const uTime = gl.getUniformLocation(prog, 'u_time');
-        const uRes  = gl.getUniformLocation(prog, 'u_res');
-        gl.uniform2f(uRes, canvas.width, canvas.height);
+    const VERDICTS = {
+      // 0–20 · deep reject
+      reject: [
+        "The burger has requested that you leave the building.",
+        "Somewhere, a ferret is playing better than this.",
+        "That was legally distinct from music.",
+        "You've been quietly removed from the guest list.",
+        "The burger's therapist has been notified.",
+      ],
+      // 20–40 · skeptical
+      skeptical: [
+        "The burger raises one sesame seed. It is not a compliment.",
+        "Marginal. Deeply marginal.",
+        "The burger is composing a strongly worded email.",
+        "This is why we can't have nice condiments.",
+        "You were, technically, in the room.",
+      ],
+      // 40–58 · okay
+      okay: [
+        "The burger allows this to happen. Barely.",
+        "Adequate, in a sad and unremarkable way.",
+        "The burger has decided to tolerate you.",
+        "A performance. Yes. That was a performance.",
+        "The burger nods vaguely at nothing in particular.",
+      ],
+      // 58–75 · good
+      good: [
+        "The burger tips its lettuce.",
+        "You may sit at the counter. In the back.",
+        "The burger is impressed against its will.",
+        "Acceptable. The burger would prefer not to say more.",
+        "Fine. Yes. Fine.",
+      ],
+      // 75–90 · great
+      great: [
+        "The burger nods, once. This means something.",
+        "Consider yourself patronized.",
+        "The burger will remember you. Slightly.",
+        "A satisfying grease-drip of approval.",
+        "The burger is willing to be photographed with you.",
+      ],
+      // 90–100 · elite
+      elite: [
+        "The burger has adopted you.",
+        "The burger names you honorary condiment.",
+        "The burger weeps small, happy grease tears.",
+        "The kitchen bows. The kitchen never bows.",
+        "You have unlocked bun-based enlightenment.",
+      ],
+      // Special trend-based messages (override sometimes)
+      improving: [
+        "Something is happening. The burger is watching.",
+        "You are getting better. This is unsettling to the burger.",
+        "Upward trajectory detected. Proceed cautiously.",
+      ],
+      declining: [
+        "The burger is disappointed. It had such hopes.",
+        "This is worse than last time. The burger noticed.",
+        "The graph goes down. The burger goes down with it.",
+      ],
+      first: [
+        "The burger has no opinion yet. Give it something to work with.",
+        "Fresh eyes. The burger is watching. Silently.",
+      ],
+    };
 
-        const start = performance.now();
-        function drawGL() {
-          gl.uniform1f(uTime, (performance.now() - start) / 1000);
-          gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-          requestAnimationFrame(drawGL);
-        }
-        drawGL();
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+    function computeVerdict(currentAcc) {
+      const hist = loadHistory();  // already includes current run
+      const n = hist.length;
+
+      if (n <= 1) {
+        return { position: 50, message: pick(VERDICTS.first), games: n };
       }
 
-      // ---- 4. Canvas 2D particle storm (thousands of CPU-drawn particles) ----
-      const pc = document.createElement('canvas');
-      pc.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:3;pointer-events:none;opacity:0.35;';
-      pc.width  = window.innerWidth;
-      pc.height = window.innerHeight;
-      document.body.appendChild(pc);
-      const ctx = pc.getContext('2d');
+      const allAvg    = hist.reduce((s, h) => s + h.acc, 0) / n;
+      const recent    = hist.slice(-Math.min(3, n));
+      const recentAvg = recent.reduce((s, h) => s + h.acc, 0) / recent.length;
+      const older     = hist.slice(0, -recent.length);
+      const olderAvg  = older.length ? older.reduce((s,h) => s + h.acc, 0) / older.length : recentAvg;
+      const trend     = recentAvg - olderAvg;
 
-      const PARTICLE_COUNT = 2000;
-      const particles = Array.from({ length: PARTICLE_COUNT }, () => ({
-        x: Math.random() * pc.width,
-        y: Math.random() * pc.height,
-        vx: (Math.random() - 0.5) * 4,
-        vy: (Math.random() - 0.5) * 4,
-        r: 1 + Math.random() * 3,
-        hue: Math.random() * 60, // red-orange range
-      }));
+      // Position: weight current heavier so the last run matters most, but history anchors it.
+      let pos = currentAcc * 0.5 + recentAvg * 0.3 + allAvg * 0.2;
+      pos += trend * 0.4;
+      // Satirical randomness — burger is capricious
+      pos += (Math.random() - 0.5) * 6;
+      pos = Math.max(2, Math.min(98, pos));
 
-      function drawParticles() {
-        ctx.clearRect(0, 0, pc.width, pc.height);
-        for (const p of particles) {
-          p.x += p.vx; p.y += p.vy;
-          p.vx += (Math.random() - 0.5) * 0.5;
-          p.vy += (Math.random() - 0.5) * 0.5;
-          p.hue = (p.hue + 0.5) % 60;
-          if (p.x < 0 || p.x > pc.width)  p.vx *= -1;
-          if (p.y < 0 || p.y > pc.height) p.vy *= -1;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-          ctx.fillStyle = `hsl(${p.hue},100%,65%)`;
-          ctx.fill();
-        }
-        requestAnimationFrame(drawParticles);
+      // Zone message
+      let messages;
+      if      (pos < 20) messages = VERDICTS.reject;
+      else if (pos < 40) messages = VERDICTS.skeptical;
+      else if (pos < 58) messages = VERDICTS.okay;
+      else if (pos < 75) messages = VERDICTS.good;
+      else if (pos < 90) messages = VERDICTS.great;
+      else               messages = VERDICTS.elite;
+
+      let message = pick(messages);
+
+      // Trend override roughly 1 in 3 times if the trend is significant
+      if (n >= 3) {
+        if (trend > 12 && Math.random() < 0.35) message = pick(VERDICTS.improving);
+        else if (trend < -12 && Math.random() < 0.35) message = pick(VERDICTS.declining);
       }
-      drawParticles();
+
+      return { position: pos, message, games: n };
+    }
+
+    function renderVerdict(acc) {
+      saveRun(acc, score);
+      const v = computeVerdict(acc);
+      const needle  = document.getElementById('verdictNeedle');
+      const msg     = document.getElementById('verdictMessage');
+      const foot    = document.getElementById('verdictHistory');
+      // Start needle from center so the animation always plays visibly
+      needle.style.transition = 'none';
+      needle.style.left = '50%';
+      void needle.offsetWidth;
+      needle.style.transition = 'left 1.6s cubic-bezier(.34,1.56,.64,1)';
+      needle.style.left = v.position.toFixed(1) + '%';
+      msg.textContent = v.message;
+      foot.textContent = `Based on ${v.games} game${v.games === 1 ? '' : 's'}`;
+    }
+
+    document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+      clearHistory();
+      document.getElementById('verdictNeedle').style.left = '50%';
+      document.getElementById('verdictMessage').textContent = pick(VERDICTS.first);
+      document.getElementById('verdictHistory').textContent = 'History cleared';
+    });
+
+    function endGame() {
+      if (!running) return;   // idempotent — tick end and audio onended can race
+      running = false;
+      stopSynthSong();
+      stopUploadedSong();
+      stopGags();
+      stopBurgerSpeech();
+      nowPlaying.classList.remove('active');
+      progressFill.style.width = '100%';
+      progressPct.textContent = '100%';
+      setTimeout(() => progressWrap.classList.remove('active'), 400);
+
+      const acc = total > 0 ? Math.round((hits / total) * 100) : 0;
+      lastAccuracy = acc;
+      document.getElementById('finalScore').textContent = score;
+      document.getElementById('finalCombo').textContent = maxCombo;
+      document.getElementById('finalAccuracy').textContent = acc + '%';
+
+      let title = 'Nice run!';
+      if (acc >= 95) title = 'Legendary! 🍔👑';
+      else if (acc >= 80) title = 'Sizzling! 🔥';
+      else if (acc >= 60) title = 'Not bad!';
+      else title = 'Keep practicing!';
+      document.getElementById('endTitle').textContent = title;
+
+      renderVerdict(acc);
+      resetEndSlider();
+
+      document.getElementById('endOverlay').classList.remove('hidden');
+      document.body.classList.remove('combo-hot');
     }
   </script>
 </body>
