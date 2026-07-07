@@ -1933,109 +1933,54 @@
     const KEYS = ['D','F','J','K'];
 
     // ================================================================
-    // CHART GENERATOR — the pattern evolves as the song progresses.
-    // Notes per beat scale from sparse (intro) to dense (climax), with
-    // section-specific flavors: rolls, chord stabs, syncopation, etc.
-    // Deterministic per beat (seeded) so a given song always plays the same.
+    // CHART — beat-locked (one row per beat), but with light variety:
+    //  • which lane a note lands in is randomized (seeded, stable per song)
+    //  • chords ramp in gradually as the song progresses
+    // Still calm: at most one note early on, occasional 2-note chords later.
     // ================================================================
 
-    // Small seeded RNG so the generated chart is stable across the song
+    // Seeded RNG so a given song always generates the same chart
     function beatRng(seed) {
       let x = (seed * 1103515245 + 12345) & 0x7fffffff;
       x ^= x << 13; x ^= x >> 17; x ^= x << 5;
       return ((x & 0x7fffffff) / 0x7fffffff);
     }
 
-    // The four base "riffs" — reused and layered by the generator
-    const RIFF_BASE = [ [0], [], [2], [], [1], [], [3], [] ];       // steady alternating
-    const RIFF_ROLL = [ [0], [1], [2], [3], [3], [2], [1], [0] ];   // ascending/descending roll
-    const RIFF_SYNC = [ [0], [], [], [2], [1], [], [], [3] ];       // syncopated / off-beat
-    const RIFF_STAB = [ [0,3], [], [], [], [1,2], [], [], [] ];     // chord stabs
+    // Rest pattern stays fixed & musical (note on beats 1,3,5,6,8... roughly),
+    // so it breathes instead of hitting every single beat.
+    const REST_PATTERN = [
+      true,  false, true,  false,   // beats 1-4
+      true,  false, true,  true,    // 5-8
+      true,  false, true,  false,   // 9-12
+      true,  false, true,  false,   // 13-16
+    ];
 
-    // Returns array of lane indices to spawn on a given absolute beat.
-    // `progress` (0..1) drives intensity; higher = busier.
-    // Hold-blocking state — a lane is occupied by a hold's tail until laneBlockedUntil[lane]
-    let laneBlockedUntil = [0, 0, 0, 0];
-    let holdCooldownUntil = 0;   // no new hold before this beat (keeps them spaced)
+    let lastLane = -1;   // avoid repeating the same lane twice in a row
 
-    function resetChartState() {
-      laneBlockedUntil = [0, 0, 0, 0];
-      holdCooldownUntil = 0;
-    }
+    function resetChartState() { lastLane = -1; }
 
-    // Returns { notes: [laneIdx...], hold: {lane, lenBeats} | null }
-    // NOTE: must be called for beats strictly in increasing order (scheduler guarantees this).
+    // progress (0..1) drives how often a chord (2nd note) appears.
     function generateBeat(beat, progress) {
-      const bar16 = beat % 16;
-      const phrase = Math.floor(beat / 16);
-      const r = beatRng(beat + 7);
+      const idx = beat % REST_PATTERN.length;
+      if (!REST_PATTERN[idx]) return { notes: [], hold: null };
 
-      const phraseWave = 0.5 + 0.5 * Math.sin(phrase * 0.9);
-      const intensity = Math.min(1, progress * 0.75 + phraseWave * 0.25);
+      // --- random primary lane (seeded), never the same lane twice running ---
+      let lane = Math.floor(beatRng(beat * 2 + 1) * 4);
+      if (lane === lastLane) lane = (lane + 1 + Math.floor(beatRng(beat * 3 + 5) * 3)) % 4;
+      lastLane = lane;
+      const notes = [lane];
 
-      // ---- HOLD DECISION (checked first so it can claim the beat/lane) ----
-      // Holds start at phrase boundaries, get more likely mid/late song, and are
-      // spaced out by a cooldown. Only one hold at a time.
-      const anyLaneBlocked = laneBlockedUntil.some(u => beat < u);
-      let hold = null;
-      if (!anyLaneBlocked && beat >= holdCooldownUntil && bar16 === 8 &&
-          progress > 0.18 && progress < 0.94) {
-        // probability climbs with intensity
-        if (beatRng(beat * 13 + 9) < 0.35 + intensity * 0.35) {
-          const holdLane = Math.floor(beatRng(beat * 17 + 5) * 4);
-          const lenBeats = 2 + Math.floor(beatRng(beat * 19 + 6) * (intensity > 0.6 ? 3 : 2)); // 2–4
-          hold = { lane: holdLane, lenBeats };
-          laneBlockedUntil[holdLane] = beat + lenBeats;   // block that lane for the tail
-          holdCooldownUntil = beat + lenBeats + 6;        // breather after a hold
-          // A hold beat is just the hold — no simultaneous tap in other lanes,
-          // so the sustain reads cleanly.
-          return { notes: [], hold };
-        }
+      // --- gradual chord ramp: chance grows from 0 → ~55% across the song ---
+      const chordChance = Math.max(0, (progress - 0.15)) * 0.65;
+      if (beatRng(beat * 7 + 11) < chordChance) {
+        let extra = Math.floor(beatRng(beat * 5 + 3) * 4);
+        if (extra === lane) extra = (extra + 1) % 4;   // must be a different lane
+        notes.push(extra);
       }
 
-      // ---- REGULAR NOTES ----
-      let riff;
-      const flavorPick = (phrase + Math.floor(intensity * 3)) % 4;
-      if      (flavorPick === 0) riff = RIFF_BASE;
-      else if (flavorPick === 1) riff = RIFF_SYNC;
-      else if (flavorPick === 2) riff = RIFF_STAB;
-      else                        riff = RIFF_ROLL;
-
-      let lanes = (riff[bar16 % 8] || []).slice();
-
-      // Density layering
-      if (lanes.length === 0) {
-        if (r < intensity * 0.55) lanes = [Math.floor(beatRng(beat * 3 + 1) * 4)];
-      } else {
-        // MORE CHORDS as we ramp: chord chance grows steeply with intensity,
-        // and at peak intensity a third stab can sneak in (still capped to 2 playable).
-        const chordChance = intensity > 0.4 ? (intensity - 0.4) * 1.15 : 0;
-        if (r < chordChance) {
-          let extra = Math.floor(beatRng(beat * 5 + 2) * 4);
-          if (!lanes.includes(extra)) lanes.push(extra);
-        }
-      }
-
-      // Phrase-end flourish
-      if (bar16 === 15 && intensity > 0.4) {
-        const fillLane = Math.floor(beatRng(beat * 7 + 3) * 4);
-        if (!lanes.includes(fillLane)) lanes.push(fillLane);
-      }
-
-      // Climax rolls
-      if (progress > 0.82) {
-        const rollLane = (beat % 4);
-        if (!lanes.includes(rollLane) && beatRng(beat * 11 + 4) < 0.5) lanes.push(rollLane);
-      }
-
-      // Remove any lane currently blocked by an active hold's tail
-      lanes = lanes.filter(l => beat >= laneBlockedUntil[l]);
-
-      // Cap at 2 simultaneous
-      if (lanes.length > 2) lanes = lanes.slice(0, 2);
-      return { notes: lanes, hold: null };
+      return { notes, hold: null };
     }
-    const DEFAULT_TOTAL_BEATS = 160; // ~75s built-in — long enough for the full intensity ramp
+    const DEFAULT_TOTAL_BEATS = 128; // built-in length (~64s at 128 BPM)
     let TOTAL_BEATS = DEFAULT_TOTAL_BEATS;  // recomputed per-song at start
 
     // ================================================================
@@ -3783,17 +3728,15 @@
         // Beat 0 must land on the song's first real downbeat, not at t=0.
         // Detected phase is in raw seconds; playback speed shortens it.
         phaseOffsetMs = (uploadedPhase / speedMultiplier) * 1000;
-        // Build the chart from the song's actual onsets (falls back if no analysis)
-        beatmap = uploadedAnalysis
-          ? buildBeatmapFromAudio(uploadedAnalysis, uploadedBPM, uploadedPhase, TOTAL_BEATS)
-          : buildBeatmapProcedural(TOTAL_BEATS);
+        // Beat-locked chart: notes land on the beat, not on the song's every onset.
+        beatmap = buildBeatmapProcedural(TOTAL_BEATS);
         audioStartWebTime = playUploadedSong();
         npText.textContent = `${bpm.toFixed(1)} BPM · your track` + (speedMultiplier !== 1 ? ` (${speedMultiplier.toFixed(2)}×)` : '');
       } else {
         bpm = DEFAULT_BPM * speedMultiplier;
         setBPM(bpm);
         TOTAL_BEATS = DEFAULT_TOTAL_BEATS;
-        beatmap = buildBeatmapBuiltin(TOTAL_BEATS);   // maps the synth's real events
+        beatmap = buildBeatmapProcedural(TOTAL_BEATS);   // beat-locked pattern
         audioStartWebTime = startSynthSong();  // synth starts exactly on beat 0
         npText.textContent = `${bpm.toFixed(0)} BPM · built-in track` + (speedMultiplier !== 1 ? ` (${speedMultiplier.toFixed(2)}×)` : '');
       }

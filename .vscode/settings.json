@@ -1,5 +1,10 @@
 {
-    "python.terminal.activateEnvironment": false,
-    "editor.autoSurround": "never",
-    "editor.autoClosingBrackets": "never"
+  "editor.autoClosingBrackets": "never",
+  "editor.autoClosingQuotes": "never",
+  "editor.autoSurround": "never",
+  "editor.autoIndent": "none",
+  "editor.formatOnType": false,
+  "editor.suggestOnTriggerCharacters": false,
+  "editor.acceptSuggestionOnEnter": "off",
+  "editor.tabCompletion": "off"
 }
