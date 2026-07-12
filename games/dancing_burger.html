@@ -5,7 +5,7 @@
 <title>Burger Beat — Mountain Peak</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Orbitron:wght@700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:ital,wght@0,400;0,600;0,700;0,800;1,600;1,700&family=Caveat:wght@500;600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
 <style>
   :root {
     --beat: 500ms;
@@ -39,9 +39,7 @@
     cursor: crosshair;
   }
 
-  /* ==================================================================
-     STARS
-     ================================================================== */
+  /* stars */
   .stars { position:fixed; inset:0; z-index:1; pointer-events:none; }
   .star {
     position:absolute;
@@ -69,9 +67,7 @@
     100% { opacity:0; }
   }
 
-  /* ==================================================================
-     MOON
-     ================================================================== */
+  /* moon */
   .moon {
     position:fixed;
     top: 8%; right: 12%;
@@ -99,9 +95,7 @@
     to   { box-shadow: 0 0 60px rgba(255,248,220,0.7), 0 0 150px rgba(255,248,220,0.4),  inset -12px -12px 30px rgba(80,60,30,0.4); }
   }
 
-  /* ==================================================================
-     AURORA — layered ribbons behind mountains
-     ================================================================== */
+  /* aurora — layered ribbons behind */
   .aurora {
     position:fixed;
     top: 15%; left: 0; right: 0;
@@ -143,9 +137,7 @@
   }
   body.combo-hot .aurora { opacity: 0.85; filter: blur(12px); }
 
-  /* ==================================================================
-     MOUNTAINS
-     ================================================================== */
+  /* mountains */
   .mountains {
     position:fixed;
     bottom: 0; left: 0; right: 0;
@@ -236,9 +228,7 @@
     clip-path: polygon(20% 0, 40% 100%, 55% 20%, 75% 100%, 90% 0, 100% 30%, 100% 0, 0 0, 0 30%);
   }
 
-  /* ==================================================================
-     FOG at base of mountains
-     ================================================================== */
+  /* fog at base of mountains */
   .fog {
     position:fixed;
     bottom: 0; left: 0; right: 0;
@@ -248,9 +238,7 @@
     pointer-events:none;
   }
 
-  /* ==================================================================
-     BURGER — back on the mountain peak
-     ================================================================== */
+  /* burger — back on the */
   .stage {
     position:fixed;
     left: 50%; bottom: 40vh;
@@ -269,7 +257,7 @@
     filter: drop-shadow(0 8px 16px rgba(0,0,0,0.7));
     will-change: transform;
   }
-  /* Beat pulses — one-shot per beat, alternate left/right lean */
+  /* beat pulses — one-shot per beat, */
   .burger-wrap.beat-a { animation: beatPulseL 0.42s cubic-bezier(.34,1.56,.64,1); }
   .burger-wrap.beat-b { animation: beatPulseR 0.42s cubic-bezier(.34,1.56,.64,1); }
   @keyframes beatPulseL {
@@ -342,7 +330,7 @@
     25%  { opacity: 1;   transform: translate(-50%, -50%) scale(1.3); }
     100% { opacity: 0;   transform: translate(-50%, -50%) scale(3.2); }
   }
-  /* Smoke ring behind the flash — signals "just launched from mouth" */
+  /* smoke ring behind the flash — */
   .mouth-ring {
     position: fixed;
     width: 50px; height: 50px;
@@ -358,7 +346,7 @@
     100% { opacity: 0;   transform: translate(-50%, -50%) scale(3.5); border-width: 0.5px; }
   }
 
-  /* Articulated limbs — shoulders/hips/knees/elbows */
+  /* articulated limbs — shoulders/hips/knees/elbows */
   .arm-left       { transform-origin: 66px 100px;  }
   .arm-right      { transform-origin: 134px 100px; }
   .forearm-left   { transform-origin: 42px 100px;  }
@@ -447,9 +435,7 @@
     to   { transform: translateY(-3px) rotate(-10deg); }
   }
 
-  /* ==================================================================
-     WTF FACTOR — random burger gags mid-song
-     ================================================================== */
+  /* wtf factor — random burger */
   .burger-wrap.gag-flip     { animation: gagFlip     1.4s ease-in-out !important; }
   .burger-wrap.gag-moonwalk { animation: gagMoonwalk 1.6s ease-in-out !important; }
   .burger-wrap.gag-vibrate  { animation: gagVibrate  0.06s linear     infinite !important; }
@@ -489,77 +475,9 @@
     100% { transform: rotate(720deg) scale(1); }
   }
 
-  /* Gag overlays — extras layered on top of the burger */
-  .gag-item {
-    position: absolute;
-    pointer-events: none;
-    z-index: 18;
-  }
-  .gag-sunglasses {
-    top: 32%; left: 50%;
-    width: 120px;
-    transform: translateX(-50%);
-    animation: gagPop 0.35s cubic-bezier(.34,1.56,.64,1);
-  }
-  .gag-mustache {
-    top: 44%; left: 50%;
-    width: 90px;
-    transform: translateX(-50%);
-    animation: gagPop 0.35s cubic-bezier(.34,1.56,.64,1);
-  }
-  .gag-halo {
-    top: -30px; left: 50%;
-    width: 130px; height: 40px;
-    transform: translateX(-50%);
-    border: 6px solid #ffd94a;
-    border-radius: 50%;
-    box-shadow: 0 0 24px #ffd94a, inset 0 0 12px #ffd94a;
-    background: transparent;
-    animation: gagHalo 2s linear infinite;
-  }
-  .gag-scream {
-    top: -40px; left: 50%;
-    transform: translateX(-50%);
-    color: #ff3355;
-    font-family: 'Impact', 'Arial Black', sans-serif;
-    font-size: 1.8rem;
-    font-weight: 900;
-    letter-spacing: 0.05em;
-    text-shadow: 0 0 8px #ffcc00, 2px 2px 0 #000;
-    white-space: nowrap;
-    animation: gagScreamShake 0.09s ease-in-out infinite alternate;
-  }
-  .gag-question {
-    top: -50px; left: 50%;
-    transform: translateX(-50%);
-    font-family: 'Georgia', serif;
-    font-style: italic;
-    color: white;
-    font-size: 1.4rem;
-    text-shadow: 0 0 12px rgba(255,255,255,0.6);
-    white-space: nowrap;
-    animation: gagFadeIn 0.3s ease-out;
-  }
-  @keyframes gagPop {
-    from { opacity: 0; transform: translateX(-50%) scale(0); }
-    to   { opacity: 1; transform: translateX(-50%) scale(1); }
-  }
-  @keyframes gagHalo {
-    from { transform: translateX(-50%) rotateY(0);   }
-    to   { transform: translateX(-50%) rotateY(360deg); }
-  }
-  @keyframes gagScreamShake {
-    from { transform: translateX(-50%) rotate(-3deg) scale(1); }
-    to   { transform: translateX(-50%) rotate(3deg)  scale(1.05); }
-  }
-  @keyframes gagFadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
+  /* (accessory overlays removed — burger wears */
 
-  /* ==================================================================
-     BURGER TALKS DURING PLAY
-     ================================================================== */
+  /* burger talks during play */
   .play-speech {
     position: fixed;
     bottom: 42vh;
@@ -603,7 +521,7 @@
   body.face-state-angry .hand-normal { display: none; }
   body.face-state-angry .hand-finger { display: block; }
 
-  /* Arms raise up during miss so the fingers actually point at the sky */
+  /* arms raise up during miss so */
   body.face-state-angry .arm-left  { animation: armRaiseL 0.6s ease-out forwards; }
   body.face-state-angry .arm-right { animation: armRaiseR 0.6s ease-out forwards; }
   @keyframes armRaiseL {
@@ -617,9 +535,7 @@
     100% { transform: rotate(55deg); }
   }
 
-  /* ==================================================================
-     HUD — angular stat plates
-     ================================================================== */
+  /* hud — angular stat plates */
   .hud {
     position:fixed;
     top: 18px;
@@ -639,7 +555,7 @@
     clip-path: var(--clip-tag);
     box-shadow: 0 4px 24px rgba(0,0,0,0.45);
   }
-  /* neon edge drawn via a pseudo underlay so the clip corners glow */
+  /* neon edge drawn via a pseudo */
   .hud-panel::before {
     content: '';
     position: absolute; inset: 0;
@@ -682,9 +598,7 @@
     100% { transform: scale(1); }
   }
 
-  /* ==================================================================
-     LANES
-     ================================================================== */
+  /* lanes */
   .lanes {
     position:fixed;
     top:0; left:50%;
@@ -777,7 +691,7 @@
     background: linear-gradient(to bottom, rgba(255,255,255,0.34), rgba(255,255,255,0.12));
   }
 
-  /* Falling notes = burger ingredients, angled toward camera */
+  /* falling notes = burger ingredients, angled */
   .note {
     position:absolute;
     left: 8px; right: 8px;
@@ -796,8 +710,7 @@
   .note[data-color="2"] { color: #ff6666; }  /* tomato  glow */
   .note[data-color="3"] { color: #b26a3a; }  /* patty   glow */
 
-  /* HOLD notes — a long flowing ribbon (Magic Tiles style) that streams down
-     the lane; you hold the key while it passes through the hit line. */
+  /* hold notes — a long flowing */
   .note.hold-note {
     top: 0; height: 0;
     left: 0; right: 0;
@@ -857,7 +770,7 @@
   }
   .hold-ribbon.holding .flow { animation-duration: 0.35s; }
   .hold-ribbon.holding .ribbon-fill { opacity: 0.8; }
-  /* hit zone glows and pulses while a hold streams into it */
+  /* hit zone glows and pulses while */
   .lane.hold-active .hit-zone {
     background: linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.2));
     box-shadow: 0 0 40px #fff, inset 0 0 20px rgba(255,255,255,0.5);
@@ -909,9 +822,7 @@
     to   { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.3); opacity:0; }
   }
 
-  /* ==================================================================
-     START SCREEN
-     ================================================================== */
+  /* start screen */
   .overlay {
     position:fixed;
     inset:0;
@@ -924,14 +835,16 @@
     display:flex;
     flex-direction: column;
     align-items:center;
-    justify-content:center;
+    justify-content: safe center;   /* "safe" = don't clip top/bottom when content is taller than the screen */
     text-align:center;
-    padding: 40px;
+    padding: 28px 40px;
+    overflow-y: auto;               /* tall end screen (stats+verdict+picker+button) can scroll instead of hiding the button */
     transition: opacity 0.5s;
   }
   .overlay.hidden {
     opacity:0;
     pointer-events:none;
+    display:none;   /* was only opacity:0 — its full-screen backdrop-blur kept rendering every frame during play */
   }
   /* small eyebrow above the title */
   .overlay .eyebrow {
@@ -1074,9 +987,7 @@
   #finalCombo   { color: var(--aurora-4); }
   #finalAccuracy{ color: var(--aurora-3); }
 
-  /* ==================================================================
-     BURGER'S VERDICT — persistent judgment gauge
-     ================================================================== */
+  /* burger's verdict — persistent judgment */
   .verdict {
     position: relative;
     width: 100%;
@@ -1170,9 +1081,7 @@
   }
   .verdict-footer button:hover { color: #ff8899; }
 
-  /* ==================================================================
-     SONG PICKER
-     ================================================================== */
+  /* song picker */
   .song-picker {
     display:flex; gap:14px;
     margin-bottom: 20px;
@@ -1376,9 +1285,7 @@
     to   { transform: scaleY(1); }
   }
 
-  /* ==================================================================
-     GEOMETRY DASH STYLE PROGRESS BAR
-     ================================================================== */
+  /* geometry dash style progress bar */
   .progress-wrap {
     position: fixed;
     top: 60px; left: 50%;
@@ -1444,10 +1351,261 @@
 
   /* now-playing text uses the UI font */
   #npText { font-family: var(--ui); font-weight: 600; }
+
+  /* hand-made pass */
+  :root {
+    /* hand-drawn type — resolved at every */
+    --display: 'Shantell Sans', 'Comic Sans MS', cursive;
+    --ui:      'Shantell Sans', 'Comic Sans MS', cursive;
+    --hand:    'Caveat', 'Shantell Sans', cursive;
+    /* paper + pen */
+    --paper:   #f6eccf;
+    --paper-2: #fff6dd;
+    --pen:     #2c2114;
+    /* felt-tip accents (swapped in for the */
+    --mk-red:    #d34a2c;
+    --mk-green:  #3f9d3a;
+    --mk-yellow: #eeab21;
+    --mk-grape:  #7a54a3;
+  }
+
+  body { font-family: var(--ui); }
+
+  /* the rough filter is what makes */
+  /* rough boil filter is too heavy to run every frame on moving stuff.
+     ink outlines already sell the hand-drawn look, so drop it here.
+     mini burgers keep it — they only show on the static overlays. */
+  /* no drop-shadow filter on the burger — it re-rasterized every beat-pulse frame.
+     the .shadow ground ellipse already grounds it. */
+  .burger-wrap { filter: none; }
+  .mini-burger { filter: url(#rough) drop-shadow(0 4px 8px rgba(0,0,0,0.4)); }
+
+  /* paper tooth over the whole screen */
+  .grain {
+    position: fixed; inset: 0; z-index: 200; pointer-events: none;
+    /* plain overlay — mix-blend-mode forced a full-screen re-composite every frame */
+    opacity: 0.05; mix-blend-mode: normal;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 140px 140px;
+  }
+
+  /* cream paper panels with wobbly ink */
+  .hud-panel, .stat-block, .speed-block, .verdict {
+    background: var(--paper);
+    color: var(--pen);
+    clip-path: none;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    border: 2.5px solid var(--pen);
+    border-radius: 20px 12px 22px 10px / 12px 22px 10px 20px;
+    box-shadow: 3px 3px 0 rgba(44,33,20,0.4);
+  }
+  .hud-panel::before, .stat-block::before,
+  .speed-block::before, .verdict::before { display: none; }
+  .hud-panel { transform: rotate(-1.2deg); }
+  .hud-panel.right { transform: rotate(1.2deg); }
+  .verdict { transform: rotate(-0.5deg); }
+  .stat-block:nth-child(2) { transform: rotate(1deg); }
+
+  /* labels + values on paper (were */
+  .hud-label, .stat-block .lbl, .speed-label, .verdict-label {
+    color: #8a744a; text-transform: none; letter-spacing: 0.04em;
+    font-family: var(--hand); font-size: 0.95rem;
+  }
+  .hud-value, .stat-block .val, .speed-value {
+    text-shadow: 1px 1px 0 rgba(44,33,20,0.18);
+  }
+  #score, #finalScore   { color: var(--mk-green); }
+  #combo, #finalCombo   { color: var(--mk-red); }
+  #finalAccuracy        { color: var(--mk-grape); }
+
+  /* title: felt-tip, no gradient-text, no pulsing */
+  .overlay { backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+  .overlay .eyebrow {
+    font-family: var(--hand); text-transform: none;
+    letter-spacing: 0.01em; text-indent: 0; font-size: 1.15rem;
+    color: #f2c877; opacity: 0.92;
+  }
+  .overlay h1 {
+    background: none; -webkit-background-clip: border-box; background-clip: border-box;
+    color: #ffe6a8; -webkit-text-fill-color: #ffe6a8;
+    filter: none; animation: none;
+    text-shadow: 3px 3px 0 #2c2114, -2px -2px 0 var(--mk-red), 5px 5px 0 rgba(0,0,0,0.25);
+    transform: rotate(-1.6deg);
+  }
+  .overlay p { font-family: var(--ui); }
+
+  /* buttons: cream/mustard sticker, hand-cut corners */
+  .start-btn {
+    background: var(--mk-yellow); color: #2c2114;
+    border: 2.5px solid var(--pen); clip-path: none;
+    border-radius: 16px 22px 14px 20px / 20px 14px 22px 16px;
+    box-shadow: 3px 3px 0 var(--pen);
+    text-shadow: none; text-transform: none; letter-spacing: 0.02em;
+    font-family: var(--display); transform: rotate(-1deg);
+  }
+  .start-btn:hover:not(.locked) {
+    background: #ffc93c;
+    box-shadow: 4px 5px 0 var(--pen);
+    transform: rotate(-1deg) translateY(-2px) scale(1.03);
+  }
+  .start-btn:active:not(.locked) { transform: rotate(-1deg) translateY(2px); box-shadow: 1px 1px 0 var(--pen); }
+  .start-btn.locked { background: #d8cbaa; color: #8a7c5c; box-shadow: 2px 2px 0 rgba(44,33,20,0.3); }
+
+  .song-btn {
+    background: var(--paper); border: 2.5px solid var(--pen);
+    border-radius: 14px 10px 16px 9px / 10px 16px 9px 14px;
+    color: #4a3d28; box-shadow: 2px 2px 0 rgba(44,33,20,0.3);
+    transform: rotate(-0.6deg);
+  }
+  .song-btn:nth-child(2) { transform: rotate(0.8deg); }
+  .song-btn:hover { background: var(--paper-2); border-color: var(--pen); }
+  .song-btn.selected {
+    background: #fff2cf; border-color: var(--mk-red);
+    box-shadow: 3px 3px 0 var(--mk-red);
+  }
+  .song-btn-title { font-family: var(--display); text-transform: none; letter-spacing: 0; color: #2c2114; }
+  .song-btn-sub   { color: #93805e; font-family: var(--hand); font-size: 0.95rem; }
+
+  /* keycaps — same doodle language */
+  .kg, .key-label {
+    font-family: var(--display); text-shadow: none;
+    border-radius: 13px 9px 14px 8px / 9px 14px 8px 13px;
+  }
+  .kg {
+    color: #2c2114; border-color: var(--pen);
+    background: var(--paper); box-shadow: 3px 3px 0 var(--pen);
+  }
+  /* beat the earlier :nth-child neon-border rules */
+  /* original ".key-guide .kg" (glass bg + glow) outranks plain ".kg" — override on the same selector */
+  .key-guide .kg {
+    border-color: var(--pen) !important;
+    color: #2c2114 !important;
+    background: var(--paper) !important;
+    box-shadow: 3px 3px 0 var(--pen) !important;
+    text-shadow: none !important;
+  }
+  .kg:nth-child(odd)  { transform: rotate(-3deg); }
+  .kg:nth-child(even) { transform: rotate(3deg); }
+  /* in-lane keycaps: paper caps, ink outline */
+  .lane .key-label {
+    background: var(--paper) !important; color: #2c2114 !important;
+    border-color: var(--pen) !important; text-shadow: none !important;
+    box-shadow: 0 4px 0 rgba(44,33,20,0.5), inset 0 1px 0 rgba(255,255,255,0.4) !important;
+  }
+  .lane.pressed .key-label { color: #2c2114 !important; box-shadow: 0 1px 0 rgba(44,33,20,0.5) !important; }
+
+  /* playfield: swap the led targets for */
+  .hit-zone {
+    border: 2.5px dashed rgba(247,238,210,0.85) !important;
+    border-radius: 15px 10px 16px 9px / 10px 16px 9px 15px !important;
+    background: rgba(247,238,210,0.08) !important;
+    box-shadow: none !important;
+  }
+  .hit-zone::after { border-color: rgba(247,238,210,0.7) !important; }
+  /* per-lane target keeps its ingredient hue, */
+  .lane[data-color="0"] .hit-zone { border-color: #9ccc65 !important; box-shadow: 0 0 8px rgba(156,204,101,0.30) !important; }
+  .lane[data-color="1"] .hit-zone { border-color: #f6d35b !important; box-shadow: 0 0 8px rgba(246,211,91,0.30) !important; }
+  .lane[data-color="2"] .hit-zone { border-color: #ef7a63 !important; box-shadow: 0 0 8px rgba(239,122,99,0.30) !important; }
+  .lane[data-color="3"] .hit-zone { border-color: #c69b6d !important; box-shadow: 0 0 8px rgba(198,155,109,0.30) !important; }
+  .lane.pressed .hit-zone { background: rgba(247,238,210,0.22) !important; }
+  /* lane floor wash: muted ingredient tint */
+  .lane[data-color="0"] { box-shadow: inset 0 -120px 90px -100px rgba(76,175,80,0.20) !important; }
+  .lane[data-color="1"] { box-shadow: inset 0 -120px 90px -100px rgba(238,171,33,0.18) !important; }
+  .lane[data-color="2"] { box-shadow: inset 0 -120px 90px -100px rgba(211,74,44,0.18) !important; }
+  .lane[data-color="3"] { box-shadow: inset 0 -120px 90px -100px rgba(122,71,42,0.20) !important; }
+
+  /* falling ingredients: same hand-inked boil as */
+  .note svg { filter: drop-shadow(1px 1.5px 0 rgba(44,33,20,0.3)); }
+  .note[data-color="0"] { color: #7bc043; }
+  .note[data-color="1"] { color: #f2c14e; }
+  .note[data-color="2"] { color: #e0533c; }
+  .note[data-color="3"] { color: #a5673f; }
+
+  /* hit feedback: inky stamp, not a neon flash */
+  .judge { text-shadow: 2px 2px 0 rgba(44,33,20,0.4) !important; font-style: normal; }
+  .judge.perfect { color: #e8a012 !important; }
+  .judge.good    { color: #3f9d3a !important; }
+  .judge.miss    { color: #d34a2c !important; }
+  .judge.empty   { color: #7a6a4a !important; text-shadow: none !important; }
+
+  /* speech bubbles + verdict message → handwriting */
+  .speech-bubble, .play-speech, .verdict-message {
+    font-family: var(--hand); font-style: normal; font-size: 1.2rem; line-height: 1.25;
+  }
+  .speech-bubble {
+    border: 2px solid var(--pen); color: #2c2114;
+    border-radius: 16px 12px 18px 10px / 12px 18px 10px 16px;
+    box-shadow: 2px 2px 0 rgba(44,33,20,0.25);
+  }
+  .verdict-message { color: #3a2f1e; font-size: 1.4rem; }
+  .verdict-footer { color: #93805e; }
+  .verdict-footer button { color: #b0562f; }
+
+  /* now-playing + progress: paper strips, ink */
+  .now-playing {
+    background: var(--paper); border: 2px solid var(--pen); color: #3a2f1e;
+    border-radius: 12px 9px 13px 8px / 9px 13px 8px 12px;
+    text-transform: none; letter-spacing: 0.01em;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
+  .np-bar { background: var(--mk-red); }
+  .progress-bar {
+    background: var(--paper); border: 2.5px solid var(--pen);
+    border-radius: 11px; box-shadow: 2px 2px 0 rgba(44,33,20,0.3);
+  }
+  .progress-fill { background: var(--mk-red); box-shadow: none; }
+  .progress-fill::before { background: #2c2114; box-shadow: none; }
+  .progress-pct { font-family: var(--display); color: #ffe6a8; text-shadow: 1px 1px 0 #2c2114; }
+
+  /* sliders: warm tape + inky handle */
+  #speedSlider, #endSpeedSlider {
+    -webkit-appearance: none; appearance: none;
+    background: linear-gradient(90deg, var(--mk-green), var(--mk-yellow) 50%, var(--mk-red));
+    height: 8px; border: 2px solid var(--pen); border-radius: 6px;
+  }
+  #speedSlider::-webkit-slider-thumb, #endSpeedSlider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    background: var(--paper-2); border: 2.5px solid var(--pen); border-radius: 50%;
+    box-shadow: 2px 2px 0 var(--pen); width: 24px; height: 24px; cursor: grab;
+  }
+  #speedSlider::-moz-range-thumb, #endSpeedSlider::-moz-range-thumb {
+    background: var(--paper-2); border: 2.5px solid var(--pen); box-shadow: 2px 2px 0 var(--pen);
+  }
+
+  /* verdict gauge: ink needle instead of */
+  .verdict-needle { background: #2c2114; box-shadow: 2px 0 0 rgba(0,0,0,0.25); border-radius: 3px; }
+  .verdict-end.reject { color: var(--mk-red); text-shadow: none; }
+  .verdict-end.accept { color: var(--mk-green); text-shadow: none; }
+  .verdict-label { font-family: var(--hand); font-size: 1rem; }
+
+  /* the sky's neon aurora is the */
+  /* ANY filter on .aurora (blur OR saturate/hue) forces the whole layer to re-render
+     through an offscreen buffer every frame the bands animate — that was the #1 lag.
+     drop the filter entirely; just keep it faint. */
+  /* soft nebula glow instead of the flat banded stripes.
+     one gradient layer that drifts via transform ONLY (no filter, no blend),
+     so edges stay feathered and smooth while costing almost nothing. */
+  .aurora {
+    opacity: 0.55;
+    filter: none;
+    background:
+      radial-gradient(46% 55% at 27% 42%, rgba(40,210,170,0.55), transparent 70%),
+      radial-gradient(46% 55% at 71% 37%, rgba(150,95,220,0.50), transparent 72%),
+      radial-gradient(62% 52% at 50% 62%, rgba(30,150,210,0.42), transparent 76%);
+    animation: auroraDrift 16s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+  body.combo-hot .aurora { opacity: 0.8; }
+  .aurora-band { display: none; }
+  @keyframes auroraDrift {
+    from { transform: translate3d(-2.5%, 0, 0) scale(1.06); }
+    to   { transform: translate3d(2.5%, 0, 0) scale(1.12); }
+  }
 </style>
 </head>
 <body>
 
+  <div class="grain"></div>
   <div class="stars" id="stars"></div>
   <div class="moon"></div>
 
@@ -1476,32 +1634,48 @@
          xmlns="http://www.w3.org/2000/svg"
          aria-label="Rhythm burger">
       <defs>
+        <!-- hand-drawn "boil": nudge every edge off -->
+        <filter id="rough" x="-20%" y="-20%" width="140%" height="140%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.016" numOctaves="2" seed="7" result="noise"/>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.6"
+                             xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+        <!-- cel-shaded: hard two-tone bands, no smooth -->
         <radialGradient id="seedGrad" cx="0.3" cy="0.3">
-          <stop offset="0%"  stop-color="#f7d98a"/>
-          <stop offset="70%" stop-color="#c99230"/>
-          <stop offset="100%" stop-color="#8b5e1a"/>
+          <stop offset="0%"   stop-color="#eecb7c"/>
+          <stop offset="62%"  stop-color="#eecb7c"/>
+          <stop offset="62%"  stop-color="#c99230"/>
+          <stop offset="100%" stop-color="#c99230"/>
         </radialGradient>
-        <radialGradient id="bunGrad" cx="0.35" cy="0.25">
-          <stop offset="0%"  stop-color="#f0b060"/>
-          <stop offset="55%" stop-color="#d4891a"/>
-          <stop offset="100%" stop-color="#a5620c"/>
+        <radialGradient id="bunGrad" cx="0.38" cy="0.28">
+          <stop offset="0%"   stop-color="#f0b562"/>
+          <stop offset="58%"  stop-color="#f0b562"/>
+          <stop offset="58%"  stop-color="#cf8420"/>
+          <stop offset="100%" stop-color="#cf8420"/>
         </radialGradient>
         <linearGradient id="bunBottomGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#d4891a"/>
-          <stop offset="100%" stop-color="#8f5910"/>
+          <stop offset="0%"   stop-color="#d4891a"/>
+          <stop offset="55%"  stop-color="#d4891a"/>
+          <stop offset="55%"  stop-color="#a86713"/>
+          <stop offset="100%" stop-color="#a86713"/>
         </linearGradient>
         <linearGradient id="pattyGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"  stop-color="#6d3a17"/>
-          <stop offset="60%" stop-color="#4a2810"/>
-          <stop offset="100%" stop-color="#2f1809"/>
+          <stop offset="0%"   stop-color="#5f3417"/>
+          <stop offset="55%"  stop-color="#5f3417"/>
+          <stop offset="55%"  stop-color="#3d2110"/>
+          <stop offset="100%" stop-color="#3d2110"/>
         </linearGradient>
         <linearGradient id="cheeseGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"  stop-color="#ffdf3f"/>
-          <stop offset="100%" stop-color="#e6a900"/>
+          <stop offset="0%"   stop-color="#ffd733"/>
+          <stop offset="60%"  stop-color="#ffd733"/>
+          <stop offset="60%"  stop-color="#edb100"/>
+          <stop offset="100%" stop-color="#edb100"/>
         </linearGradient>
         <linearGradient id="skinGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"  stop-color="#ffe580"/>
-          <stop offset="100%" stop-color="#e6b930"/>
+          <stop offset="0%"   stop-color="#ffe27a"/>
+          <stop offset="58%"  stop-color="#ffe27a"/>
+          <stop offset="58%"  stop-color="#ecc23e"/>
+          <stop offset="100%" stop-color="#ecc23e"/>
         </linearGradient>
       </defs>
 
@@ -1586,23 +1760,22 @@
         </g>
       </g>
 
-      <rect x="38" y="145" width="124" height="30" rx="14" fill="url(#bunBottomGrad)"/>
+      <rect x="30" y="145" width="140" height="32" rx="16" fill="url(#bunBottomGrad)" stroke="#6e4310" stroke-width="3" stroke-linejoin="round"/>
 
-      <path d="M36,144 Q42,132 50,142 Q56,130 62,143 Q70,130 78,144 Q86,130 94,143
-               Q102,130 110,144 Q118,130 126,143 Q134,130 142,144 Q150,130 158,143
-               Q164,136 166,144" fill="#4caf50" stroke="#2e7d32" stroke-width="1"/>
+      <path d="M30,144 Q37,131 46,142 Q53,129 61,143 Q70,129 78,144 Q86,129 94,143
+               Q102,129 110,144 Q118,129 126,143 Q134,129 142,144 Q149,129 157,143
+               Q166,131 170,144" fill="#4caf50" stroke="#215d24" stroke-width="2.6" stroke-linejoin="round"/>
 
-      <rect x="44" y="126" width="112" height="18" rx="6" fill="#e53935"/>
+      <rect x="36" y="126" width="128" height="18" rx="8" fill="#e53935" stroke="#9c1f16" stroke-width="2.6" stroke-linejoin="round"/>
 
-      <polygon points="40,126 160,126 168,112 32,112" fill="url(#cheeseGrad)"/>
-      <path d="M52,126 Q50,138 46,142 Q44,146 48,148 Q52,146 54,142 Q56,136 54,126 Z" fill="url(#cheeseGrad)"/>
-      <path d="M96,126 Q94,140 90,144 Q88,148 92,150 Q96,148 98,144 Q100,138 98,126 Z" fill="url(#cheeseGrad)"/>
-      <path d="M140,126 Q138,138 134,142 Q132,146 136,148 Q140,146 142,142 Q144,136 142,126 Z" fill="url(#cheeseGrad)"/>
+      <polygon points="34,126 166,126 174,112 26,112" fill="url(#cheeseGrad)" stroke="#b07d00" stroke-width="2.6" stroke-linejoin="round"/>
 
-      <rect x="34" y="96" width="132" height="22" rx="10" fill="url(#pattyGrad)"/>
+      <rect x="30" y="96" width="140" height="22" rx="11" fill="url(#pattyGrad)" stroke="#241206" stroke-width="3" stroke-linejoin="round"/>
 
-      <ellipse cx="100" cy="78" rx="70" ry="40" fill="url(#bunGrad)"/>
-      <ellipse cx="82"  cy="58" rx="34" ry="14" fill="#f5c078" opacity="0.55"/>
+      <!-- top bun: a dome with a -->
+      <path d="M28,100 Q24,46 100,44 Q176,46 172,100 Z" fill="url(#bunGrad)" stroke="#6e4310" stroke-width="3.2" stroke-linejoin="round"/>
+      <!-- flat cel highlight, not a soft gloss blob -->
+      <path d="M52,62 Q76,50 106,56" fill="none" stroke="#ffd98a" stroke-width="7" stroke-linecap="round" opacity="0.85"/>
 
       <g>
         <ellipse class="seed" cx="82"  cy="58" rx="7" ry="3.5" fill="url(#seedGrad)" transform="rotate(-20,82,58)"/>
@@ -1755,7 +1928,7 @@
 
   <!-- START overlay -->
   <div class="overlay" id="startOverlay">
-    <div class="eyebrow">Rhythm · Mountain Peak</div>
+    <div class="eyebrow">a small rhythm game about one judgemental burger</div>
     <h1>Burger Beat</h1>
     <p>The burger looms overhead and spits notes at you across four lanes. Each key drives a limb — <b style="color:var(--aurora-1)">D</b> left leg, <b style="color:var(--aurora-3)">F</b> left arm, <b style="color:var(--aurora-4)">J</b> right arm, <b style="color:var(--aurora-2)">K</b> right leg. Hit them as they land in the glowing bar. Mash empty air and the burger will let you know how it feels about that.</p>
     <div class="key-guide">
@@ -1783,7 +1956,7 @@
         <span class="speed-label">Game speed</span>
         <span class="speed-value" id="speedValue">1.00×</span>
       </div>
-      <input type="range" id="speedSlider" min="0.5" max="2" step="0.05" value="1">
+      <input type="range" id="speedSlider" min="0.5" max="3" step="0.05" value="1">
       <div class="opinion-row">
         <svg class="mini-burger" id="miniBurger" viewBox="0 0 100 100" width="60" height="60">
           <defs>
@@ -1825,7 +1998,7 @@
 
   <!-- END overlay -->
   <div class="overlay hidden" id="endOverlay">
-    <div class="eyebrow">Round Complete</div>
+    <div class="eyebrow">well, that happened</div>
     <h1 id="endTitle">Nice run!</h1>
     <div class="final-stats">
       <div class="stat-block"><div class="lbl">Score</div>     <div class="val" id="finalScore">0</div></div>
@@ -1850,13 +2023,13 @@
       </div>
     </div>
 
-    <!-- Next-round speed slider (burger will hijack it) -->
+    <!-- next-round speed slider (burger will hijack -->
     <div class="speed-block">
       <div class="speed-header">
         <span class="speed-label">Next round speed</span>
         <span class="speed-value" id="endSpeedValue">1.00×</span>
       </div>
-      <input type="range" id="endSpeedSlider" min="0.5" max="2" step="0.05" value="1">
+      <input type="range" id="endSpeedSlider" min="0.5" max="3" step="0.05" value="1">
       <div class="opinion-row">
         <svg class="mini-burger" id="endMiniBurger" viewBox="0 0 100 100" width="60" height="60">
           <defs>
@@ -1888,15 +2061,28 @@
       </div>
     </div>
 
+    <div class="verdict-label" style="margin-bottom:8px">Change the track?</div>
+    <div class="song-picker">
+      <button class="song-btn selected" id="endDefaultBtn">
+        <div class="song-btn-title">Built-in track</div>
+        <div class="song-btn-sub">Synth · 128 BPM</div>
+      </button>
+      <button class="song-btn" id="endUploadBtn">
+        <div class="song-btn-title">Your own song</div>
+        <div class="song-btn-sub" id="endUploadSub">Pick a file</div>
+      </button>
+    </div>
+    <div class="analyzer-status" id="endAnalyzerStatus"></div>
+
     <button class="start-btn" id="againBtn">↻ Again</button>
   </div>
 
   <script>
-    // ================================================================
+    // ok this file got kinda big lol sorry
+    // TODO: split this up someday (probably never)
     // STARS
-    // ================================================================
     const starsEl = document.getElementById('stars');
-    for (let i = 0; i < 120; i++) {
+    for (let i = 0; i < 70; i++) {
       const s = document.createElement('div');
       s.className = 'star';
       const size = Math.random() * 2 + 0.5;
@@ -1914,9 +2100,7 @@
     shooter.style.left = '10%';
     starsEl.appendChild(shooter);
 
-    // ================================================================
     // RHYTHM ENGINE — BPM is set at game start
-    // ================================================================
     let BEAT_MS = 500;                   // recomputed from song BPM
     let NOTE_FALL_MS = 1600;             // recomputed as 3.2 beats
     const PERFECT_MS = 80;
@@ -1932,12 +2116,10 @@
     const keyMap = { d: 0, f: 1, j: 2, k: 3 };
     const KEYS = ['D','F','J','K'];
 
-    // ================================================================
     // CHART — beat-locked (one row per beat), but with light variety:
     //  • which lane a note lands in is randomized (seeded, stable per song)
     //  • chords ramp in gradually as the song progresses
     // Still calm: at most one note early on, occasional 2-note chords later.
-    // ================================================================
 
     // Seeded RNG so a given song always generates the same chart
     function beatRng(seed) {
@@ -1946,7 +2128,7 @@
       return ((x & 0x7fffffff) / 0x7fffffff);
     }
 
-    // Rest pattern stays fixed & musical (note on beats 1,3,5,6,8... roughly),
+    // rest pattern stays fixed & musical (note
     // so it breathes instead of hitting every single beat.
     const REST_PATTERN = [
       true,  false, true,  false,   // beats 1-4
@@ -1964,7 +2146,7 @@
       const idx = beat % REST_PATTERN.length;
       if (!REST_PATTERN[idx]) return { notes: [], hold: null };
 
-      // --- random primary lane (seeded), never the same lane twice running ---
+      // random primary lane (seeded), never the same
       let lane = Math.floor(beatRng(beat * 2 + 1) * 4);
       if (lane === lastLane) lane = (lane + 1 + Math.floor(beatRng(beat * 3 + 5) * 3)) % 4;
       lastLane = lane;
@@ -1983,18 +2165,16 @@
     const DEFAULT_TOTAL_BEATS = 128; // built-in length (~64s at 128 BPM)
     let TOTAL_BEATS = DEFAULT_TOTAL_BEATS;  // recomputed per-song at start
 
-    // ================================================================
     // MUSIC-DRIVEN BEATMAP
     // Instead of placing a note on every beat, notes follow the actual
     // rhythm: real onsets (attacks) in the audio, with rests where the
     // music rests. Built at 16th-note resolution (4 slots per beat).
-    //   beatmap: Map<slotIndex, { notes:[lane...], hold:{lane,lenSlots}|null }>
-    //   slotIndex = beat*4 + sixteenth(0..3);  hitTime = songStart + slot*(BEAT_MS/4)
-    // ================================================================
+    // beatmap: map<slotindex, { notes:[lane...], hold:{lane,lenslots}|null }>
+    // slotindex = beat*4 + sixteenth(0..3); hittime =
     const SLOTS_PER_BEAT = 4;
     let beatmap = null;
 
-    // --- Built-in track: map the synth's own kick/snare/bass/lead events ---
+    // built-in track: map the synth's own kick/snare/bass/lead
     function buildBeatmapBuiltin(totalBeats) {
       const map = new Map();
       const totalSlots = totalBeats * SLOTS_PER_BEAT;   // 16th slots
@@ -2191,9 +2371,7 @@
       }, dur);
     }
 
-    // ================================================================
     // PERFORMANCE — cache geometry so the tick loop never queries layout
-    // ================================================================
     const stageEl     = document.getElementById('stage');
     const burgerSvgEl = document.getElementById('burgerSvg');
 
@@ -2228,12 +2406,12 @@
     function getMouthScreenPos() {
       if (!mouthCache) {
         const r = stageEl.getBoundingClientRect();
-        // Mouth is ~42% down the stage (SVG mouth path center is at viewBox y≈100 of 220)
+        // mouth is ~42% down the stage (svg
         mouthCache = { x: r.left + r.width / 2, y: r.top + r.height * 0.42 };
       }
       return mouthCache;
     }
-    // Invalidate when the burger's DOM position changes (start/end overlay open/close briefly shifts layout)
+    // invalidate when the burger's dom position changes
     function refreshMouthOnNextFrame() {
       mouthCache = null;
       laneCache = null;
@@ -2257,40 +2435,55 @@
 
     // Burger ingredient SVGs — one per lane
     const INGREDIENT_SVGS = [
-      // Lane 0 — LETTUCE (green wavy leaf)
-      `<svg viewBox="0 0 80 40" xmlns="http://www.w3.org/2000/svg">
-         <path d="M2,22 Q10,6 20,20 Q30,4 40,20 Q50,4 60,20 Q70,6 78,22 Q78,34 60,36 Q40,38 20,36 Q2,34 2,22 Z"
-               fill="#4caf50" stroke="#1b5e20" stroke-width="1.5"/>
-         <path d="M6,18 Q20,14 40,16 Q60,14 74,18" stroke="#66bb6a" stroke-width="1.5" fill="none" opacity="0.9"/>
-         <path d="M10,26 Q40,30 70,26" stroke="#2e7d32" stroke-width="1" fill="none" opacity="0.6"/>
+      // Lane 0 — LETTUCE (frilly leaf, ruffled top edge + veins)
+      `<svg viewBox="0 0 100 56" xmlns="http://www.w3.org/2000/svg">
+         <path d="M6,34 Q4,23 15,22 Q12,11 23,16 Q25,5 35,14 Q41,3 49,14 Q57,3 65,14 Q75,5 77,16 Q88,11 86,23 Q96,24 93,35 Q88,48 66,49 Q49,51 33,49 Q11,48 6,34 Z"
+               fill="#66bb45" stroke="#2e7d32" stroke-width="2.6" stroke-linejoin="round"/>
+         <path d="M14,27 Q31,18 50,20 Q69,18 86,27" stroke="#93d873" stroke-width="3" fill="none" opacity="0.8" stroke-linecap="round"/>
+         <path d="M49,23 L49,45 M49,31 Q39,33 31,40 M49,31 Q59,33 67,40 M49,38 Q42,40 37,45 M49,38 Q57,40 61,45"
+               stroke="#2e7d32" stroke-width="1.8" fill="none" opacity="0.5" stroke-linecap="round"/>
        </svg>`,
-      // Lane 1 — CHEESE (yellow slice with drips)
-      `<svg viewBox="0 0 80 40" xmlns="http://www.w3.org/2000/svg">
-         <polygon points="4,10 76,10 78,4 2,4" fill="#e6a900"/>
-         <rect x="2" y="10" width="76" height="18" rx="3" fill="#ffdf3f"/>
-         <rect x="2" y="10" width="76" height="6"  rx="3" fill="#fff" opacity="0.35"/>
-         <path d="M12,28 Q10,36 14,38 Q16,36 14,28" fill="#ffdf3f"/>
-         <path d="M40,28 Q38,36 42,38 Q44,36 42,28" fill="#ffdf3f"/>
-         <path d="M64,28 Q62,36 66,38 Q68,36 66,28" fill="#ffdf3f"/>
+      // Lane 1 — CHEESE (melty slice, droopy bottom edge + holes)
+      `<svg viewBox="0 0 100 56" xmlns="http://www.w3.org/2000/svg">
+         <path d="M9,12 L84,7 Q92,7 92,15 L94,31 Q94,36 88,37 Q79,34 73,41 Q66,48 58,41 Q50,34 42,41 Q34,48 26,41 Q19,35 11,39 Q7,35 7,30 Z"
+               fill="#ffd23f" stroke="#c98f00" stroke-width="2.6" stroke-linejoin="round"/>
+         <path d="M14,14 Q50,9 84,12" stroke="#fff2b0" stroke-width="3.4" fill="none" opacity="0.7" stroke-linecap="round"/>
+         <ellipse cx="33" cy="22" rx="6.5" ry="5.5" fill="#e6a900"/>
+         <ellipse cx="63" cy="17" rx="5"   ry="4.2" fill="#e6a900"/>
+         <ellipse cx="73" cy="30" rx="4.2" ry="3.6" fill="#e6a900"/>
        </svg>`,
-      // Lane 2 — TOMATO (red slice with seeds)
-      `<svg viewBox="0 0 80 40" xmlns="http://www.w3.org/2000/svg">
-         <rect x="2" y="8" width="76" height="24" rx="12" fill="#e53935"/>
-         <rect x="2" y="8" width="76" height="8"  rx="4"  fill="#f44336" opacity="0.7"/>
-         <ellipse cx="16" cy="20" rx="3" ry="1.6" fill="#fff8dc" opacity="0.85"/>
-         <ellipse cx="32" cy="22" rx="3" ry="1.6" fill="#fff8dc" opacity="0.85"/>
-         <ellipse cx="48" cy="19" rx="3" ry="1.6" fill="#fff8dc" opacity="0.85"/>
-         <ellipse cx="64" cy="21" rx="3" ry="1.6" fill="#fff8dc" opacity="0.85"/>
+      // Lane 2 — TOMATO (round slice, seed chambers + seeds)
+      `<svg viewBox="0 0 100 56" xmlns="http://www.w3.org/2000/svg">
+         <path d="M4,28 Q6,7 28,4 Q50,1 72,4 Q94,7 96,28 Q94,49 72,52 Q50,55 28,52 Q6,49 4,28 Z"
+               fill="#e53935" stroke="#9c1f16" stroke-width="2.6" stroke-linejoin="round"/>
+         <path d="M12,28 Q14,13 30,11 Q50,9 70,11 Q86,13 88,28 Q86,43 70,45 Q50,47 30,45 Q14,43 12,28 Z"
+               fill="#f5675a"/>
+         <ellipse cx="50" cy="28" rx="9" ry="6.5" fill="#f7897d"/>
+         <g fill="#ffd9a0" opacity="0.92">
+           <ellipse cx="50" cy="15" rx="7" ry="4"/><ellipse cx="69" cy="21" rx="7" ry="4"/>
+           <ellipse cx="69" cy="35" rx="7" ry="4"/><ellipse cx="50" cy="41" rx="7" ry="4"/>
+           <ellipse cx="31" cy="35" rx="7" ry="4"/><ellipse cx="31" cy="21" rx="7" ry="4"/>
+         </g>
+         <g fill="#fff6d5">
+           <ellipse cx="50" cy="15" rx="2" ry="2.8"/><ellipse cx="69" cy="21" rx="2" ry="2.8"/>
+           <ellipse cx="69" cy="35" rx="2" ry="2.8"/><ellipse cx="50" cy="41" rx="2" ry="2.8"/>
+           <ellipse cx="31" cy="35" rx="2" ry="2.8"/><ellipse cx="31" cy="21" rx="2" ry="2.8"/>
+         </g>
        </svg>`,
-      // Lane 3 — PATTY (brown with grill marks)
-      `<svg viewBox="0 0 80 40" xmlns="http://www.w3.org/2000/svg">
-         <rect x="2" y="4" width="76" height="30" rx="14" fill="#4a2810"/>
-         <rect x="2" y="4" width="76" height="10" rx="10" fill="#6d3a17" opacity="0.6"/>
-         <rect x="2" y="24" width="76" height="8" rx="8"  fill="#2f1809" opacity="0.7"/>
-         <ellipse cx="16" cy="18" rx="4" ry="2" fill="#7a4520" opacity="0.75"/>
-         <ellipse cx="34" cy="20" rx="3" ry="1.6" fill="#7a4520" opacity="0.75"/>
-         <ellipse cx="52" cy="17" rx="4" ry="2" fill="#7a4520" opacity="0.75"/>
-         <ellipse cx="66" cy="21" rx="3" ry="1.6" fill="#7a4520" opacity="0.75"/>
+      // Lane 3 — PATTY (plump grilled, seared top + char speckle)
+      `<svg viewBox="0 0 100 56" xmlns="http://www.w3.org/2000/svg">
+         <path d="M6,30 Q4,13 27,10 Q50,7 73,10 Q96,13 94,30 Q96,46 72,48 Q50,50 28,48 Q4,46 6,30 Z"
+               fill="#5a3216" stroke="#241206" stroke-width="2.6" stroke-linejoin="round"/>
+         <path d="M13,20 Q50,11 87,20" stroke="#8a5228" stroke-width="5" fill="none" opacity="0.7" stroke-linecap="round"/>
+         <g fill="#341c0b" opacity="0.6">
+           <ellipse cx="30" cy="31" rx="3" ry="2"/><ellipse cx="48" cy="35" rx="2.6" ry="1.8"/>
+           <ellipse cx="66" cy="30" rx="3" ry="2"/><ellipse cx="56" cy="25" rx="2" ry="1.5"/>
+           <ellipse cx="39" cy="26" rx="2" ry="1.5"/>
+         </g>
+         <g fill="#9a6432" opacity="0.5">
+           <ellipse cx="37" cy="33" rx="1.7" ry="1.2"/><ellipse cx="61" cy="36" rx="1.7" ry="1.2"/>
+           <ellipse cx="73" cy="25" rx="1.5" ry="1.1"/>
+         </g>
        </svg>`,
     ];
 
@@ -2306,7 +2499,11 @@
       const el = document.createElement('div');
       el.className = 'note';
       el.dataset.color = laneIdx;
-      el.appendChild(INGREDIENT_TEMPLATES[laneIdx].cloneNode(true));
+      const ingredientSvg = INGREDIENT_TEMPLATES[laneIdx].cloneNode(true);
+      // rotate a lil so they dont look samey
+      //console.log('spawn', laneIdx);
+      ingredientSvg.style.transform = 'rotate(' + (Math.random() * 11 - 5.5).toFixed(1) + 'deg)';
+      el.appendChild(ingredientSvg);
       lane.appendChild(el);
 
       // Cached lane geom + mouth position — no layout thrash
@@ -2340,7 +2537,7 @@
       lane.appendChild(el);
 
       // Straight-fall geometry (Magic Tiles style), computed once.
-      // Head (bottom edge) reaches the hit line at hitTime; tail reaches it holdMs later.
+      // head (bottom edge) reaches the hit line
       const HITY = hitGeomCache.center;
       const startHeadY = -60;
       const v = (HITY - startHeadY) / NOTE_FALL_MS;   // px per ms
@@ -2464,7 +2661,7 @@
     function triggerLimb(laneIdx) {
       const t = LIMB_TARGETS[laneIdx];
       if (!t) return;
-      // Skip if angry-state animation is running — arms/legs are locked to the miss pose
+      // skip if angry-state animation is running —
       if (document.body.classList.contains('face-state-angry')) return;
       const { upper, lower, cls } = t;
       if (upper) {
@@ -2606,9 +2803,7 @@
       }
     });
 
-    // ================================================================
     // BURGER TALKS DURING PLAY — event-driven speech bubbles
-    // ================================================================
 
     // In-game speech bubbles
     const PLAY_LINES = {
@@ -2694,92 +2889,32 @@
       document.querySelectorAll('.play-speech').forEach(el => el.remove());
     }
 
-    // ================================================================
     // WTF FACTOR — the burger occasionally does something absurd
-    // ================================================================
     let gagActive = false;
     let gagTimer  = null;
-    let activeGagOverlays = [];
-
+    // Motion-only gags — the burger just goofs around. No worn accessories.
     const GAGS = [
-      { name: 'flip',       duration: 1400 },
-      { name: 'moonwalk',   duration: 1600 },
-      { name: 'vibrate',    duration: 1000 },
-      { name: 'zoom',       duration: 900  },
-      { name: 'stretch',    duration: 1200 },
-      { name: 'spin',       duration: 1200 },
-      { name: 'sunglasses', duration: 2400, overlay: 'sunglasses' },
-      { name: 'mustache',   duration: 2400, overlay: 'mustache'   },
-      { name: 'halo',       duration: 2600, overlay: 'halo'       },
-      { name: 'scream',     duration: 1400, overlay: 'scream', extra: 'vibrate' },
-      { name: 'question',   duration: 1800, overlay: 'question' },
+      { name: 'flip',     duration: 1400 },
+      { name: 'moonwalk', duration: 1600 },
+      { name: 'vibrate',  duration: 1000 },
+      { name: 'zoom',     duration: 900  },
+      { name: 'stretch',  duration: 1200 },
+      { name: 'spin',     duration: 1200 },
     ];
-
-    const GAG_TEXTS = {
-      scream:   ['AAAAAA', 'NOOOOO', 'REEEEE', 'AIIEEEE'],
-      question: ['wait what.', 'did you see that?', 'nope.', 'this is fine.', 'why am I here.'],
-    };
-
-    function makeGagOverlay(kind) {
-      const el = document.createElement('div');
-      el.className = 'gag-item gag-' + kind;
-      if (kind === 'sunglasses') {
-        el.innerHTML = `
-          <svg viewBox="0 0 120 30" xmlns="http://www.w3.org/2000/svg">
-            <rect x="4"  y="4" width="46" height="22" rx="6" fill="#000"/>
-            <rect x="70" y="4" width="46" height="22" rx="6" fill="#000"/>
-            <rect x="46" y="12" width="28" height="4" fill="#000"/>
-            <path d="M10,10 L26,20" stroke="#fff" stroke-width="1.5" opacity="0.35"/>
-            <path d="M76,10 L92,20" stroke="#fff" stroke-width="1.5" opacity="0.35"/>
-          </svg>`;
-      } else if (kind === 'mustache') {
-        el.innerHTML = `
-          <svg viewBox="0 0 90 30" xmlns="http://www.w3.org/2000/svg">
-            <path d="M45,10 C30,4 8,4 4,18 C10,14 22,14 32,20
-                     C36,22 42,22 45,20
-                     C48,22 54,22 58,20 C68,14 80,14 86,18
-                     C82,4 60,4 45,10 Z" fill="#1a1006"/>
-            <path d="M20,12 Q10,12 6,16" stroke="#000" stroke-width="1" fill="none" opacity="0.6"/>
-          </svg>`;
-      } else if (kind === 'halo') {
-        // halo is styled purely with CSS
-      } else if (kind === 'scream') {
-        el.textContent = GAG_TEXTS.scream[Math.floor(Math.random() * GAG_TEXTS.scream.length)];
-      } else if (kind === 'question') {
-        el.textContent = GAG_TEXTS.question[Math.floor(Math.random() * GAG_TEXTS.question.length)];
-      }
-      return el;
-    }
 
     function runGag() {
       if (!running || gagActive) return;
       gagActive = true;
       const gag = GAGS[Math.floor(Math.random() * GAGS.length)];
-
       // Clear any beat-pulse anim so gag animation owns the burger
       burgerSvgEl.classList.remove('beat-a', 'beat-b', 'hit-perfect');
-      // Apply transform gag if any
-      const primary = gag.overlay ? (gag.extra || null) : gag.name;
-      if (primary) burgerSvgEl.classList.add('gag-' + primary);
-      // Apply overlay if any
-      if (gag.overlay) {
-        const el = makeGagOverlay(gag.overlay);
-        stageEl.appendChild(el);
-        activeGagOverlays.push(el);
-      }
-
+      burgerSvgEl.classList.add('gag-' + gag.name);
       setTimeout(endGag, gag.duration);
     }
 
     function endGag() {
       burgerSvgEl.classList.remove('gag-flip', 'gag-moonwalk', 'gag-vibrate',
                                     'gag-zoom', 'gag-stretch', 'gag-spin');
-      activeGagOverlays.forEach(el => {
-        el.style.transition = 'opacity 0.2s';
-        el.style.opacity = '0';
-        setTimeout(() => el.remove(), 220);
-      });
-      activeGagOverlays = [];
       gagActive = false;
       if (running) scheduleNextGag();
     }
@@ -2798,9 +2933,7 @@
       gagActive = false;
     }
 
-    // ================================================================
     // MAIN LOOP
-    // ================================================================
     let lastBeat = -1;
     let beatToggle = false;
 
@@ -2859,13 +2992,13 @@
         for (const laneIdx of cell.notes) {
           spawnNote(laneIdx, hitTime);
         }
-        // Fire the muzzle flash at the moment the note "leaves" the burger's mouth
+        // fire the muzzle flash at the moment
         const spawnTime = hitTime - NOTE_FALL_MS;
         const delayMs = Math.max(0, spawnTime - performance.now());
         setTimeout(spawnMouthFlash, delayMs);
       }
 
-      // Move active notes — arc: burger tosses ingredients UP then they FALL down to hit zone
+      // move active notes — arc: burger tosses
       const laneTargetY = hitGeomCache.target;   // pre-cached
       const apexY = 40;                          // apex near the top of the screen
       const TOSS_FRAC = 0.28;                    // 28% of travel is the upward toss
@@ -2874,7 +3007,7 @@
         const n = activeNotes[i];
         if (n.hit) { activeNotes.splice(i, 1); continue; }
 
-        // ---- HOLD RIBBON: streams down; while held it is absorbed at the hit line ----
+        // hold ribbon: streams down; while held it
         if (n.isHold) {
           const HITY = hitGeomCache.center;
           const headY = n.startHeadY + n.fallV * (now - n.spawnAt);
@@ -2914,7 +3047,7 @@
               continue;
             }
           }
-          // Clean up if it has fully streamed off the bottom (only when not being absorbed)
+          // clean up if it has fully streamed
           if (!n.holding && topY > vHeight + 40) {
             lanes[n.lane].classList.remove('hold-active');
             n.hit = true;
@@ -2927,12 +3060,12 @@
         const age = now - n.spawnAt;
         const t   = Math.min(1, Math.max(0, age / NOTE_FALL_MS));
 
-        // X: curves quickly from mouth into its lane (first 35% of travel), ease-out cubic
+        // x: curves quickly from mouth into its
         const xT = Math.min(1, Math.max(0, age / (NOTE_FALL_MS * 0.35)));
         const xEased = 1 - Math.pow(1 - xT, 3);
         const x = n.mouthDx * (1 - xEased);
 
-        // Y: two-phase arc — toss up fast (ease-out), then fall with gravity (ease-in)
+        // y: two-phase arc — toss up fast
         let y;
         const tossEnd = NOTE_FALL_MS * TOSS_FRAC;
         if (age < tossEnd) {
@@ -2958,13 +3091,13 @@
 
         // Ingredient tumbles as it flies — full rotation across the trajectory
         const spin = t * 340 * ((n.lane % 2) ? 1 : -1);
-        // rotateX(+30) tilts the top edge BACK toward the burger — reads as depth
+        // rotatex(+30) tilts the top edge back toward
         n.el.style.transform =
           `translate(${x}px, ${y}px) ` +
           `perspective(600px) rotateX(30deg) rotateZ(${spin}deg) scale(${scale})`;
         n.el.style.opacity = opacity;
 
-        // Missed? (note passed the hit zone by more than GOOD_MS, and not being held)
+        // missed? (note passed the hit zone by
         const msUntilHit = n.hitAt - now;
         if (msUntilHit < -GOOD_MS) {
           n.hit = true;
@@ -2986,9 +3119,7 @@
       requestAnimationFrame(tick);
     }
 
-    // ================================================================
     // AUDIO SYSTEM
-    // ================================================================
     let audioCtx = null;
     let masterGain = null;
 
@@ -3177,9 +3308,7 @@
       }
     }
 
-    // ================================================================
     // BPM DETECTION — autocorrelation on onset envelope
-    // ================================================================
     async function detectBPM(buffer) {
       // Mono-mix
       const nCh = buffer.numberOfChannels;
@@ -3191,7 +3320,7 @@
         for (let i = 0; i < len; i++) mono[i] += d[i] / nCh;
       }
 
-      // One-pole lowpass split → low band (bass/kick) and high band (snare/hats/melody)
+      // one-pole lowpass split → low band (bass/kick)
       // Cutoff ~ 250 Hz. alpha for a simple RC lowpass.
       const cutoff = 250;
       const rc = 1 / (2 * Math.PI * cutoff);
@@ -3264,7 +3393,7 @@
 
       let bpm = 60 * envFPS / bestLag;
 
-      // Normalize to a danceable range 85-170 (track the lag so phase stays consistent)
+      // normalize to a danceable range 85-170 (track
       let periodFrames = bestLag;
       while (bpm < 85)  { bpm *= 2; periodFrames /= 2; }
       while (bpm > 170) { bpm /= 2; periodFrames *= 2; }
@@ -3287,9 +3416,7 @@
       };
     }
 
-    // ================================================================
     // SPEED SLIDER — burger's opinions
-    // ================================================================
     let speedMultiplier = 1.0;
 
     const OPINIONS = {
@@ -3386,9 +3513,7 @@
     // Set initial opinion
     pickOpinion(1.0);
 
-    // ================================================================
     // END SPEED SLIDER — the burger declares a verdict, laughs at overrides
-    // ================================================================
     const VERDICT_INTRO = {
       bullyBig: [
         "You handled that too well. Punishment: faster.",
@@ -3458,19 +3583,19 @@
     let endCurrentTier = 'normal';
 
     // Absolute verdict speed based on how well the user just played.
-    // Great score → BULLY with a faster speed; poor score → DEMEAN with slow speed.
-    // ±0.20 satirical jitter so the burger's verdict isn't perfectly predictable.
+    // great score → bully with a faster
+    // ±0.20 satirical jitter so the burger's verdict
     function computeSpeedVerdict(acc) {
       if (acc == null) return null;
       let base, tier;
-      if      (acc >= 90) { base = 1.80; tier = 'bullyBig';   }
-      else if (acc >= 75) { base = 1.40; tier = 'bully';      }
+      if      (acc >= 90) { base = 2.40; tier = 'bullyBig';   }
+      else if (acc >= 75) { base = 1.75; tier = 'bully';      }
       else if (acc >= 55) { base = 1.05; tier = 'neutral';    }
       else if (acc >= 35) { base = 0.75; tier = 'demean';     }
       else                { base = 0.60; tier = 'demeanBig';  }
       const jitter = (Math.random() - 0.5) * 0.4;  // uniform ±0.20
       let value = base + jitter;
-      value = Math.max(0.5, Math.min(2.0, value));
+      value = Math.max(0.5, value);   // no upper cap anymore
       value = Math.round(value * 20) / 20;   // snap to 0.05 grid
       return { value, tier };
     }
@@ -3516,7 +3641,7 @@
 
       // Player can extend the verdict by ±0.20 in either direction
       verdictMin = Math.max(0.5, +(currentVerdict.value - 0.20).toFixed(2));
-      verdictMax = Math.min(2.0, +(currentVerdict.value + 0.20).toFixed(2));
+      verdictMax = +(currentVerdict.value + 0.20).toFixed(2);
 
       const pool = VERDICT_INTRO[currentVerdict.tier];
       const line = pool[Math.floor(Math.random() * pool.length)];
@@ -3584,7 +3709,7 @@
         againBtn.classList.remove('locked');
       }
 
-      // Verdict-margin check: within ±0.20 → burger allows it; outside → laugh + snap
+      // verdict-margin check: within ±0.20 → burger allows
       if (currentVerdict != null) {
         clearTimeout(overrideTimer);
         const outside = s < (verdictMin - 0.001) || s > (verdictMax + 0.001);
@@ -3599,6 +3724,7 @@
       cancelSliderAnim();
       clearTimeout(overrideTimer);
       clearTimeout(verdictTimer);
+      syncSongUI();
       userInteractedEnd = false;
       currentVerdict = null;
       verdictMin = null;
@@ -3625,64 +3751,78 @@
       }
     }
 
-    // ================================================================
     // SONG SOURCE UI
-    // ================================================================
     let songSource = 'default'; // 'default' | 'upload'
     const defaultBtn = document.getElementById('defaultBtn');
     const uploadBtn  = document.getElementById('uploadBtn');
     const fileInput  = document.getElementById('fileInput');
     const analyzerStatus = document.getElementById('analyzerStatus');
     const uploadSub  = document.getElementById('uploadSub');
+    // end-screen picker (lets you swap songs between runs)
+    const endDefaultBtn = document.getElementById('endDefaultBtn');
+    const endUploadBtn  = document.getElementById('endUploadBtn');
+    const endUploadSub  = document.getElementById('endUploadSub');
+    const endAnalyzerStatus = document.getElementById('endAnalyzerStatus');
 
-    defaultBtn.addEventListener('click', () => {
+    function setSongStatus(text, isError) {
+      [analyzerStatus, endAnalyzerStatus].forEach(el => {
+        if (!el) return;
+        el.textContent = text;
+        el.classList.toggle('error', !!isError);
+      });
+    }
+    function syncSongUI() {
+      const def = songSource === 'default';
+      [defaultBtn, endDefaultBtn].forEach(b => b && b.classList.toggle('selected', def));
+      [uploadBtn, endUploadBtn].forEach(b => b && b.classList.toggle('selected', !def));
+    }
+    function selectDefaultSong() {
       songSource = 'default';
-      defaultBtn.classList.add('selected');
-      uploadBtn.classList.remove('selected');
-      analyzerStatus.textContent = '';
-      analyzerStatus.classList.remove('error');
-    });
+      syncSongUI();
+      setSongStatus('');
+    }
+
+    defaultBtn.addEventListener('click', selectDefaultSong);
+    endDefaultBtn.addEventListener('click', selectDefaultSong);
+    // reuse the one hidden file input for the end picker too
+    endUploadBtn.addEventListener('click', () => fileInput.click());
 
     fileInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
       songSource = 'upload';
-      defaultBtn.classList.remove('selected');
-      uploadBtn.classList.add('selected');
-      uploadSub.textContent = file.name.length > 32 ? file.name.slice(0,29)+'…' : file.name;
-      analyzerStatus.classList.remove('error');
-      analyzerStatus.textContent = 'Decoding…';
+      syncSongUI();
+      const shortName = file.name.length > 32 ? file.name.slice(0,29)+'…' : file.name;
+      uploadSub.textContent = shortName;
+      if (endUploadSub) endUploadSub.textContent = shortName;
+      setSongStatus('Decoding…');
 
       try {
         initAudio();
         const arr = await file.arrayBuffer();
-        analyzerStatus.textContent = 'Decoding audio…';
+        setSongStatus('Decoding audio…');
         uploadedBuffer = await audioCtx.decodeAudioData(arr);
-        analyzerStatus.textContent = 'Analyzing tempo…';
+        setSongStatus('Analyzing tempo…');
         // Yield to browser so the "Analyzing" text actually paints
         await new Promise(r => setTimeout(r, 30));
         const result = await detectBPM(uploadedBuffer);
         uploadedBPM = result.bpm;
         uploadedPhase = result.phaseSec;
         uploadedAnalysis = result.analysis;
-        analyzerStatus.textContent = `Detected ${uploadedBPM.toFixed(1)} BPM · ${Math.round(uploadedBuffer.duration)}s`;
+        setSongStatus(`Detected ${uploadedBPM.toFixed(1)} BPM · ${Math.round(uploadedBuffer.duration)}s`);
       } catch (err) {
         console.error(err);
-        analyzerStatus.textContent = 'Could not read that file. Try MP3, WAV, or OGG.';
-        analyzerStatus.classList.add('error');
+        setSongStatus('Could not read that file. Try MP3, WAV, or OGG.', true);
         uploadedBuffer = null;
         uploadedBPM = null;
         uploadedPhase = 0;
         uploadedAnalysis = null;
         songSource = 'default';
-        defaultBtn.classList.add('selected');
-        uploadBtn.classList.remove('selected');
+        syncSongUI();
       }
     });
 
-    // ================================================================
     // START / END
-    // ================================================================
     document.getElementById('startBtn').addEventListener('click', startGame);
     againBtn.addEventListener('click', () => {
       if (againBtn.disabled) return;
@@ -3728,7 +3868,7 @@
         // Beat 0 must land on the song's first real downbeat, not at t=0.
         // Detected phase is in raw seconds; playback speed shortens it.
         phaseOffsetMs = (uploadedPhase / speedMultiplier) * 1000;
-        // Beat-locked chart: notes land on the beat, not on the song's every onset.
+        // beat-locked chart: notes land on the beat,
         beatmap = buildBeatmapProcedural(TOTAL_BEATS);
         audioStartWebTime = playUploadedSong();
         npText.textContent = `${bpm.toFixed(1)} BPM · your track` + (speedMultiplier !== 1 ? ` (${speedMultiplier.toFixed(2)}×)` : '');
@@ -3746,14 +3886,15 @@
       progressPct.textContent = '0%';
 
       // Convert audioCtx time → performance.now() equivalent for game clock.
-      // The game uses performance.now(); we align songStart to when audio actually begins,
-      // then add the beat-phase offset so note index 0 lands on the real downbeat.
+      // the game uses performance.now(); we align songstart
+      // then add the beat-phase offset so note
       const audioNow = audioCtx.currentTime;
       const perfNow  = performance.now();
       const msUntilAudioStarts = (audioStartWebTime - audioNow) * 1000;
       songStart = perfNow + msUntilAudioStarts + phaseOffsetMs;
 
       running = true;
+      document.body.classList.add('playing');
       requestAnimationFrame(tick);
       scheduleNextGag();
       // Burger greets you a bit after notes start flowing
@@ -3761,9 +3902,7 @@
       scheduleIdleSpeech();
     }
 
-    // ================================================================
     // BURGER'S VERDICT — persistent judgment
-    // ================================================================
     const HISTORY_KEY = 'burgerBeatHistory';
 
     function loadHistory() {
@@ -3867,7 +4006,7 @@
       const olderAvg  = older.length ? older.reduce((s,h) => s + h.acc, 0) / older.length : recentAvg;
       const trend     = recentAvg - olderAvg;
 
-      // Position: weight current heavier so the last run matters most, but history anchors it.
+      // position: weight current heavier so the last
       let pos = currentAcc * 0.5 + recentAvg * 0.3 + allAvg * 0.2;
       pos += trend * 0.4;
       // Satirical randomness — burger is capricious
@@ -3915,11 +4054,23 @@
       document.getElementById('verdictNeedle').style.left = '50%';
       document.getElementById('verdictMessage').textContent = pick(VERDICTS.first);
       document.getElementById('verdictHistory').textContent = 'History cleared';
+      // burger backs off — no stealing/snapping the slider this round
+      cancelSliderAnim();
+      clearTimeout(verdictTimer);
+      clearTimeout(overrideTimer);
+      currentVerdict = null;
+      verdictMin = null;
+      verdictMax = null;
+      userInteractedEnd = true;
+      againBtn.disabled = false;
+      againBtn.classList.remove('locked');
+      endBurgerOpinion.textContent = "Fine. Pick your own speed. See if I care.";
     });
 
     function endGame() {
       if (!running) return;   // idempotent — tick end and audio onended can race
       running = false;
+      document.body.classList.remove('playing');
       stopSynthSong();
       stopUploadedSong();
       stopGags();
