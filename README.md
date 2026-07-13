@@ -14,4 +14,4 @@ EVERYTHONG HERE IS SO GODDAMN STUPID!!(not yet, just got main menu on)
 
 ###### [PLAY HERE](https://arnavaggarwal-dev.github.io/unblocked-games)
 
-[Spoilers to the games]
+[Spoilers to the games](https://github.com/arnavaggarwal-dev/unblocked-games/blob/main/spoilers.md)
