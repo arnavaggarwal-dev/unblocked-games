@@ -39,6 +39,11 @@
         display: none;
         position: fixed;
         inset: 0;
+        background:
+          radial-gradient(circle at 20% 20%, rgba(120, 80, 255, 0.25), transparent 45%),
+          radial-gradient(circle at 80% 30%, rgba(0, 220, 255, 0.2), transparent 45%),
+          radial-gradient(circle at 50% 80%, rgba(255, 60, 160, 0.2), transparent 45%),
+          #0a0a0a;
       }
       #gallery-title {
         font-size: 1rem;
@@ -51,27 +56,59 @@
         z-index: 10;
       }
       .card {
-        border: 1px solid rgba(255,255,255,0.1);
+        width: 260px;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.35),
+          inset 0 1px 0 rgba(255, 255, 255, 0.5),
+          inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+          inset 0 0 4px 2px rgba(255, 255, 255, 0.2);
+        position: absolute;
+        overflow: hidden;
         padding: 2rem;
         cursor: grab;
         color: #f0f0f0;
         display: block;
-        position: absolute;
-        width: 260px;
-        background: #0a0a0a;
         user-select: none;
         transform-origin: center center;
         -webkit-user-drag: none;
         transition: none;
       }
-      .card:active { cursor: grabbing; }
-      .card-title { font-size: 1.1rem; margin-bottom: 0.5rem; font-weight: bold; }
-      .card-desc { font-size: 0.78rem; opacity: 0.45; line-height: 1.6; }
-
-      @keyframes neon-pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.4; }
+      .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.8),
+          transparent
+        );
       }
+      .card::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1px;
+        height: 100%;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.8),
+          transparent,
+          rgba(255, 255, 255, 0.3)
+        );
+      }
+      .card:active { cursor: grabbing; }
+      .card-title { font-size: 1.1rem; margin-bottom: 0.5rem; font-weight: bold; position: relative; z-index: 1; }
+      .card-desc { font-size: 0.78rem; opacity: 0.65; line-height: 1.6; position: relative; z-index: 1; }
     </style>
   </head>
   <body>
@@ -102,7 +139,7 @@
         <div class="card-title">DANCE BURGER</div>
         <div class="card-desc">try to defeat the burgers beats. good luck.</div>
       </div>
-      
+
       <div class="card" id="5" data-href="games/maze.html" draggable="false">
         <div class="card-title">Maze</div>
         <div class="card-desc">Its easy i swear. very easy to play.</div>
@@ -187,11 +224,21 @@
             frictionAir: 0.012,
             density:     0.002,
           });
+          body.cardIndex = i;
           World.add(world, body);
           el.style.left = (startPos[i].x - W/2) + 'px';
           el.style.top  = (startPos[i].y - H/2) + 'px';
           return { body, el, dropped: false };
         });
+
+        function dropCard(i) {
+          const c = cards[i];
+          if (c.dropped) return;
+          c.dropped = true;
+          Body.setStatic(c.body, false);
+          Body.setVelocity(c.body, { x: (Math.random() - 0.5) * 3, y: 0.5 });
+          Body.setAngularVelocity(c.body, (Math.random() - 0.5) * 0.15);
+        }
 
         const mouse = Mouse.create(document.documentElement);
         const mc = MouseConstraint.create(engine, {
@@ -211,16 +258,19 @@
           if (spd > MAX) Body.setVelocity(e.body, { x: vel.x/spd*MAX, y: vel.y/spd*MAX });
         });
 
-        cardEls.forEach((el, i) => {
-          el.addEventListener('mouseenter', () => {
-            const c = cards[i];
-            if (!c.dropped) {
-              c.dropped = true;
-              Body.setStatic(c.body, false);
-              Body.setVelocity(c.body, { x: (Math.random() - 0.5) * 3, y: 0.5 });
-              Body.setAngularVelocity(c.body, (Math.random() - 0.5) * 0.15);
-            }
+        // Any collision between two cards drops both — this is what
+        // lets a still-static card get knocked loose by a falling neighbor.
+        Events.on(engine, 'collisionStart', (event) => {
+          event.pairs.forEach(({ bodyA, bodyB }) => {
+            const aIsCard = bodyA.cardIndex !== undefined;
+            const bIsCard = bodyB.cardIndex !== undefined;
+            if (aIsCard) dropCard(bodyA.cardIndex);
+            if (bIsCard) dropCard(bodyB.cardIndex);
           });
+        });
+
+        cardEls.forEach((el, i) => {
+          el.addEventListener('mouseenter', () => dropCard(i));
 
           el.addEventListener('click', () => {
             if (isDragging) return;
@@ -253,41 +303,6 @@
         });
 
         Runner.run(Runner.create(), engine);
-
-        // ── Synced neon flashes ───────────────────────────────
-        const neonColors = [
-          '#ff003c', '#ff6600', '#ffee00',
-          '#00ff88', '#00cfff', '#cc00ff', '#ff00aa'
-        ];
-        let colorIdx = 0;
-
-        function flashCycle() {
-          const color = neonColors[colorIdx % neonColors.length];
-          colorIdx++;
-
-          // Flash on — instant, no transition
-          cardEls.forEach(el => {
-            el.style.transition  = 'none';
-            el.style.background  = color + '18';
-            el.style.borderColor = color;
-            el.style.boxShadow   = `0 0 16px ${color}99, inset 0 0 10px ${color}22`;
-          });
-
-          // Fade out after 120ms
-          setTimeout(() => {
-            cardEls.forEach(el => {
-              el.style.transition  = 'background 0.5s, border-color 0.5s, box-shadow 0.5s';
-              el.style.background  = '#0a0a0a';
-              el.style.borderColor = 'rgba(255,255,255,0.1)';
-              el.style.boxShadow   = 'none';
-            });
-          }, 120);
-
-          // Random gap 300–1200ms before next flash
-          setTimeout(flashCycle, 300 + Math.random() * 900);
-        }
-
-        flashCycle();
       }
     </script>
   </body>
