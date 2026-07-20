@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>KAMEHA RAYCASTER</title>
+<title>SHOOT KJO</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Kalam:wght@400;700&display=swap');
   :root{ --ink:#1a1a1a; --hud-red:#e8433a; --hud-yellow:#ffcf3f; }
@@ -106,7 +106,7 @@
       </div>
 
       <div id="tutorialOverlay" class="overlay">
-        <h1>KAMEHA BLASTER</h1>
+        <h1>SHOOT KJO</h1>
         <ul>
           <li><b>Aim with W A S D:</b> A / D turn left and right, W / S look up and down.</li>
           <li><b>Charge:</b> make a fist and hold it up in view of your webcam.</li>
@@ -526,8 +526,6 @@
   });
 
   cancelCamBtn.addEventListener('click', closeCaptureUI);
-
-  // ================= MEDIAPIPE HAND GESTURE (real kamehameha detection) =================
   // Shape-based: FIST charges, open PALM fires. Works with one hand, no precise
   // two-hand alignment needed (that was causing occlusion problems before).
   const gestureStatus = document.getElementById('gestureStatus');
@@ -541,7 +539,7 @@
   let camReady = false;
   let spaceHeld = false;
 
-  const MIN_CHARGE_FRAMES = 6;
+  const MIN_CHARGE_FRAMES = 7;
   const MIN_FIRE_CHARGE = 0.35;
 
   function dist2(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
