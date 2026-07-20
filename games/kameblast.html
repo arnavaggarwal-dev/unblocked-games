@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>KAMEHA RAYCASTER</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Kalam:wght@400;700&display=swap');
+  :root{ --ink:#1a1a1a; --hud-red:#e8433a; --hud-yellow:#ffcf3f; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:#111;font-family:'Kalam',cursive;color:var(--ink);overflow:hidden;
+    display:flex;align-items:center;justify-content:center;}
+  #stage{position:relative;width:960px;max-width:100vw;height:680px;max-height:100vh;}
+  #frame{position:relative;width:100%;height:100%;background:#2b2b2b;border-radius:14px;padding:14px;
+    box-shadow:0 20px 50px rgba(0,0,0,.6), inset 0 0 0 4px #000;}
+  #screenWrap{position:relative;width:100%;height:100%;border-radius:6px;overflow:hidden;border:6px solid #000;background:#000;}
+  canvas#view{display:block;width:100%;height:100%;image-rendering:pixelated;}
+
+  #hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;
+    padding:10px 16px;pointer-events:none;font-family:'Bangers',cursive;letter-spacing:1px;}
+  .hud-box{background:#fff8e6;border:4px solid var(--ink);border-radius:4px;padding:4px 12px;
+    box-shadow:4px 4px 0 rgba(0,0,0,.5);transform:rotate(-1.5deg);}
+  #scoreBox{transform:rotate(1.5deg);}
+  .hud-label{font-size:13px;color:#777;}
+  .hud-val{font-size:24px;color:var(--hud-red);text-shadow:1px 1px 0 #000;}
+  #hearts{display:flex;gap:4px;margin-top:2px;}
+  .heart{width:16px;height:16px;}
+
+  #camPanel{position:absolute;bottom:10px;left:10px;width:170px;background:#fff8e6;border:4px solid var(--ink);
+    border-radius:4px;padding:6px;box-shadow:4px 4px 0 rgba(0,0,0,.5);transform:rotate(-1deg);z-index:5;
+    font-family:'Kalam',cursive;}
+  #camPreview{position:relative;width:100%;height:120px;background:#000;border:3px solid #000;border-radius:3px;overflow:hidden;}
+  #camPreview video, #camPreview canvas{position:absolute;top:0;left:0;width:100%;height:100%;transform:scaleX(-1);}
+  #gestureStatus{font-family:'Bangers',cursive;font-size:15px;color:var(--hud-red);text-align:center;margin-top:5px;letter-spacing:.5px;}
+  #chargeBarWrap{height:8px;background:#ddd;border:2px solid #000;border-radius:3px;margin-top:4px;overflow:hidden;}
+  #chargeBarFill{height:100%;width:0%;background:linear-gradient(90deg,#ffcf3f,#ff6a2e);}
+  #gestureDebug{font-size:9px;color:#888;text-align:center;margin-top:3px;font-family:monospace;}
+
+  #uploadPanel{position:absolute;bottom:10px;right:10px;font-family:'Bangers',cursive;background:#fff8e6;
+    border:4px solid var(--ink);border-radius:4px;padding:8px 10px;box-shadow:4px 4px 0 rgba(0,0,0,.5);
+    transform:rotate(1deg);z-index:5;max-width:190px;}
+  #uploadPanel p{margin:0 0 6px;font-size:12px;font-family:'Kalam',cursive;color:#333;}
+  #uploadPanel input{font-family:'Kalam',cursive;font-size:11px;width:100%;}
+  #faceStatus{font-size:10px;color:#3a7d2c;margin-top:4px;font-family:'Kalam',cursive;}
+
+  #minimap{position:absolute;top:66px;right:10px;border:3px solid #000;background:rgba(0,0,0,.55);z-index:4;}
+
+  .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:rgba(20,30,10,.92);text-align:center;padding:20px;z-index:10;}
+  .overlay h1{font-family:'Bangers',cursive;font-size:56px;color:var(--hud-yellow);-webkit-text-stroke:3px #000;
+    letter-spacing:2px;margin:0 0 6px;transform:rotate(-2deg);}
+  .overlay p{font-family:'Kalam',cursive;color:#fff;font-size:15px;max-width:520px;margin:4px 0;text-align:left;}
+  .overlay ul{font-family:'Kalam',cursive;color:#fff;font-size:15px;max-width:520px;text-align:left;margin:8px 0;padding-left:22px;}
+  .overlay li{margin:4px 0;}
+  .btn{font-family:'Bangers',cursive;font-size:22px;letter-spacing:1px;background:var(--hud-red);color:#fff;
+    border:4px solid #000;border-radius:6px;padding:10px 26px;margin-top:14px;cursor:pointer;
+    box-shadow:4px 4px 0 rgba(0,0,0,.6);}
+  .btn:active{transform:translateY(2px);box-shadow:1px 1px 0 rgba(0,0,0,.6);}
+  .btn.secondary{background:#555;font-size:16px;padding:7px 16px;}
+  .btn:disabled{background:#777;cursor:not-allowed;box-shadow:2px 2px 0 rgba(0,0,0,.4);opacity:.6;}
+  #tutorialTimer{font-family:'Bangers',cursive;font-size:20px;color:var(--hud-yellow);margin-top:10px;}
+  #tutorialUpload{background:rgba(255,255,255,.08);border:2px dashed rgba(255,255,255,.4);border-radius:6px;
+    padding:8px 14px;margin:10px 0;width:100%;max-width:460px;}
+  #tutorialUpload input{width:100%;font-family:'Kalam',cursive;font-size:12px;color:#fff;}
+  #faceStatusStart{font-size:11px;color:#bde8a0;text-align:center;margin-top:4px;font-family:'Kalam',cursive;}
+  #photoCaptureRow{text-align:center;margin-top:6px;}
+  #photoCaptureRow .btn{font-size:13px;padding:6px 12px;margin-top:0;}
+  #photoCaptureBox{margin-top:8px;text-align:center;}
+  #capturePreview{width:220px;max-width:100%;height:165px;object-fit:cover;background:#000;
+    border:3px solid #000;border-radius:4px;transform:scaleX(-1);}
+  #photoCaptureBtns{margin-top:6px;}
+  #photoCaptureBtns .btn{font-size:13px;padding:6px 12px;margin:0 4px;}
+  .hidden{display:none !important;}
+  #crosshair{position:absolute;top:50%;left:50%;width:18px;height:18px;margin:-9px;pointer-events:none;z-index:3;}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="frame">
+    <div id="screenWrap">
+      <canvas id="view" width="960" height="600"></canvas>
+      <svg id="crosshair" viewBox="0 0 18 18"><g stroke="#fff" stroke-width="2" opacity=".85">
+        <line x1="9" y1="0" x2="9" y2="6"/><line x1="9" y1="12" x2="9" y2="18"/>
+        <line x1="0" y1="9" x2="6" y2="9"/><line x1="12" y1="9" x2="18" y2="9"/></g></svg>
+      <canvas id="minimap" width="140" height="140"></canvas>
+
+      <div id="hud">
+        <div id="scoreBox" class="hud-box"><div class="hud-label">SCORE</div><div class="hud-val" id="scoreVal">0</div></div>
+        <div class="hud-box"><div class="hud-label">WAVE</div><div class="hud-val" id="waveVal">1</div></div>
+        <div class="hud-box"><div class="hud-label">LIFE</div><div id="hearts"></div></div>
+      </div>
+
+      <div id="camPanel">
+        <div id="camPreview">
+          <video id="camVideo" autoplay playsinline muted></video>
+          <canvas id="camOverlay" width="160" height="120"></canvas>
+        </div>
+        <div id="gestureStatus">WAITING FOR CAMERA</div>
+        <div id="chargeBarWrap"><div id="chargeBarFill"></div></div>
+        <div id="gestureDebug">ratio: -- &nbsp; grow: --</div>
+      </div>
+
+      <div id="uploadPanel">
+        <p><b>Custom goon face</b> — your own photo, stays local in your browser.</p>
+        <input type="file" id="faceInput" accept="image/*">
+        <div id="faceStatus">Loading default.png...</div>
+      </div>
+
+      <div id="tutorialOverlay" class="overlay">
+        <h1>KAMEHA BLASTER</h1>
+        <ul>
+          <li><b>Aim with W A S D:</b> A / D turn left and right, W / S look up and down.</li>
+          <li><b>Charge:</b> make a fist and hold it up in view of your webcam.</li>
+          <li><b>Fire:</b> open that fist into a flat palm.</li>
+          <li>No webcam? Hold <b>SPACE</b> to charge, release to fire.</li>
+          <li>Goons close in from every direction — turn and blast them before they reach you. 3 hits and you're out.</li>
+        </ul>
+        <div id="tutorialUpload">
+          <p style="text-align:center;margin-bottom:4px;"><b>Optional:</b> upload a custom face for the goons — stays local in your browser, never uploaded anywhere.</p>
+          <input type="file" id="faceInputStart" accept="image/*">
+          <div id="faceStatusStart">Loading default.png...</div>
+          <div id="photoCaptureRow">
+            <button class="btn secondary" id="openCamBtn" type="button">📸 Or take a photo now</button>
+          </div>
+          <div id="photoCaptureBox" class="hidden">
+            <video id="capturePreview" autoplay playsinline muted></video>
+            <div id="photoCaptureBtns">
+              <button class="btn secondary" id="snapBtn" type="button">Capture</button>
+              <button class="btn secondary" id="cancelCamBtn" type="button">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <p>Read it — the buttons unlock in a few seconds.</p>
+        <div id="tutorialTimer">Starting in 20s...</div>
+        <button class="btn" id="startBtn" disabled>START</button>
+        <button class="btn secondary" id="skipCamBtn" disabled>Skip camera, use spacebar</button>
+      </div>
+
+      <div id="overOverlay" class="overlay hidden">
+        <h1>WASTED</h1>
+        <p id="finalScoreLine" style="text-align:center;">Final score: 0</p>
+        <button class="btn" id="retryBtn">TRY AGAIN</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js" crossorigin="anonymous"></script>
+<script>
+(() => {
+  // ================= RAYCASTER CORE =================
+  const view = document.getElementById('view');
+  const vctx = view.getContext('2d');
+  const VW = view.width, VH = view.height;
+
+  // open arena — border walls only, no interior maze
+  const MAPW = 21, MAPH = 21;
+  const MAP = Array.from({length:MAPH}, (_, y) =>
+    Array.from({length:MAPW}, (_, x) => (x===0||y===0||x===MAPW-1||y===MAPH-1) ? 1 : 0)
+  );
+  // a few decorative pillars scattered around the edges for visual interest (not a maze — plenty of open floor)
+  [[4,4],[16,4],[4,16],[16,16],[10,3],[10,17]].forEach(([x,y]) => { MAP[y][x] = 2; });
+
+  const CENTER_X = MAPW/2, CENTER_Y = MAPH/2;
+  let player = { x: CENTER_X, y: CENTER_Y, dirX: 0, dirY: -1, planeX: 0.66, planeY: 0 };
+  let pitch = 0; // vertical look offset in px, purely visual shear
+  const PITCH_MAX = 180, PITCH_SPEED = 4.5;
+  const rotSpeed = 0.045;
+  const keys = {};
+  window.addEventListener('keydown', e => { keys[e.code] = true; });
+  window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+  function movePlayer(){
+    // no movement — the player holds their ground. WASD only aims.
+    if (keys['KeyA'] || keys['ArrowLeft']) rotate(-rotSpeed);
+    if (keys['KeyD'] || keys['ArrowRight']) rotate(rotSpeed);
+    if (keys['KeyW'] || keys['ArrowUp']) pitch = Math.min(PITCH_MAX, pitch + PITCH_SPEED);
+    if (keys['KeyS'] || keys['ArrowDown']) pitch = Math.max(-PITCH_MAX, pitch - PITCH_SPEED);
+  }
+  function rotate(a){
+    const odx = player.dirX;
+    player.dirX = player.dirX*Math.cos(a) - player.dirY*Math.sin(a);
+    player.dirY = odx*Math.sin(a) + player.dirY*Math.cos(a);
+    const opx = player.planeX;
+    player.planeX = player.planeX*Math.cos(a) - player.planeY*Math.sin(a);
+    player.planeY = opx*Math.sin(a) + player.planeY*Math.cos(a);
+  }
+
+  let zbuffer = new Float64Array(VW);
+
+  function castWalls(){
+    const horizon = VH/2 + pitch;
+    for (let col = 0; col < VW; col++){
+      const cameraX = 2*col/VW - 1;
+      const rayDirX = player.dirX + player.planeX*cameraX;
+      const rayDirY = player.dirY + player.planeY*cameraX;
+      let mapX = Math.floor(player.x), mapY = Math.floor(player.y);
+      const deltaDistX = Math.abs(1/rayDirX), deltaDistY = Math.abs(1/rayDirY);
+      let stepX, stepY, sideDistX, sideDistY;
+      if (rayDirX < 0){ stepX = -1; sideDistX = (player.x - mapX) * deltaDistX; }
+      else { stepX = 1; sideDistX = (mapX + 1 - player.x) * deltaDistX; }
+      if (rayDirY < 0){ stepY = -1; sideDistY = (player.y - mapY) * deltaDistY; }
+      else { stepY = 1; sideDistY = (mapY + 1 - player.y) * deltaDistY; }
+
+      let hit = 0, side = 0, wallType = 1;
+      let safety = 0;
+      while (hit === 0 && safety++ < 64){
+        if (sideDistX < sideDistY){ sideDistX += deltaDistX; mapX += stepX; side = 0; }
+        else { sideDistY += deltaDistY; mapY += stepY; side = 1; }
+        if (mapY < 0 || mapY >= MAPH || mapX < 0 || mapX >= MAPW) { hit = 1; wallType = 1; break; }
+        if (MAP[mapY][mapX] > 0){ hit = 1; wallType = MAP[mapY][mapX]; }
+      }
+      const perpDist = side === 0 ? (sideDistX - deltaDistX) : (sideDistY - deltaDistY);
+      zbuffer[col] = perpDist;
+      const lineH = Math.floor(VH / Math.max(perpDist, 0.0001));
+      const drawStart = Math.max(0, Math.floor(-lineH/2 + horizon));
+      const drawEnd = Math.min(VH-1, Math.floor(lineH/2 + horizon));
+
+      let base = wallType === 2 ? [120,150,90] : [178,116,70];
+      const shade = side === 1 ? 0.65 : 1.0;
+      const fog = Math.max(0.35, 1 - perpDist/14);
+      const r = base[0]*shade*fog, g = base[1]*shade*fog, b = base[2]*shade*fog;
+      vctx.strokeStyle = `rgb(${r|0},${g|0},${b|0})`;
+      vctx.beginPath(); vctx.moveTo(col, drawStart); vctx.lineTo(col, drawEnd); vctx.stroke();
+      if ((mapX+mapY) % 4 === 0 && Math.abs(sideDistX-sideDistY) < 0.02){
+        vctx.strokeStyle = 'rgba(0,0,0,0.25)';
+        vctx.beginPath(); vctx.moveTo(col, drawStart); vctx.lineTo(col, drawEnd); vctx.stroke();
+      }
+    }
+  }
+
+  function drawSkyFloor(){
+    const horizon = VH/2 + pitch;
+    const skyGrad = vctx.createLinearGradient(0,0,0,Math.max(1,horizon));
+    skyGrad.addColorStop(0,'#4fb8ef'); skyGrad.addColorStop(1,'#bfe9ff');
+    vctx.fillStyle = skyGrad; vctx.fillRect(0,0,VW,Math.max(0,horizon));
+    vctx.fillStyle = '#ffe14d';
+    vctx.beginPath(); vctx.arc(VW-90,60+pitch*0.3,34,0,Math.PI*2); vctx.fill();
+    const floorGrad = vctx.createLinearGradient(0,horizon,0,VH);
+    floorGrad.addColorStop(0,'#3f7a24'); floorGrad.addColorStop(1,'#274f16');
+    vctx.fillStyle = floorGrad; vctx.fillRect(0,Math.max(0,horizon),VW,VH-Math.max(0,horizon));
+  }
+
+  // ================= ENTITIES: enemies + fireballs =================
+  let enemies = [];
+  let fireballs = [];
+  let particles = [];
+  let frame = 0, spawnTimer = 0, spawnInterval = 130, enemySpeed = 0.018;
+  let score = 0, wave = 1, lives = 3;
+
+  function spawnEnemy(){
+    const angle = Math.random()*Math.PI*2;
+    const r = 8.5; // spawn ring near the arena edge
+    enemies.push({ x: CENTER_X + Math.cos(angle)*r, y: CENTER_Y + Math.sin(angle)*r, hp:1, dead:false, bob:Math.random()*10,
+      suitColor:['#3b5b8c','#8c3b3b','#3b8c5b'][Math.floor(Math.random()*3)] });
+  }
+
+  function distTo(x,y){ return Math.hypot(x-player.x, y-player.y); }
+
+  function updateEnemies(){
+    enemies.forEach(en => {
+      if (en.dead) return;
+      const d = distTo(en.x, en.y);
+      if (d > 0.6){
+        const dx = (player.x - en.x)/d, dy = (player.y - en.y)/d;
+        const nx = en.x + dx*enemySpeed, ny = en.y + dy*enemySpeed;
+        if (MAP[Math.floor(en.y)][Math.floor(nx)] === 0) en.x = nx;
+        if (MAP[Math.floor(ny)][Math.floor(en.x)] === 0) en.y = ny;
+      } else {
+        en.dead = true; lives--; drawHearts();
+        if (lives <= 0) endGame();
+      }
+    });
+    enemies = enemies.filter(e => !e.dead);
+  }
+
+  function fireBlast(){
+    fireballs.push({ x: player.x + player.dirX*0.4, y: player.y + player.dirY*0.4,
+      dx: player.dirX, dy: player.dirY, dist: 0, spin: 0 });
+  }
+  function updateFireballs(){
+    fireballs.forEach(fb => {
+      fb.x += fb.dx*0.16; fb.y += fb.dy*0.16; fb.dist += 0.16; fb.spin += 0.3;
+      if (fb.dist > 0.3 && MAP[Math.floor(fb.y)] && MAP[Math.floor(fb.y)][Math.floor(fb.x)] > 0) fb.dist = 999;
+      enemies.forEach(en => {
+        if (en.dead) return;
+        if (Math.hypot(en.x-fb.x, en.y-fb.y) < 0.45){
+          en.dead = true; fb.dist = 999;
+          score += 10; scoreVal.textContent = score;
+          for (let i=0;i<10;i++) particles.push({x:en.x,y:en.y,vx:(Math.random()-0.5)*0.06,vy:(Math.random()-0.5)*0.06,life:20+Math.random()*10});
+        }
+      });
+    });
+    fireballs = fireballs.filter(fb => fb.dist < 12);
+    enemies = enemies.filter(e => !e.dead);
+  }
+
+  // ================= sprite billboard rendering =================
+  function renderSprites(){
+    const sprites = [
+      ...enemies.map(e => ({type:'enemy', x:e.x, y:e.y, ref:e})),
+      ...fireballs.map(f => ({type:'fireball', x:f.x, y:f.y, ref:f})),
+    ];
+    sprites.sort((a,b) => distTo(b.x,b.y) - distTo(a.x,a.y));
+    const horizon = VH/2 + pitch;
+
+    sprites.forEach(s => {
+      const spriteX = s.x - player.x, spriteY = s.y - player.y;
+      const invDet = 1.0/(player.planeX*player.dirY - player.dirX*player.planeY);
+      const transformX = invDet*(player.dirY*spriteX - player.dirX*spriteY);
+      const transformY = invDet*(-player.planeY*spriteX + player.planeX*spriteY);
+      if (transformY <= 0.15) return;
+      const screenX = Math.floor((VW/2)*(1 + transformX/transformY));
+
+      if (s.type === 'enemy'){
+        const bob = Math.sin(frame*0.06 + s.ref.bob) * 4;
+        const spriteH = Math.abs(Math.floor(VH/transformY));
+        const spriteW = spriteH * 0.62;
+        const drawStartY = Math.floor(horizon - spriteH/2 + bob);
+        const left = Math.floor(screenX - spriteW/2), right = Math.floor(screenX + spriteW/2);
+        if (right < 0 || left > VW) return;
+        const checkCol = Math.max(0, Math.min(VW-1, screenX));
+        if (zbuffer[checkCol] < transformY) return;
+        drawEnemySprite(left, drawStartY, spriteW, spriteH, s.ref, transformY);
+      } else {
+        const size = Math.min(220, Math.max(10, Math.abs(Math.floor(VH/transformY)) * 0.28));
+        const checkCol = Math.max(0, Math.min(VW-1, screenX));
+        if (zbuffer[checkCol] < transformY) return;
+        drawFireballSprite(screenX, horizon + 10, size, s.ref.spin, transformY);
+      }
+    });
+
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.life--;
+      const spriteX = p.x - player.x, spriteY = p.y - player.y;
+      const invDet = 1.0/(player.planeX*player.dirY - player.dirX*player.planeY);
+      const transformX = invDet*(player.dirY*spriteX - player.dirX*spriteY);
+      const transformY = invDet*(-player.planeY*spriteX + player.planeX*spriteY);
+      if (transformY <= 0.1) return;
+      const screenX = (VW/2)*(1 + transformX/transformY);
+      const size = Math.max(1, Math.abs(6/transformY));
+      vctx.globalAlpha = Math.max(0, p.life/30);
+      vctx.fillStyle = '#ffcf3f';
+      vctx.beginPath(); vctx.arc(screenX, horizon, size, 0, Math.PI*2); vctx.fill();
+      vctx.globalAlpha = 1;
+    });
+    particles = particles.filter(p => p.life > 0);
+  }
+
+  function drawEnemySprite(x, y, w, h, en, dist){
+    const cx = x + w/2;
+    vctx.save();
+    vctx.fillStyle = '#1a1a1a';
+    vctx.fillRect(x+w*0.18, y+h*0.72, w*0.28, h*0.28);
+    vctx.fillRect(x+w*0.54, y+h*0.72, w*0.28, h*0.28);
+    vctx.fillStyle = en.suitColor;
+    vctx.fillRect(x+w*0.08, y+h*0.32, w*0.84, h*0.44);
+    vctx.strokeStyle='rgba(0,0,0,0.6)'; vctx.lineWidth = Math.max(1, w*0.03);
+    vctx.strokeRect(x+w*0.08, y+h*0.32, w*0.84, h*0.44);
+    vctx.fillStyle = '#ffcf3f';
+    [0.3,0.5,0.7].forEach(f => { vctx.beginPath(); vctx.arc(x+w*f, y+h*0.5, w*0.035, 0, Math.PI*2); vctx.fill(); });
+    const headR = w*0.26;
+    vctx.save();
+    vctx.beginPath(); vctx.arc(cx, y+h*0.2, headR, 0, Math.PI*2); vctx.closePath();
+    vctx.fillStyle = '#e8c39e'; vctx.fill(); vctx.clip();
+    const activeFace = faceImg || defaultFaceImg;
+    if (activeFace){ vctx.drawImage(activeFace, cx-headR, y+h*0.2-headR, headR*2, headR*2); }
+    else {
+      vctx.fillStyle = '#1a1a1a'; vctx.fillRect(cx-headR, y+h*0.2-headR, headR*2, headR*0.9);
+      vctx.fillStyle = '#000';
+      vctx.beginPath(); vctx.arc(cx-headR*0.35, y+h*0.2, headR*0.14, 0, Math.PI*2);
+      vctx.arc(cx+headR*0.35, y+h*0.2, headR*0.14, 0, Math.PI*2); vctx.fill();
+    }
+    vctx.restore();
+    vctx.strokeStyle = '#000'; vctx.lineWidth = Math.max(1, w*0.03);
+    vctx.beginPath(); vctx.arc(cx, y+h*0.2, headR, 0, Math.PI*2); vctx.stroke();
+    vctx.fillStyle = '#c0392b';
+    vctx.beginPath(); vctx.ellipse(cx, y+h*0.06, headR*0.95, headR*0.4, 0, Math.PI, 0); vctx.fill(); vctx.stroke();
+    const fog = Math.min(0.6, Math.max(0, (dist-4)/12));
+    if (fog > 0){ vctx.fillStyle = `rgba(90,140,180,${fog})`; vctx.fillRect(x,y,w,h); }
+    vctx.restore();
+  }
+
+  function drawFireballSprite(x, y, r, spin, dist){
+    vctx.save();
+    vctx.translate(x,y); vctx.rotate(spin);
+    const glow = vctx.createRadialGradient(0,0,0,0,0,r*2.2);
+    glow.addColorStop(0,'rgba(255,207,63,0.5)'); glow.addColorStop(1,'rgba(255,106,46,0)');
+    vctx.fillStyle = glow; vctx.beginPath(); vctx.arc(0,0,r*2.2,0,Math.PI*2); vctx.fill();
+    const core = vctx.createRadialGradient(-r*0.3,-r*0.3,r*0.1,0,0,r);
+    core.addColorStop(0,'#fffbe0'); core.addColorStop(0.35,'#ffe14d');
+    core.addColorStop(0.7,'#ff8a2e'); core.addColorStop(1,'#c8390f');
+    vctx.fillStyle = core; vctx.beginPath(); vctx.arc(0,0,r,0,Math.PI*2); vctx.fill();
+    vctx.strokeStyle = '#000'; vctx.lineWidth = Math.max(1.5, r*0.06);
+    vctx.beginPath(); vctx.arc(0,0,r,0,Math.PI*2); vctx.stroke();
+    vctx.strokeStyle = 'rgba(255,180,60,0.8)'; vctx.lineWidth = Math.max(1,r*0.15);
+    for (let i=0;i<5;i++){
+      const a = (i/5)*Math.PI*2;
+      vctx.beginPath(); vctx.moveTo(Math.cos(a)*r*0.8, Math.sin(a)*r*0.8);
+      vctx.lineTo(Math.cos(a)*r*1.5, Math.sin(a)*r*1.5); vctx.stroke();
+    }
+    vctx.restore();
+  }
+
+  // ================= minimap =================
+  const mmCanvas = document.getElementById('minimap');
+  const mmCtx = mmCanvas.getContext('2d');
+  function drawMinimap(){
+    const scale = mmCanvas.width / MAPW;
+    mmCtx.clearRect(0,0,mmCanvas.width,mmCanvas.height);
+    for (let y=0;y<MAPH;y++) for (let x=0;x<MAPW;x++){
+      mmCtx.fillStyle = MAP[y][x] > 0 ? '#eee' : 'rgba(255,255,255,0.06)';
+      mmCtx.fillRect(x*scale, y*scale, scale, scale);
+    }
+    enemies.forEach(e => { mmCtx.fillStyle = '#e8433a'; mmCtx.beginPath(); mmCtx.arc(e.x*scale,e.y*scale,2.5,0,Math.PI*2); mmCtx.fill(); });
+    mmCtx.fillStyle = '#ffcf3f';
+    mmCtx.beginPath(); mmCtx.arc(player.x*scale, player.y*scale, 3, 0, Math.PI*2); mmCtx.fill();
+    mmCtx.strokeStyle = '#ffcf3f'; mmCtx.lineWidth = 1.5;
+    mmCtx.beginPath(); mmCtx.moveTo(player.x*scale, player.y*scale);
+    mmCtx.lineTo((player.x+player.dirX*1.3)*scale, (player.y+player.dirY*1.3)*scale); mmCtx.stroke();
+  }
+
+  // ================= HUD =================
+  const scoreVal = document.getElementById('scoreVal');
+  const waveVal = document.getElementById('waveVal');
+  const heartsEl = document.getElementById('hearts');
+  function heartSVG(filled){
+    return `<svg class="heart" viewBox="0 0 32 29"><path d="M16 28C4 20 1 13 1 8.5 1 3.8 4.6 1 8.7 1c3 0 5.3 1.7 7.3 4.6C18 2.7 20.3 1 23.3 1 27.4 1 31 3.8 31 8.5 31 13 28 20 16 28Z"
+      fill="${filled?'#e8433a':'#ffffff'}" stroke="#000" stroke-width="2"/></svg>`;
+  }
+  function drawHearts(){ heartsEl.innerHTML = Array.from({length:3},(_,i)=>heartSVG(i<lives)).join(''); }
+
+  // ================= face upload =================
+  let faceImg = null; // user-uploaded / captured face, takes priority when set
+
+  // default.png must sit next to this HTML file — it's used for every goon until
+  // the user uploads or captures their own photo. Falls back to a drawn cartoon
+  // face only if default.png can't be found.
+  let defaultFaceImg = null;
+  (() => {
+    const img = new Image();
+    img.onload = () => {
+      defaultFaceImg = img;
+      document.getElementById('faceStatus').textContent = 'Using default.png';
+      document.getElementById('faceStatusStart').textContent = 'Using default.png';
+    };
+    img.onerror = () => {
+      console.warn('default.png not found next to this file — using built-in cartoon face instead');
+      document.getElementById('faceStatus').textContent = 'default.png not found — using built-in face';
+      document.getElementById('faceStatusStart').textContent = 'default.png not found — using built-in face';
+    };
+    img.src = 'default.png';
+  })();
+
+  function loadFaceFile(file){
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        faceImg = img;
+        document.getElementById('faceStatus').textContent = 'Custom face loaded.';
+        document.getElementById('faceStatusStart').textContent = 'Custom face loaded.';
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  document.getElementById('faceInput').addEventListener('change', e => loadFaceFile(e.target.files[0]));
+
+  const faceInputStart = document.getElementById('faceInputStart');
+  faceInputStart.addEventListener('click', () => pauseTutorialTimer());
+  faceInputStart.addEventListener('change', e => { loadFaceFile(e.target.files[0]); resumeTutorialTimer(); });
+  // covers the "opened the file picker then cancelled" case — window regains focus either way
+  window.addEventListener('focus', () => resumeTutorialTimer());
+
+  // ---- take-a-photo-now option, captured at full webcam resolution (not a low-res thumbnail) ----
+  const openCamBtn = document.getElementById('openCamBtn');
+  const photoCaptureBox = document.getElementById('photoCaptureBox');
+  const capturePreview = document.getElementById('capturePreview');
+  const snapBtn = document.getElementById('snapBtn');
+  const cancelCamBtn = document.getElementById('cancelCamBtn');
+  let captureStream = null;
+
+  function stopCaptureStream(){
+    if (captureStream){ captureStream.getTracks().forEach(t => t.stop()); captureStream = null; }
+  }
+  function closeCaptureUI(){
+    stopCaptureStream();
+    photoCaptureBox.classList.add('hidden');
+    openCamBtn.classList.remove('hidden');
+    resumeTutorialTimer();
+  }
+
+  openCamBtn.addEventListener('click', async () => {
+    pauseTutorialTimer();
+    try {
+      captureStream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1920 }, height: { ideal: 1440 }, facingMode: 'user' }
+      });
+      capturePreview.srcObject = captureStream;
+      photoCaptureBox.classList.remove('hidden');
+      openCamBtn.classList.add('hidden');
+    } catch (err) {
+      console.warn('camera capture unavailable', err);
+      document.getElementById('faceStatusStart').textContent = "Couldn't access camera — try uploading a file instead.";
+      resumeTutorialTimer();
+    }
+  });
+
+  snapBtn.addEventListener('click', () => {
+    const w = capturePreview.videoWidth || 1280, h = capturePreview.videoHeight || 960;
+    const cnv = document.createElement('canvas');
+    cnv.width = w; cnv.height = h;
+    const cctx = cnv.getContext('2d');
+    cctx.translate(w, 0); cctx.scale(-1, 1); // un-mirror so the saved photo isn't flipped
+    cctx.drawImage(capturePreview, 0, 0, w, h);
+    const img = new Image();
+    img.onload = () => {
+      faceImg = img;
+      document.getElementById('faceStatus').textContent = 'Custom photo captured.';
+      document.getElementById('faceStatusStart').textContent = `Custom photo captured (${w}×${h}).`;
+    };
+    img.src = cnv.toDataURL('image/png');
+    closeCaptureUI();
+  });
+
+  cancelCamBtn.addEventListener('click', closeCaptureUI);
+
+  // ================= MEDIAPIPE HAND GESTURE (real kamehameha detection) =================
+  // Shape-based: FIST charges, open PALM fires. Works with one hand, no precise
+  // two-hand alignment needed (that was causing occlusion problems before).
+  const gestureStatus = document.getElementById('gestureStatus');
+  const gestureDebug = document.getElementById('gestureDebug');
+  const chargeBarFill = document.getElementById('chargeBarFill');
+  const camVideo = document.getElementById('camVideo');
+  const camOverlay = document.getElementById('camOverlay');
+  const camOCtx = camOverlay.getContext('2d');
+
+  let charging = false, chargeFrames = 0, chargeAmt = 0;
+  let camReady = false;
+  let spaceHeld = false;
+
+  const MIN_CHARGE_FRAMES = 6;
+  const MIN_FIRE_CHARGE = 0.35;
+
+  function dist2(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+  function countCurledFingers(lm){
+    const wrist = lm[0];
+    const pairs = [[8,6],[12,10],[16,14],[20,18]];
+    let curled = 0;
+    pairs.forEach(([tip, pip]) => { if (dist2(lm[tip], wrist) < dist2(lm[pip], wrist)) curled++; });
+    return curled;
+  }
+
+  function onHandsResults(results){
+    camOCtx.save();
+    camOCtx.clearRect(0,0,camOverlay.width,camOverlay.height);
+    camOCtx.drawImage(results.image, 0, 0, camOverlay.width, camOverlay.height);
+
+    const lms = results.multiHandLandmarks || [];
+    if (lms.length >= 1){
+      const curled = Math.max(...lms.map(countCurledFingers));
+      camOCtx.fillStyle = '#ffcf3f';
+      lms.forEach(h => h.forEach(p => {
+        camOCtx.beginPath(); camOCtx.arc(p.x*camOverlay.width, p.y*camOverlay.height, 2, 0, Math.PI*2); camOCtx.fill();
+      }));
+
+      const isFist = curled >= 3;
+      const isPalm = curled <= 1;
+
+      if (isFist){
+        charging = true;
+        chargeFrames++;
+        chargeAmt = Math.min(1, chargeFrames/MIN_CHARGE_FRAMES);
+        gestureStatus.textContent = chargeAmt >= 1 ? 'OPEN HAND TO FIRE!' : 'CHARGING FIST...';
+      } else if (isPalm && charging && chargeAmt >= MIN_FIRE_CHARGE){
+        triggerFire();
+        charging = false; chargeFrames = 0; chargeAmt = 0;
+        gestureStatus.textContent = 'FIRED!';
+      } else if (isPalm){
+        gestureStatus.textContent = 'MAKE A FIST TO CHARGE';
+      } else {
+        gestureStatus.textContent = 'FIST OR PALM?';
+      }
+      gestureDebug.textContent = `curled: ${curled}/4 (fist>=3, palm<=1) | shots: ${fireballs.length}`;
+    } else {
+      charging = false; chargeFrames = 0; chargeAmt = 0;
+      gestureStatus.textContent = 'SHOW A HAND TO CHARGE';
+      gestureDebug.textContent = `hands visible: 0`;
+    }
+    chargeBarFill.style.width = (chargeAmt*100) + '%';
+    camOCtx.restore();
+  }
+
+  function triggerFire(){ if (running) fireBlast(); }
+
+  async function initCamera(){
+    try{
+      const hands = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${f}` });
+      hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.6, minTrackingConfidence: 0.5, selfieMode: true });
+      hands.onResults(onHandsResults);
+      const camera = new Camera(camVideo, {
+        onFrame: async () => { await hands.send({ image: camVideo }); },
+        width: 320, height: 240
+      });
+      await camera.start();
+      camReady = true;
+      gestureStatus.textContent = 'MAKE A FIST TO CHARGE';
+    } catch(err){
+      gestureStatus.textContent = 'NO CAMERA — USE SPACE';
+      console.warn('camera/mediapipe unavailable, falling back to spacebar', err);
+    }
+  }
+
+  window.addEventListener('keydown', e => {
+    if (e.code === 'Space' && !spaceHeld){ spaceHeld = true; charging = true; chargeFrames = 0; }
+  });
+  window.addEventListener('keyup', e => {
+    if (e.code === 'Space'){
+      spaceHeld = false;
+      if (chargeAmt > 0.15) triggerFire();
+      charging = false; chargeFrames = 0; chargeAmt = 0;
+    }
+  });
+  function updateSpaceCharge(){
+    if (spaceHeld && !camReady){
+      chargeFrames++;
+      chargeAmt = Math.min(1, chargeFrames/22);
+      chargeBarFill.style.width = (chargeAmt*100)+'%';
+      gestureStatus.textContent = 'CHARGING (SPACE)';
+    }
+  }
+
+  // ================= main loop =================
+  let running = false, loopId;
+  function resetState(){
+    score=0; wave=1; lives=3; enemies=[]; fireballs=[]; particles=[];
+    spawnTimer=0; spawnInterval=130; enemySpeed=0.018; pitch=0;
+    player = { x: CENTER_X, y: CENTER_Y, dirX: 0, dirY: -1, planeX: 0.66, planeY: 0 };
+    scoreVal.textContent=0; waveVal.textContent=1; drawHearts();
+  }
+  function endGame(){
+    running = false; cancelAnimationFrame(loopId);
+    document.getElementById('finalScoreLine').textContent = `Final score: ${score}`;
+    document.getElementById('overOverlay').classList.remove('hidden');
+  }
+
+  function loop(){
+    if (!running) return;
+    frame++;
+    movePlayer();
+    updateSpaceCharge();
+    spawnTimer++;
+    if (spawnTimer > spawnInterval){ spawnTimer = 0; spawnEnemy(); }
+    updateEnemies();
+    updateFireballs();
+
+    if (score > 0 && score % 150 === 0){
+      const nw = Math.floor(score/150)+1;
+      if (nw !== wave){ wave = nw; waveVal.textContent = wave;
+        spawnInterval = Math.max(55, 130 - wave*8); enemySpeed = 0.018 + wave*0.004; }
+    }
+
+    drawSkyFloor();
+    castWalls();
+    renderSprites();
+    drawMinimap();
+
+    loopId = requestAnimationFrame(loop);
+  }
+
+  // ================= tutorial gate: 20s forced read before Start is clickable =================
+  let tutorialSecondsLeft = 20;
+  let tutorialInterval = null;
+  let tutorialPaused = false;
+  const tutorialTimer = document.getElementById('tutorialTimer');
+  const startBtn = document.getElementById('startBtn');
+  const skipCamBtn = document.getElementById('skipCamBtn');
+
+  function tutorialTick(){
+    tutorialSecondsLeft--;
+    if (tutorialSecondsLeft > 0){
+      tutorialTimer.textContent = `Starting in ${tutorialSecondsLeft}s...`;
+    } else {
+      tutorialTimer.textContent = "Ready — let's go!";
+      startBtn.disabled = false;
+      skipCamBtn.disabled = false;
+      clearInterval(tutorialInterval); tutorialInterval = null;
+    }
+  }
+  function startTutorialTimer(){
+    if (tutorialInterval || tutorialSecondsLeft <= 0) return;
+    tutorialInterval = setInterval(tutorialTick, 1000);
+  }
+  function pauseTutorialTimer(){
+    if (tutorialSecondsLeft <= 0) return; // already unlocked, nothing to pause
+    if (tutorialInterval){ clearInterval(tutorialInterval); tutorialInterval = null; }
+    tutorialPaused = true;
+    tutorialTimer.textContent = 'Paused while you pick a photo...';
+  }
+  function resumeTutorialTimer(){
+    if (!tutorialPaused) return;
+    tutorialPaused = false;
+    if (tutorialSecondsLeft > 0){
+      tutorialTimer.textContent = `Starting in ${tutorialSecondsLeft}s...`;
+      startTutorialTimer();
+    }
+  }
+  startTutorialTimer();
+
+  startBtn.addEventListener('click', async () => {
+    if (startBtn.disabled) return;
+    stopCaptureStream();
+    document.getElementById('tutorialOverlay').classList.add('hidden');
+    resetState(); running = true;
+    await initCamera();
+    loop();
+  });
+  skipCamBtn.addEventListener('click', () => {
+    if (skipCamBtn.disabled) return;
+    stopCaptureStream();
+    document.getElementById('tutorialOverlay').classList.add('hidden');
+    resetState(); running = true;
+    gestureStatus.textContent = 'SPACE TO CHARGE/FIRE';
+    loop();
+  });
+  document.getElementById('retryBtn').addEventListener('click', () => {
+    document.getElementById('overOverlay').classList.add('hidden');
+    resetState(); running = true;
+    if (!camReady) gestureStatus.textContent = 'SPACE TO CHARGE/FIRE';
+    loop();
+  });
+
+  drawHearts();
+  drawSkyFloor(); castWalls(); drawMinimap();
+})();
+</script>
+</body>
+</html>
