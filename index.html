@@ -58,8 +58,11 @@
       .card {
         width: 260px;
         background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        left: 0;
+        top: 0;
+        will-change: transform;
         border-radius: 20px;
         border: 1px solid rgba(255, 255, 255, 0.3);
         box-shadow:
@@ -109,6 +112,26 @@
       .card:active { cursor: grabbing; }
       .card-title { font-size: 1.1rem; margin-bottom: 0.5rem; font-weight: bold; position: relative; z-index: 1; }
       .card-desc { font-size: 0.78rem; opacity: 0.65; line-height: 1.6; position: relative; z-index: 1; }
+      .card.dummy { background: rgba(255, 255, 255, 0.08); }
+      .card.dummy .card-title { opacity: 0.5; }
+
+      .card.hinge {
+        width: 128px;
+        height: 52px;
+        padding: 0.5rem 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.22);
+        z-index: 5;
+      }
+      .card.hinge .card-title {
+        margin: 0;
+        font-size: 0.82rem;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+      }
     </style>
   </head>
   <body>
@@ -118,41 +141,40 @@
     </div>
 
     <div id="gallery">
-      <div id="gallery-title">↓ double clicketh thee ↓</div>
-      <div class="card" id="card-0" data-href="games/aim_trainer.html" draggable="false">
+      <div id="gallery-title"><span id="gallery-title-text">↓ double clicketh thee ↓</span></div>
+      <div class="card" data-href="games/aim_trainer.html" draggable="false">
         <div class="card-title">Aim Trainer</div>
         <div class="card-desc">Uses camera to aim and microphone to shoot</div>
       </div>
-      <div class="card" id="card-1" data-href="games/dead_zone.html" draggable="false">
+      <div class="card" data-href="games/dead_zone.html" draggable="false">
         <div class="card-title">Dead Zone</div>
         <div class="card-desc">Nothing cool yet, probably wont add anything.</div>
       </div>
-      <div class="card" id="card-2" data-href="games/breakout.html" draggable="false">
+      <div class="card" data-href="games/breakout.html" draggable="false">
         <div class="card-title">Breakout</div>
         <div class="card-desc">Just your average breakout game. Trust.</div>
       </div>
-      <div class="card" id="card-3" data-href="https://arnavaggarwal-dev.github.io/frylock/" draggable="false">
+      <div class="card" data-href="https://arnavaggarwal-dev.github.io/frylock/" draggable="false">
         <div class="card-title">Fry</div>
         <div class="card-desc">Just a fry. enjoy looking at it ig.</div>
       </div>
-      <div class="card" id="card-4" data-href="games/dancing_burger.html" draggable="false">
+      <div class="card" data-href="games/dancing_burger.html" draggable="false">
         <div class="card-title">DANCE BURGER</div>
         <div class="card-desc">try to defeat the burgers beats. good luck.</div>
       </div>
-
-      <div class="card" id="5" data-href="games/maze.html" draggable="false">
+      <div class="card" data-href="games/maze.html" draggable="false">
         <div class="card-title">Maze</div>
         <div class="card-desc">Its easy i swear. very easy to play.</div>
       </div>
-      <div class="card" id="6" data-href="https://arnavaggarwal-dev.github.io/flappybirb/" draggable="false">
+      <div class="card" data-href="https://arnavaggarwal-dev.github.io/flappybirb/" draggable="false">
         <div class="card-title">Flappy bird</div>
         <div class="card-desc">Flappy birb but with some chill vibes.</div>
       </div>
-      <div class="card" id="7" data-href="games/LastLink.html" draggable="false">
+      <div class="card" data-href="games/LastLink.html" draggable="false">
         <div class="card-title">THE LAST LINK</div>
         <div class="card-desc">Can you save  your knight friend from dying?</div>
       </div>
-      <div class="card" id="8" data-href="games/kameblast.html" draggable="false">
+      <div class="card" data-href="games/kameblast.html" draggable="false">
         <div class="card-title">KJO SHOOTER </div>
         <div class="card-desc">KJO shooter, but u can upload ur own face if uw.</div>
       </div>
@@ -160,6 +182,77 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <script>
+      const REAL_GAMES = Array.from(document.querySelectorAll('#gallery .card')).map(el => ({
+        title: el.querySelector('.card-title').textContent,
+        desc:  el.querySelector('.card-desc').textContent,
+        href:  el.dataset.href,
+        dummy: false,
+      }));
+      document.querySelectorAll('#gallery .card').forEach(el => el.remove());
+
+      const DUMMY_CARD_COUNT = 3;
+      const DUMMY_GAMES = Array.from({ length: DUMMY_CARD_COUNT }, (_, i) => ({
+        title: `Dummy ${i + 1}`,
+        desc:  `placeholder card #${i + 1}, just here for the ride.`,
+        href:  '#',
+        dummy: true,
+      }));
+
+      const ALL_GAMES  = REAL_GAMES.concat(DUMMY_GAMES);
+      const PAGE_SIZE   = 9; // max real/dummy cards per gallery page
+      const TOTAL_PAGES = Math.ceil(ALL_GAMES.length / PAGE_SIZE);
+
+      let currentPage   = 0;
+      let currentRunner = null;
+
+      function buildPage(pageIndex) {
+        currentPage = pageIndex;
+
+        if (currentRunner) {
+          Matter.Runner.stop(currentRunner);
+          currentRunner = null;
+        }
+        document.querySelectorAll('#gallery .card').forEach(el => el.remove());
+
+        const titleTextEl = document.getElementById('gallery-title-text');
+        titleTextEl.textContent = TOTAL_PAGES > 1
+          ? `gallery ${pageIndex + 1}/${TOTAL_PAGES}  —  ↓ double clicketh thee ↓`
+          : '↓ double clicketh thee ↓';
+
+        const gallery = document.getElementById('gallery');
+
+        // regular grid cards for this page
+        const slice = ALL_GAMES.slice(pageIndex * PAGE_SIZE, pageIndex * PAGE_SIZE + PAGE_SIZE);
+        slice.forEach(def => {
+          const card = document.createElement('div');
+          card.className = 'card' + (def.dummy ? ' dummy' : '');
+          card.dataset.href = def.href;
+          card.draggable = false;
+          card.innerHTML = `<div class="card-title">${def.title}</div><div class="card-desc">${def.desc}</div>`;
+          gallery.appendChild(card);
+        });
+
+        // small hinge-mounted nav buttons, next to the title, not part of the grid
+        const navDefs = [];
+        if (pageIndex > 0) navDefs.push({ title: '← back', nav: 'prev' });
+        if ((pageIndex + 1) * PAGE_SIZE < ALL_GAMES.length) navDefs.push({ title: 'more gamez →', nav: 'next' });
+        navDefs.forEach(def => {
+          const card = document.createElement('div');
+          card.className = 'card hinge';
+          card.dataset.href = '#';
+          card.dataset.nav = def.nav;
+          card.draggable = false;
+          card.innerHTML = `<div class="card-title">${def.title}</div>`;
+          gallery.appendChild(card);
+        });
+
+        initPhysics();
+      }
+
+      function goToPage(index) {
+        if (index < 0 || index >= TOTAL_PAGES) return;
+        buildPage(index);
+      }
       const btn     = document.getElementById('enter-btn');
       const home    = document.getElementById('home');
       const gallery = document.getElementById('gallery');
@@ -185,18 +278,19 @@
       btn.addEventListener('click', () => {
         home.style.display = 'none';
         gallery.style.display = 'block';
-        initPhysics();
+        goToPage(0);
       });
 
       function initPhysics() {
-        const { Engine, Runner, Bodies, Body, World, Events, Mouse, MouseConstraint } = Matter;
+        const { Engine, Runner, Bodies, Body, Constraint, World, Events, Mouse, MouseConstraint } = Matter;
 
         const VW = window.innerWidth;
         const VH = window.innerHeight;
 
-        const cardEls = Array.from(document.querySelectorAll('.card'));
-        const W = cardEls[0].offsetWidth;
-        const H = cardEls[0].offsetHeight;
+        // regular grid cards (drop on hover/collision, settle on the floor)
+        const cardEls  = Array.from(document.querySelectorAll('.card:not(.hinge)'));
+        // small nav cards, hinge-mounted near the title — never touch the floor
+        const hingeEls = Array.from(document.querySelectorAll('.card.hinge'));
 
         const engine = Engine.create({ gravity: { y: 2.5 }, enableSleeping: false });
         const world  = engine.world;
@@ -208,42 +302,72 @@
           Bodies.rectangle(VW+THICK/2, VH/2,            THICK, VH*3, { isStatic: true, friction: 0.2, restitution: 0.2  }),
           Bodies.rectangle(VW/2,       -1700 - THICK/2, VW*3, THICK, { isStatic: true, friction: 0.2, restitution: 0.3  }),
         ]);
+        let cards = [];
+        if (cardEls.length) {
+          const W = cardEls[0].offsetWidth;
+          const H = cardEls[0].offsetHeight;
 
-        const startPos = [
-          { x: VW * 0.20, y: 160 + H/2 },
-          { x: VW * 0.50, y: 160 + H/2 },
-          { x: VW * 0.80, y: 160 + H/2 },
-          { x: VW * 0.20, y: 160 + H/2 + H + 15 },
-          { x: VW * 0.50, y: 160 + H/2 + H + 15 },
-          { x: VW * 0.80, y: 160 + H/2 + H + 15 },
-          { x: VW * 0.20, y: 160 + H/2 + H + 15 + H + 15},
-          { x: VW * 0.50, y: 160 + H/2 + H + 15 + H + 15},
-          { x: VW * 0.80, y: 160 + H/2 + H + 15 + H + 15},
-        ];
-
-        const cards = cardEls.map((el, i) => {
-          const body = Bodies.rectangle(startPos[i].x, startPos[i].y, W, H, {
-            isStatic:    true,
-            restitution: 0.55,
-            friction:    0.3,
-            frictionAir: 0.012,
-            density:     0.002,
+          const COLS = 3;
+          const COL_FRACS = [0.20, 0.50, 0.80];
+          const startPos = cardEls.map((_, i) => {
+            const col = i % COLS;
+            const row = Math.floor(i / COLS);
+            return { x: VW * COL_FRACS[col], y: 160 + H/2 + row * (H + 15) };
           });
-          body.cardIndex = i;
-          World.add(world, body);
-          el.style.left = (startPos[i].x - W/2) + 'px';
-          el.style.top  = (startPos[i].y - H/2) + 'px';
-          return { body, el, dropped: false };
-        });
+
+          cards = cardEls.map((el, i) => {
+            const body = Bodies.rectangle(startPos[i].x, startPos[i].y, W, H, {
+              isStatic:    true,
+              restitution: 0.55,
+              friction:    0.3,
+              frictionAir: 0.012,
+              density:     0.002,
+            });
+            body.cardIndex = i;
+            World.add(world, body);
+            el.style.transform = `translate(${startPos[i].x - W/2}px, ${startPos[i].y - H/2}px)`;
+            return { body, el, dropped: false };
+          });
+        }
 
         function dropCard(i) {
           const c = cards[i];
-          if (c.dropped) return;
+          if (!c || c.dropped) return;
           c.dropped = true;
           Body.setStatic(c.body, false);
           Body.setVelocity(c.body, { x: (Math.random() - 0.5) * 3, y: 0.5 });
           Body.setAngularVelocity(c.body, (Math.random() - 0.5) * 0.15);
         }
+        const titleRect = document.getElementById('gallery-title-text').getBoundingClientRect();
+        const HINGE_GAP = 90;
+        const hingeW = 128, hingeH = 52;
+
+        const hingeCards = hingeEls.map(el => {
+          const isNext  = el.dataset.nav === 'next';
+          const anchorX = isNext ? titleRect.right + HINGE_GAP : titleRect.left - HINGE_GAP;
+          const anchorY = titleRect.top + titleRect.height / 2;
+
+          const body = Bodies.rectangle(anchorX, anchorY + hingeH/2, hingeW, hingeH, {
+            restitution: 0.4,
+            friction:    0.4,
+            frictionAir: 0.02,
+            density:     0.0025,
+          });
+          World.add(world, body);
+
+          const constraint = Constraint.create({
+            pointA:    { x: anchorX, y: anchorY },
+            bodyB:     body,
+            pointB:    { x: 0, y: -hingeH / 2 },
+            length:    0,
+            stiffness: 0.9,
+            damping:   0.15,
+          });
+          World.add(world, constraint);
+
+          el.style.transform = `translate(${anchorX - hingeW/2}px, ${anchorY}px)`;
+          return { body, el };
+        });
 
         const mouse = Mouse.create(document.documentElement);
         const mc = MouseConstraint.create(engine, {
@@ -262,9 +386,6 @@
           const spd = Math.hypot(vel.x, vel.y);
           if (spd > MAX) Body.setVelocity(e.body, { x: vel.x/spd*MAX, y: vel.y/spd*MAX });
         });
-
-        // Any collision between two cards drops both — this is what
-        // lets a still-static card get knocked loose by a falling neighbor.
         Events.on(engine, 'collisionStart', (event) => {
           event.pairs.forEach(({ bodyA, bodyB }) => {
             const aIsCard = bodyA.cardIndex !== undefined;
@@ -282,17 +403,28 @@
             const vel = cards[i].body.velocity;
             const moving = Math.abs(vel.x) > 0.8 || Math.abs(vel.y) > 0.8
                         || Math.abs(cards[i].body.angularVelocity) > 0.05;
-            if (!moving) {
-              const a = document.createElement('a');
-              a.href = el.dataset.href;
-              a.target = '_blank';
-              a.rel = 'noopener';
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-            }
+            if (moving) return;
+            if (el.dataset.href === '#') return;
+
+            const a = document.createElement('a');
+            a.href = el.dataset.href;
+            a.target = '_blank';
+            a.rel = 'noopener';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
           });
         });
+        hingeCards.forEach(({ el }) => {
+          el.addEventListener('click', () => {
+            if (isDragging) return;
+            if (el.dataset.nav === 'next') goToPage(currentPage + 1);
+            if (el.dataset.nav === 'prev') goToPage(currentPage - 1);
+          });
+        });
+
+        const gridW = cardEls.length ? cardEls[0].offsetWidth : 0;
+        const gridH = cardEls.length ? cardEls[0].offsetHeight : 0;
 
         Events.on(engine, 'afterUpdate', () => {
           cards.forEach(({ body, el, dropped }) => {
@@ -301,13 +433,17 @@
             const spd = Math.hypot(body.velocity.x, body.velocity.y);
             if (spd > MAX) Body.setVelocity(body, { x: body.velocity.x/spd*MAX, y: body.velocity.y/spd*MAX });
             const { x, y } = body.position;
-            el.style.left      = (x - W/2) + 'px';
-            el.style.top       = (y - H/2) + 'px';
-            el.style.transform = `rotate(${body.angle}rad)`;
+            el.style.transform = `translate(${x - gridW/2}px, ${y - gridH/2}px) rotate(${body.angle}rad)`;
+          });
+
+          hingeCards.forEach(({ body, el }) => {
+            const { x, y } = body.position;
+            el.style.transform = `translate(${x - hingeW/2}px, ${y - hingeH/2}px) rotate(${body.angle}rad)`;
           });
         });
 
-        Runner.run(Runner.create(), engine);
+        currentRunner = Runner.create();
+        Runner.run(currentRunner, engine);
       }
     </script>
   </body>
