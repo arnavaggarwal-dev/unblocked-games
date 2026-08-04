@@ -1,0 +1,66 @@
+# Flatpak manifest — wraps the .deb that `tauri build --bundles deb` produces.
+#
+# Flatpak is not a Tauri bundle target, so this repackages rather than compiles. The GNOME
+# runtime already ships WebKitGTK, which is the one system library the app actually needs.
+#
+# Built by .github/workflows/build-desktop.yml. That job is marked continue-on-error: this
+# path is the least-trodden of the bunch and every other format ships independently of it.
+
+id: dev.arnavaggarwal.chaos-alldatime
+runtime: org.gnome.Platform
+runtime-version: '46'
+sdk: org.gnome.Sdk
+command: chaos-alldatime
+
+finish-args:
+  # Display
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  - --device=dri
+
+  # Audio — every game synthesises its own sound through WebAudio.
+  - --socket=pulseaudio
+
+  # Camera and microphone: Aim Trainer uses the mic, KJO SHOOTER uses the camera.
+  # --device=all rather than --device=dri alone, since v4l2 capture needs the wider grant.
+  - --device=all
+
+  # Deliberately NO --share=network. The whole point of this build is that it never touches
+  # the internet, and the sandbox is a good place to prove it: if anything still tries to
+  # phone home, it fails here rather than quietly succeeding.
+
+modules:
+  - name: chaos-alldatime
+    buildsystem: simple
+    build-commands:
+      # Names are discovered rather than hardcoded: the exact binary/desktop filename Tauri
+      # emits depends on productName vs mainBinaryName, and guessing wrong fails the build
+      # in a confusing way at install time.
+      - |
+        set -eu
+        APP_ID=dev.arnavaggarwal.chaos-alldatime
+
+        ar x app.deb
+        tar -xf "$(ls data.tar.* | head -1)"
+
+        BIN=$(find usr/bin -maxdepth 1 -type f | head -1)
+        install -Dm755 "$BIN" /app/bin/chaos-alldatime
+
+        DESKTOP=$(find usr/share/applications -name '*.desktop' | head -1)
+        install -Dm644 "$DESKTOP" "/app/share/applications/$APP_ID.desktop"
+
+        # Flatpak requires the desktop file, its Icon key and the icon files to all match
+        # the app ID, otherwise the launcher shows up unnamed and iconless.
+        desktop-file-edit --set-key=Exec --set-value=chaos-alldatime \
+          "/app/share/applications/$APP_ID.desktop"
+        desktop-file-edit --set-key=Icon --set-value="$APP_ID" \
+          "/app/share/applications/$APP_ID.desktop"
+
+        find usr/share/icons/hicolor -name '*.png' | while read -r src; do
+          size=$(echo "$src" | sed -E 's#usr/share/icons/hicolor/([^/]+)/.*#\1#')
+          install -Dm644 "$src" "/app/share/icons/hicolor/$size/apps/$APP_ID.png"
+        done
+    sources:
+      - type: file
+        path: app.deb

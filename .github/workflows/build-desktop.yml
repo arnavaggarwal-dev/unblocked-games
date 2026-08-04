@@ -1,0 +1,186 @@
+name: Build desktop apps
+
+# Builds the offline desktop app for Windows, macOS and Linux.
+#
+# Trigger it by hand from the Actions tab, or push a tag like v1.0.0 to also publish a
+# draft GitHub Release with every installer attached.
+#
+# No FreeBSD/OpenBSD job: GitHub hosts no BSD runner, and Tauri's webview layer (wry/tao)
+# has no BSD backend, so there is nothing to build even on a self-hosted one.
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+# Needed for tauri-action to create the draft Release on a tag push. Repos default to
+# read-only tokens, in which case the build succeeds and only the release step fails.
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Windows (.exe + .msi)
+            os: windows-latest
+            rust-targets: ''
+            args: ''
+          - label: macOS (.dmg, universal)
+            os: macos-latest
+            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
+            args: '--target universal-apple-darwin'
+          # 22.04 on purpose: an AppImage links against the glibc it was built on, so
+          # building on a newer runner would silently drop support for older distros.
+          - label: Linux (.AppImage + .deb + .rpm)
+            os: ubuntu-22.04
+            rust-targets: ''
+            args: ''
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libxdo-dev \
+            libssl-dev \
+            patchelf \
+            build-essential \
+            file \
+            wget
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-targets }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ./src-tauri -> target
+
+      # vendor/ may or may not be committed. Caching it keeps CI off the network on repeat
+      # runs; vendor.mjs is idempotent and skips anything already present either way.
+      - name: Cache vendored assets
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-${{ hashFiles('scripts/vendor.mjs', 'scripts/pygbag-files.json') }}
+
+      - run: npm ci
+
+      - name: Download vendored assets (fonts, libraries, games)
+        run: npm run vendor
+
+      # Fails the build if any external URL survives into the bundled site, so a broken
+      # offline build can never be published.
+      - name: Verify the built site is fully offline
+        run: npm run build:site
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: ${{ matrix.args }}
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
+          releaseName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
+          releaseDraft: true
+          prerelease: false
+
+      - name: Upload installers as workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-installers
+          if-no-files-found: warn
+          path: |
+            src-tauri/target/release/bundle/**/*.exe
+            src-tauri/target/release/bundle/**/*.msi
+            src-tauri/target/release/bundle/**/*.dmg
+            src-tauri/target/release/bundle/**/*.AppImage
+            src-tauri/target/release/bundle/**/*.deb
+            src-tauri/target/release/bundle/**/*.rpm
+            src-tauri/target/universal-apple-darwin/release/bundle/**/*.dmg
+
+  flatpak:
+    name: Linux (.flatpak)
+    needs: build
+    runs-on: ubuntu-22.04
+    # Flatpak is not a Tauri bundle target — it wraps the .deb this job rebuilds. Allowed to
+    # fail without failing the whole workflow: every other format is already published above.
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libxdo-dev \
+            libssl-dev \
+            patchelf \
+            build-essential \
+            file \
+            flatpak \
+            flatpak-builder
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ./src-tauri -> target
+
+      - name: Cache vendored assets
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-${{ hashFiles('scripts/vendor.mjs', 'scripts/pygbag-files.json') }}
+
+      - run: npm ci
+      - run: npm run vendor
+
+      - name: Build the .deb
+        run: npx tauri build --bundles deb
+
+      - name: Install the GNOME runtime
+        run: |
+          flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y flathub org.gnome.Platform//46 org.gnome.Sdk//46
+
+      - name: Build the flatpak
+        run: |
+          DEB=$(find src-tauri/target/release/bundle/deb -name '*.deb' | head -1)
+          cp "$DEB" packaging/flatpak/app.deb
+          flatpak-builder --user --disable-rofiles-fuse --force-clean \
+            --repo=repo flatpak-build packaging/flatpak/dev.arnavaggarwal.chaos-alldatime.yml
+          flatpak build-bundle repo chaos-alldatime.flatpak \
+            dev.arnavaggarwal.chaos-alldatime --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+
+      - name: Upload flatpak
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-flatpak
+          path: chaos-alldatime.flatpak
+          if-no-files-found: warn

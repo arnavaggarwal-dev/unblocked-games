@@ -1,0 +1,35 @@
+{
+  "_comment": [
+    "File list for the Pygbag 0.9.3 CPython-WASM runtime that games/flappybirb depends on.",
+    "This CDN tree is a GitHub Pages build artifact and exists in no git repo, so the list was",
+    "derived by reading pythons.js: it resolves config.cdn from its own script URL (line ~2353),",
+    "then loads `${interpreter}${pydigits}/main.js` — cpython312/ for a data-python=python3.12",
+    "build. Emscripten's main.js then pulls main.wasm and main.data as siblings.",
+    "Everything else main.js references is a virtual-FS path inside main.data, not a fetch.",
+    "Note vtx.js and lib/index.html sit one level ABOVE the version directory (cdn/, not",
+    "cdn/0.9.3/) — vtx.js is pulled because the game's shell sets data-os=\"vtx,snd,gui\".",
+    "Paths are relative to https://pygame-web.github.io/cdn/0.9.3/ .",
+    "Re-derive with: curl .../pythons.js and re-read the config.cdn / config.executable logic.",
+    "",
+    "Deliberately NOT listed: browserfs.min.js, which the game's index.html requests but which",
+    "404s on the live site too (its 9379-byte response is the GitHub Pages 404 page). The game",
+    "works without it, so the offline copy reproduces that same harmless miss.",
+    "Also not listed: pygbag0.9.3.js — its service-worker registration is commented out upstream."
+  ],
+  "pygbagVersion": "0.9.3",
+  "interpreter": "cpython312",
+  "cdnFiles": [
+    "pythons.js",
+    "empty.ogg",
+    "cpythonrc.py",
+    "cpython312/main.js",
+    "cpython312/main.wasm",
+    "cpython312/main.data",
+    "empty.html",
+    "../lib/index.html",
+    "../vtx.js",
+    "../vt/xterm.css",
+    "../vt/xterm.js",
+    "../vt/xterm-addon-image.js"
+  ]
+}

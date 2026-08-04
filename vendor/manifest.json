@@ -1,0 +1,16 @@
+{
+  "games": {
+    "frylock": {
+      "offline": true,
+      "entry": "games/frylock/index.html"
+    },
+    "bombdefuser": {
+      "offline": true,
+      "entry": "games/bombdefuser/index.html"
+    },
+    "flappybirb": {
+      "offline": true,
+      "entry": "games/flappybirb/index.html"
+    }
+  }
+}

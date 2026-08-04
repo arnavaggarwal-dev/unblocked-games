@@ -1,0 +1,17 @@
+{
+  "name": "chaos-alldatime-offline",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline desktop build of the chaos alldatime game gallery",
+  "type": "module",
+  "scripts": {
+    "vendor": "node scripts/vendor.mjs",
+    "build:site": "node scripts/build-offline.mjs",
+    "dev": "node scripts/tauri.mjs dev",
+    "build": "node scripts/tauri.mjs build",
+    "verify": "node scripts/verify-offline.mjs"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4"
+  }
+}

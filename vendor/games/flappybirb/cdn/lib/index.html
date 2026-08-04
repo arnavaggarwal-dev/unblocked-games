@@ -1,0 +1,73 @@
+<html>
+<head>
+<script>
+console.log("dlfcn:init")
+var dlmap = {}
+function print(...argv) {
+    stdout.innerHTML = stdout.innerHTML + argv.join(" ") + "\n"
+}
+
+async function rx(event) {
+    const rxmsg = ""+event.data
+    const origin = event.origin
+    var e = rxmsg.split(':')
+    const rt = e.shift()
+    if (rt == "dlopen") {
+        const lib = e.shift()
+        const linkid = e.shift()
+        const pkgframe = document.createElement("iframe")
+        pkgframe.id = linkid
+        pkgframe.loading = "eager"
+        pkgframe.sandbox="allow-same-origin allow-top-navigation allow-scripts"
+        pkgframe.allow="autoplay; geolocation; microphone; camera; midi; gyroscope; accelerometer; cross-origin-isolated"
+        pkgframe.style.display = "none";
+        pkgframe.src = "/archives/lib/"+lib+"/index.html#"+linkid
+
+        dlmap[linkid] = pkgframe
+        document.body.appendChild(pkgframe)
+        console.log("dlopen: linking ", pkgframe.id )
+        print("+", lib)
+
+    } else {
+        if (rt == "dlfcn") {
+            const serial = e.shift()
+            const linkref = e.shift()
+            if (serial == "") {
+                if (linkref.substring(0,1) == "#" ) {
+                    const linkid = linkref.substr(1)
+                    console.log("dlfcn->dlopen", linkid )
+                    window.parent.postMessage("dlopen::"+linkid,  document.referrer)
+                } else {
+                    console.log("bus(41)", rxmsg)
+                }
+            // return value with serial
+            } else {
+                //console.warn("dlfcn->dopen rv:", serial, linkref)
+                window.parent.postMessage("dlopen:"+serial+":"+linkref, document.referrer)
+            }
+        } else {
+            if (!dlmap[rt])
+                console.log("bus(50)", rxmsg )
+            else
+                dlmap[rt].contentWindow.postMessage(e.shift())
+        }
+    }
+}
+
+window.addEventListener("message", rx, false)
+window.onload= ()=>{
+    print(document.location.host)
+    window.parent.postMessage("dlopen::dlopen",  document.referrer)
+}
+
+</script>
+</head>
+
+<body>
+dlfcn.js
+<hr>
+<pre id=stdout>
+</pre>
+</body>
+</html>
+

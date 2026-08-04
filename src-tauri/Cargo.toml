@@ -1,0 +1,24 @@
+[package]
+name = "chaos-alldatime"
+version = "1.0.0"
+description = "Offline desktop build of the chaos alldatime game gallery"
+edition = "2021"
+rust-version = "1.77"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+# Note: if aim_trainer's mic or kameblast's camera come up dead, the cause is WebView2's
+# PermissionRequested event defaulting to deny. The fix is to add webview2-com + windows here
+# and hook it in main.rs. Deliberately not added up front — wry may already handle it, and an
+# unused unsafe COM dependency is worse than one added once it's proven necessary.
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
