@@ -9,7 +9,8 @@
     "build:site": "node scripts/build-offline.mjs",
     "dev": "node scripts/tauri.mjs dev",
     "build": "node scripts/tauri.mjs build",
-    "verify": "node scripts/verify-offline.mjs"
+    "verify": "node scripts/verify-offline.mjs",
+    "tauri": "tauri"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4"
