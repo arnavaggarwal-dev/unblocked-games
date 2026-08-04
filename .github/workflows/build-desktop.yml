@@ -99,7 +99,9 @@ jobs:
           args: ${{ matrix.args }}
           tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
           releaseName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
-          releaseDraft: true
+          # Published, not draft — a draft release is invisible on the Releases page until
+          # someone clicks publish, which defeats the point of tagging to cut a build.
+          releaseDraft: false
           prerelease: false
 
       - name: Upload installers as workflow artifacts
@@ -184,3 +186,12 @@ jobs:
           name: linux-flatpak
           path: chaos-alldatime.flatpak
           if-no-files-found: warn
+
+      # tauri-action attaches the formats it builds itself; flatpak isn't one of them, so the
+      # bundle has to be added to the release separately or it would only ever exist as a
+      # 90-day workflow artifact.
+      - name: Attach flatpak to the release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.ref_name }}" chaos-alldatime.flatpak --clobber
