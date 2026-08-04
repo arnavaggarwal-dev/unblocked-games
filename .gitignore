@@ -10,3 +10,8 @@ src-tauri/target/
 
 # Scratch space used by scripts/vendor.mjs while unpacking npm tarballs
 .vendor-tmp/
+
+# Local record of released version tags, written by scripts/push.ps1.
+# Deliberately untracked: it's per-machine, and tracking it would make every
+# main -> distrib merge conflict on the same line.
+version.log
