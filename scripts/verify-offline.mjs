@@ -30,14 +30,37 @@ const MIME = {
   '.apk': 'application/octet-stream', '.gz': 'application/gzip', '.py': 'text/plain',
 };
 
-const EDGE_CANDIDATES = [
-  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-  'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
-];
+// Any Chromium will do — this only drives it over the devtools protocol.
+const BROWSER_CANDIDATES = {
+  win32: [
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  ],
+  linux: [
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/chromium',
+    '/usr/bin/microsoft-edge',
+  ],
+  darwin: [
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+    '/Applications/Chromium.app/Contents/MacOS/Chromium',
+  ],
+};
 
 function findBrowser() {
-  for (const p of EDGE_CANDIDATES) if (fs.existsSync(p)) return p;
-  throw new Error('Microsoft Edge not found — cannot run the headless offline check');
+  if (process.env.CHROME_PATH && fs.existsSync(process.env.CHROME_PATH)) {
+    return process.env.CHROME_PATH;
+  }
+  for (const p of BROWSER_CANDIDATES[process.platform] ?? []) {
+    if (fs.existsSync(p)) return p;
+  }
+  throw new Error(
+    'No Chromium-based browser found (looked for Chrome/Edge/Chromium). ' +
+      'Set CHROME_PATH to point at one.',
+  );
 }
 
 // Mirrors the COOP/COEP headers set in tauri.conf.json, so the check exercises the same
@@ -116,11 +139,20 @@ async function main() {
     let id = 0;
     const send = (method, params = {}) => ws.send(JSON.stringify({ id: ++id, method, params }));
 
+    // loadingFailed only carries a requestId, so the URL has to be remembered from the
+    // matching requestWillBeSent — without it a failure report says "something failed"
+    // and gives you nothing to act on.
+    const urlByRequestId = new Map();
+
     await new Promise((resolve) => (ws.onopen = resolve));
     ws.onmessage = (ev) => {
       const msg = JSON.parse(ev.data);
+      if (msg.method === 'Network.requestWillBeSent') {
+        urlByRequestId.set(msg.params.requestId, msg.params.request.url);
+      }
       if (msg.method === 'Network.loadingFailed') {
-        failures.push(`${msg.params.errorText} ${msg.params.type}`);
+        const url = urlByRequestId.get(msg.params.requestId) ?? '(unknown url)';
+        failures.push(`${msg.params.errorText} ${msg.params.type} ${url}`);
       }
       if (msg.method === 'Runtime.exceptionThrown') {
         const d = msg.params.exceptionDetails;

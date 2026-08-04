@@ -12,5 +12,6 @@
       "offline": true,
       "entry": "games/flappybirb/index.html"
     }
-  }
+  },
+  "auto": {}
 }

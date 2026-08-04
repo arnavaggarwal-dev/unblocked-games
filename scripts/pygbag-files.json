@@ -30,6 +30,7 @@
     "../vtx.js",
     "../vt/xterm.css",
     "../vt/xterm.js",
-    "../vt/xterm-addon-image.js"
+    "../vt/xterm-addon-image.js",
+    "../index-0.9.3-cp312.json"
   ]
 }

@@ -11,6 +11,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { findExternalUrls, isManuallyHandled } from './manual-assets.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const VENDOR = path.join(ROOT, 'vendor');
@@ -132,16 +133,25 @@ function vendorNpmLibs() {
 // 2. Google Fonts -> local woff2 + a single stylesheet
 // ---------------------------------------------------------------------------
 
-const FONT_CSS_URLS = [
-  // games/LastLink.html:7
-  'https://fonts.googleapis.com/css2?family=Cinzel:wght@700..900&family=EB+Garamond:ital@0;1&display=block',
-  // games/kameblast.html:7 (@import)
-  'https://fonts.googleapis.com/css2?family=Bangers&family=Kalam:wght@400;700&display=swap',
-  // games/dancing_burger.html:8
-  'https://fonts.googleapis.com/css2?family=Shantell+Sans:ital,wght@0,400;0,600;0,700;0,800;1,600;1,700&family=Caveat:wght@500;600;700&family=Patrick+Hand&display=swap',
-];
+// Every external URL referenced by the site's own HTML. Discovered rather than listed, so
+// dropping a new game into games/ picks up its fonts and libraries with no code change here.
+function scanSiteUrls() {
+  const files = [
+    path.join(ROOT, 'index.html'),
+    ...fs
+      .readdirSync(path.join(ROOT, 'games'))
+      .filter((f) => f.endsWith('.html'))
+      .map((f) => path.join(ROOT, 'games', f)),
+  ].filter((f) => fs.existsSync(f));
 
-async function vendorFonts() {
+  const urls = new Set();
+  for (const file of files) {
+    for (const url of findExternalUrls(fs.readFileSync(file, 'utf8'))) urls.add(url);
+  }
+  return urls;
+}
+
+async function vendorFonts(FONT_CSS_URLS) {
   log('--- google fonts ---');
   const outDir = path.join(VENDOR, 'fonts');
   const cssPath = path.join(outDir, 'fonts.css');
@@ -173,6 +183,42 @@ async function vendorFonts() {
 
   fs.writeFileSync(cssPath, chunks.join('\n'), 'utf8');
   log(`wrote fonts/fonts.css`);
+}
+
+// ---------------------------------------------------------------------------
+// 2b. Anything else the HTML loads from the network — mirrored automatically
+// ---------------------------------------------------------------------------
+//
+// This is what makes adding a game a one-step job: drop the .html in games/, and whatever
+// plain <script>/<link> assets it pulls get mirrored here without touching this file.
+//
+// Limitation worth knowing: only URLs written literally in the HTML can be found this way.
+// A library that builds asset URLs at runtime (the way MediaPipe's locateFile does) has to
+// be added to MANUAL_URL_PREFIXES instead. `npm run verify` is what catches that case — it
+// loads every page with DNS blackholed, so a runtime fetch to the network shows up as a
+// failure rather than passing silently.
+
+async function mirrorAutoAssets(urls, manifest) {
+  log('--- auto-mirrored assets ---');
+  manifest.auto ??= {};
+
+  const todo = [...urls].filter((u) => !isManuallyHandled(u));
+  if (todo.length === 0) {
+    log('none (everything is handled by a dedicated rule)');
+    return;
+  }
+
+  for (const url of todo) {
+    const { host, pathname } = new URL(url);
+    // Mirror the remote layout so relative references between mirrored files still line up.
+    const rel = path.join('auto', host, pathname.replace(/^\/+/, '') || 'index.html');
+    const ok = await download(url, path.join(VENDOR, rel), { optional: true });
+    if (ok) {
+      manifest.auto[url] = rel.split(path.sep).join('/');
+    } else {
+      warn(`could not fetch ${url} — the offline build will fail until this resolves`);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -303,8 +349,15 @@ async function main() {
     : { games: {} };
   manifest.games ??= {};
 
+  const siteUrls = scanSiteUrls();
+  const fontCssUrls = [...siteUrls].filter((u) =>
+    u.startsWith('https://fonts.googleapis.com/css'),
+  );
+  log(`scanned site HTML: ${siteUrls.size} external URL(s), ${fontCssUrls.length} font stylesheet(s)`);
+
   vendorNpmLibs();
-  await vendorFonts();
+  await vendorFonts(fontCssUrls);
+  await mirrorAutoAssets(siteUrls, manifest);
   await vendorGodotGames(manifest);
   await vendorFlappybirb(manifest);
 

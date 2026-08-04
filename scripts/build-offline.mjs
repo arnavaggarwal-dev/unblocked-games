@@ -167,6 +167,9 @@ function assemble() {
 
   copyDir(path.join(VENDOR, 'js'), path.join(DIST, 'vendor', 'js'));
   copyDir(path.join(VENDOR, 'fonts'), path.join(DIST, 'vendor', 'fonts'));
+  if (fs.existsSync(path.join(VENDOR, 'auto'))) {
+    copyDir(path.join(VENDOR, 'auto'), path.join(DIST, 'vendor', 'auto'));
+  }
 
   const manifest = loadManifest();
   for (const [name, info] of Object.entries(manifest.games)) {
@@ -213,7 +216,65 @@ function rewriteGameCards(manifest) {
   return stillOnline;
 }
 
-function applyRules() {
+// Rules generated from whatever vendor.mjs auto-mirrored. These come from scanning the site
+// rather than from the hand-written table above, so a new game's CDN assets get rewritten
+// without anyone editing this file.
+function autoRules(manifest) {
+  return Object.entries(manifest.auto ?? {}).map(([url, rel]) => ({
+    name: `auto: ${url.slice(0, 60)}${url.length > 60 ? '…' : ''}`,
+    find: url,
+    replace: `%VENDOR%${rel}`,
+  }));
+}
+
+// pygbag's Python layer asks for its package index by absolute URL, assembled inside the
+// CPython-WASM blob where no text rewrite can reach it. This shim maps that one host onto
+// the local mirror at runtime.
+//
+// Injected into the built page rather than into the Tauri window, so `npm run verify`
+// exercises the same code path the shipped app uses — a fix that only existed in the Rust
+// layer would leave the check permanently red and unable to catch the next regression.
+const PYGBAG_FETCH_SHIM = `<script>
+(function () {
+  var REMOTE = 'https://pygame-web.github.io/cdn/';
+  var LOCAL = '/games/flappybirb/cdn/';
+  function map(u) {
+    return (typeof u === 'string' && u.indexOf(REMOTE) === 0) ? LOCAL + u.slice(REMOTE.length) : u;
+  }
+  var origFetch = window.fetch;
+  window.fetch = function (input, init) {
+    if (input && typeof input === 'object' && input.url) {
+      return origFetch.call(this, new Request(map(input.url), input), init);
+    }
+    return origFetch.call(this, map(input), init);
+  };
+  var origOpen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function (method, url) {
+    arguments[1] = map(url);
+    return origOpen.apply(this, arguments);
+  };
+})();
+</script>`;
+
+function injectPygbagShim() {
+  const file = path.join(DIST, 'games', 'flappybirb', 'index.html');
+  if (!fs.existsSync(file)) return;
+
+  let html = fs.readFileSync(file, 'utf8');
+  if (html.includes('pygame-web.github.io/cdn/')) {
+    // Must run before the pygbag loader, which is the first <script> in the document.
+    const at = html.indexOf('<script');
+    if (at === -1) throw new Error('flappybirb index.html has no <script> to inject before');
+    html = html.slice(0, at) + PYGBAG_FETCH_SHIM + html.slice(at);
+    fs.writeFileSync(file, html, 'utf8');
+    log('injected pygbag fetch shim');
+  }
+}
+
+function applyRules(manifest) {
+  // Hand-written rules first: several match a prefix of a URL that an auto-rule would also
+  // match, and the specific handling has to win.
+  const allRules = [...RULES, ...autoRules(manifest)];
   const files = walk(DIST, (p) => /\.(html|css)$/i.test(p) && !p.includes(`${path.sep}vendor${path.sep}`));
   const counts = new Map();
 
@@ -221,7 +282,7 @@ function applyRules() {
     let text = fs.readFileSync(file, 'utf8');
     const prefix = vendorPrefix(file);
 
-    for (const rule of RULES) {
+    for (const rule of allRules) {
       const replacement = rule.replace.split('%VENDOR%').join(prefix);
       let hits = 0;
 
@@ -242,7 +303,7 @@ function applyRules() {
     fs.writeFileSync(file, text, 'utf8');
   }
 
-  for (const rule of RULES) {
+  for (const rule of allRules) {
     const n = counts.get(rule.name) ?? 0;
     log(`  rule "${rule.name}": ${n} replacement${n === 1 ? '' : 's'}`);
   }
@@ -253,7 +314,15 @@ function applyRules() {
 // and breaks only once disconnected — exactly the failure this whole branch exists to avoid.
 function guard(allowedOnline) {
   // XML namespace identifiers. They appear in xmlns attributes and are never fetched.
-  const ALLOWED = [/^https?:\/\/www\.w3\.org\//];
+  const ALLOWED = [
+    /^https?:\/\/www\.w3\.org\//,
+    // The pygbag shim above holds this host as a string to *match against* so it can
+    // redirect it to the local mirror. It is compared, never fetched — the whole reason
+    // it exists is to stop that host from being contacted.
+    // Anchored to the exact origin+path, so a real asset URL under that host would still
+    // be caught — only the bare prefix the shim compares against is tolerated.
+    /^https:\/\/pygame-web\.github\.io\/cdn\/$/,
+  ];
 
   // Third-party bundles under vendor/js are excluded — minified library source is full of URLs
   // in comments, licence headers and error strings, none of which are fetched. vendor/fonts.css
@@ -345,6 +414,8 @@ function checkLocalRefs() {
 
 const manifest = assemble();
 const stillOnline = rewriteGameCards(manifest);
-applyRules();
+// Before applyRules: the shim is located by searching for the un-rewritten pygbag host.
+injectPygbagShim();
+applyRules(manifest);
 guard(stillOnline);
 checkLocalRefs();

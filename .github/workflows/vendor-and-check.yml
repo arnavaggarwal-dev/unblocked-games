@@ -1,0 +1,74 @@
+name: Vendor assets and check offline build
+
+# Runs on every push to distrib — including the automatic merges from sync-to-distrib.yml.
+#
+# Two jobs in one: fetch whatever a newly-added game needs and commit it, then prove the
+# offline build still holds. Takes ~2-3 minutes because it never compiles Rust; the full
+# multi-OS build stays on tag pushes where it belongs.
+
+on:
+  push:
+    branches: [distrib]
+  workflow_dispatch:
+
+jobs:
+  vendor-and-check:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: distrib
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Scans the site's HTML and downloads anything new it references. Adding a game that
+      # uses a font or library nobody has used before needs no code change — vendor.mjs
+      # discovers it from the markup.
+      - name: Fetch any newly-referenced assets
+        run: npm run vendor
+
+      # Committed back so the repo stays self-contained: a fresh clone can build the app
+      # with no network at all. Pushes made with GITHUB_TOKEN don't retrigger workflows,
+      # so this cannot loop.
+      - name: Commit newly vendored assets
+        run: |
+          set -e
+          if [ -z "$(git status --porcelain vendor)" ]; then
+            echo "::notice::No new assets needed."
+            exit 0
+          fi
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add vendor
+          git commit -m "Vendor assets for newly added content [skip ci]"
+          git push origin distrib
+          echo "::notice::Committed newly vendored assets."
+
+      # Fails if any external URL survives into the built site, or if a rewritten path
+      # doesn't resolve on disk.
+      - name: Static offline checks
+        run: npm run build:site
+
+      # The stronger check: loads every page in headless Chrome with DNS blackholed for
+      # every host except localhost. Catches assets fetched at runtime by JS, which the
+      # static scan above cannot see.
+      - name: Runtime offline verification
+        run: npm run verify
+
+      - name: Explain a failure
+        if: failure()
+        run: |
+          echo "::error::The offline build broke."
+          echo "Most likely a newly added game loads something that can't be mirrored by"
+          echo "simply downloading it — e.g. a library that builds asset URLs at runtime."
+          echo "Fix: add its URL prefix to MANUAL_URL_PREFIXES in scripts/manual-assets.mjs"
+          echo "and give it dedicated handling in scripts/vendor.mjs."
