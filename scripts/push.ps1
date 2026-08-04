@@ -78,6 +78,24 @@ if ($repo -like '*OneDrive*') {
 
 # --- commit ------------------------------------------------------------------
 
+# --- validate workflows ------------------------------------------------------
+# Before anything is committed. A malformed workflow file is not rejected by GitHub with an
+# obvious error - it simply never runs - so it is worth catching here.
+
+if (Test-Path (Join-Path $repo 'node_modules')) {
+    Say "`nChecking workflow YAML ..."
+    $wf = Invoke-Native -Exe 'node' -Arguments @('scripts/check-workflows.mjs')
+    if (-not $wf.Ok) {
+        Write-Host ($wf.Output -join "`n") -ForegroundColor Red
+        Die "Workflow YAML is invalid. Fix it before pushing (nothing has been committed)."
+    }
+    Ok "Workflows valid."
+} else {
+    Warn "Skipping workflow check (run 'npm install' to enable it)."
+}
+
+# --- commit ------------------------------------------------------------------
+
 $dirty = & git status --porcelain
 if ($dirty) {
     $count = ($dirty | Measure-Object -Line).Lines

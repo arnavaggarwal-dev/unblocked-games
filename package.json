@@ -10,9 +10,11 @@
     "dev": "node scripts/tauri.mjs dev",
     "build": "node scripts/tauri.mjs build",
     "verify": "node scripts/verify-offline.mjs",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "check:workflows": "node scripts/check-workflows.mjs"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.11.4"
+    "@tauri-apps/cli": "^2.11.4",
+    "yaml": "^2.9.0"
   }
 }

@@ -180,6 +180,54 @@ function assemble() {
   return manifest;
 }
 
+// Cuts one gallery card out of the markup, matched by its data-href.
+//
+// Depth-counted rather than regexed: a card is a <div> containing two more <div>s, and a
+// non-greedy pattern would stop at the first </div> and leave the tail behind.
+function removeCard(html, url) {
+  const open = new RegExp(`<div[^>]*class="card"[^>]*data-href="${escapeRe(url)}"[^>]*>`, 'i');
+  const m = open.exec(html);
+  if (!m) return { html, removed: false };
+
+  let i = m.index + m[0].length;
+  let depth = 1;
+  const tag = /<\/?div\b[^>]*>/gi;
+  tag.lastIndex = i;
+
+  let t;
+  while (depth > 0 && (t = tag.exec(html)) !== null) {
+    depth += t[0].startsWith('</') ? -1 : 1;
+    i = t.index + t[0].length;
+  }
+  if (depth !== 0) throw new Error(`unbalanced <div> while removing card for ${url}`);
+
+  // Take the trailing whitespace with it so the markup stays tidy.
+  const after = html.slice(i).replace(/^[ \t]*\r?\n/, '');
+  return { html: html.slice(0, m.index).replace(/[ \t]+$/, '') + after, removed: true };
+}
+
+function escapeRe(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Any card still pointing off-site after the known games have been localised is dropped.
+// The "Offline releases" card is the motivating case: a link to download the offline app,
+// shown inside the offline app, is noise at best and a dead end without a connection.
+function dropExternalCards(html) {
+  const dropped = [];
+  for (const m of [...html.matchAll(/data-href="(https?:\/\/[^"]+)"/gi)]) {
+    const url = m[1];
+    if (dropped.includes(url)) continue;
+    const r = removeCard(html, url);
+    if (r.removed) {
+      html = r.html;
+      dropped.push(url);
+    }
+  }
+  for (const url of dropped) log(`dropped external card -> ${url}`);
+  return html;
+}
+
 function rewriteGameCards(manifest) {
   const indexPath = path.join(DIST, 'index.html');
   let html = fs.readFileSync(indexPath, 'utf8');
@@ -211,6 +259,10 @@ function rewriteGameCards(manifest) {
       log(`card ${name} -> ONLINE-ONLY (kept remote URL)`);
     }
   }
+
+  // Runs last, so the three vendored games have already been repointed at local copies and
+  // only genuinely off-site cards remain.
+  html = dropExternalCards(html);
 
   fs.writeFileSync(indexPath, html, 'utf8');
   return stillOnline;
@@ -334,6 +386,23 @@ function guard(allowedOnline) {
   ].filter((p) => fs.existsSync(p));
   const offenders = [];
 
+  // Links the user clicks (<a href>) are not the same problem as assets the page loads
+  // silently. A hyperlink to GitHub doesn't make the app depend on the network — nothing is
+  // fetched until someone clicks it, and the app hands those off to the system browser
+  // (see open_external in src-tauri/src/main.rs). Only anchor hrefs get this pass; a
+  // <script src> or <link href> to the same URL would still fail the check.
+  const anchorUrls = new Set();
+  for (const file of files) {
+    const raw = fs.readFileSync(file, 'utf8');
+    for (const m of raw.matchAll(/<a\b[^>]*?href\s*=\s*["'](https?:\/\/[^"']+)["']/gi)) {
+      anchorUrls.add(m[1]);
+    }
+    // The gallery stores destinations in data-href and navigates via JS.
+    for (const m of raw.matchAll(/data-href\s*=\s*["'](https?:\/\/[^"']+)["']/gi)) {
+      anchorUrls.add(m[1]);
+    }
+  }
+
   for (const file of files) {
     const raw = fs.readFileSync(file, 'utf8');
     // Blank out comment bodies but keep their newlines, so reported line numbers stay accurate.
@@ -346,6 +415,7 @@ function guard(allowedOnline) {
         const url = m[0];
         if (ALLOWED.some((re) => re.test(url))) continue;
         if (allowedOnline.some((u) => url.startsWith(u))) continue;
+        if (anchorUrls.has(url)) continue;
         offenders.push(`${path.relative(DIST, file)}:${i + 1}  ${url}`);
       }
     });

@@ -13,7 +13,7 @@ use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 const OPEN_IN_WINDOW: &str = r#"
 window.addEventListener('click', function (e) {
   var el = e.target;
-  while (el && el !== document && !(el.tagName === 'A' && el.target === '_blank')) {
+  while (el && el !== document && el.tagName !== 'A') {
     el = el.parentNode;
   }
   if (!el || el === document || !el.getAttribute) return;
@@ -21,12 +21,24 @@ window.addEventListener('click', function (e) {
   var href = el.getAttribute('href');
   if (!href || href === '#') return;
 
-  e.preventDefault();
-  e.stopPropagation();
+  var url = new URL(href, window.location.href);
 
-  // Resolve against the current document so relative hrefs work, then hand over just the path.
-  var path = new URL(href, window.location.href).pathname.replace(/^\/+/, '');
-  window.__TAURI_INTERNALS__.invoke('open_game', { path: path });
+  // Links off this app (e.g. the releases page) go to the real browser. Navigating the
+  // webview there would strand the user on a dead page with no back button when offline.
+  if (url.origin !== window.location.origin) {
+    e.preventDefault();
+    e.stopPropagation();
+    window.__TAURI_INTERNALS__.invoke('open_external', { url: url.href });
+    return;
+  }
+
+  // In-app links marked target="_blank" mean "new tab" on the web; a desktop webview has no
+  // tabs, so give them a real second window instead.
+  if (el.target === '_blank') {
+    e.preventDefault();
+    e.stopPropagation();
+    window.__TAURI_INTERNALS__.invoke('open_game', { path: url.pathname.replace(/^\/+/, '') });
+  }
 }, true);
 "#;
 
@@ -47,6 +59,38 @@ fn window_title(path: &str) -> String {
         _ => trimmed.rsplit('/').next().unwrap_or(trimmed),
     };
     name.replace(['_', '-'], " ")
+}
+
+// Hands a link to the operating system's default browser.
+//
+// This shells out, so the URL is validated first: only http/https, and no characters that
+// could let a crafted link turn into extra arguments. The pages loaded here are the app's
+// own bundled HTML, but that is not a reason to pass unchecked strings to a process spawn.
+#[tauri::command]
+async fn open_external(url: String) -> Result<(), String> {
+    let url = url.trim();
+
+    if !(url.starts_with("https://") || url.starts_with("http://")) {
+        return Err(format!("refusing to open non-web URL: {url}"));
+    }
+    if url.chars().any(|c| c.is_control() || c == '"' || c == '\'') {
+        return Err("refusing to open URL containing control or quote characters".into());
+    }
+
+    #[cfg(target_os = "windows")]
+    // rundll32 rather than `cmd /C start`: cmd would reinterpret & and ^ inside the URL,
+    // and `start` treats a quoted first argument as a window title.
+    let result = std::process::Command::new("rundll32")
+        .args(["url.dll,FileProtocolHandler", url])
+        .spawn();
+
+    #[cfg(target_os = "macos")]
+    let result = std::process::Command::new("open").arg(url).spawn();
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let result = std::process::Command::new("xdg-open").arg(url).spawn();
+
+    result.map(|_| ()).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -80,7 +124,7 @@ async fn open_game(app: tauri::AppHandle, path: String) -> Result<(), String> {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![open_game])
+        .invoke_handler(tauri::generate_handler![open_game, open_external])
         .setup(|app| {
             // Built here rather than declared in tauri.conf.json because an initialization
             // script can only be attached at window-creation time.
