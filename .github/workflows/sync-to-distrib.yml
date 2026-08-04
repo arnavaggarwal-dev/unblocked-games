@@ -1,0 +1,51 @@
+name: Sync main into distrib
+
+# THIS FILE MUST LIVE ON `main`. A workflow only triggers from the branch it was pushed to,
+# so a copy sitting on distrib would never fire on a push to main.
+#
+# Why it works cleanly: distrib is a purely additive branch. It never edits index.html or
+# anything in games/ — the offline build rewrites a *copy* at build time. So merging main in
+# is always a fast-forward-ish merge with nothing to conflict over.
+#
+# Adding this to main does not affect the website: GitHub Pages ignores .github/.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge main into distrib
+        run: |
+          set -e
+
+          if ! git ls-remote --exit-code --heads origin distrib >/dev/null 2>&1; then
+            echo "::notice::No distrib branch yet — nothing to sync."
+            exit 0
+          fi
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin distrib
+          git checkout -B distrib origin/distrib
+
+          if git merge origin/main --no-edit; then
+            git push origin distrib
+            echo "::notice::distrib is up to date with main."
+          else
+            echo "::error::Merge conflict between main and distrib."
+            echo "distrib is supposed to be additive-only. If a game file was edited on both"
+            echo "branches, resolve it by hand: git checkout distrib && git merge main"
+            exit 1
+          fi
