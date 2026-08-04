@@ -1,4 +1,24 @@
-# Offline desktop build (`tauri-offline` branch)
+# Offline desktop build (`distrib` branch)
+
+## Publishing
+
+```powershell
+.\push.bat "what changed"        # commit + push
+.\push.bat "what changed" -Release   # ...and build installers for every OS
+```
+
+Validates the workflow YAML, commits, rebases onto the remote, pushes, and optionally tags a
+release (auto-incrementing the version recorded in `version.log`).
+
+Run it from **PowerShell or by double-clicking**. It does not work from Git Bash — MSYS
+re-quotes arguments on the way into `cmd`, and splits this project's path at
+`OneDrive - NUS`. From a bash shell, call the script directly instead:
+
+```bash
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/push.ps1 "what changed" -NoBuild
+```
+
+
 
 Builds the whole gallery into a Windows app that runs with **no internet at all** — every font,
 library, and game bundled locally.
