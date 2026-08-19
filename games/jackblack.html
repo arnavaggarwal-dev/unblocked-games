@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>jackblack</title>
+<title>Blackjack</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;family=VT323&amp;display=swap" rel="stylesheet">
 <style>
   :root{
     --bg-1:#3a1466;
@@ -64,7 +62,6 @@
     pointer-events:none;
     z-index:1;
   }
-
   #topbar{
     z-index:2;
     width:100%;
@@ -131,7 +128,6 @@
     35%{ transform:scale(1.16) rotate(-2deg); }
     100%{ transform:scale(1) rotate(0); }
   }
-
   .zone{
     z-index:2;
     display:flex;
@@ -172,6 +168,93 @@
     transition:transform 0.3s cubic-bezier(.34,1.56,.64,1);
   }
   .score-pill.bump{ animation:statBump 0.4s cubic-bezier(.34,1.56,.64,1); }
+  .dealer-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:16px;
+  }
+  #dealer-face{
+    width:96px;
+    height:96px;
+    object-fit:cover;
+    flex-shrink:0;
+    border-radius:8px;
+    border:3px solid var(--ink);
+    box-shadow:3px 3px 0 var(--ink), 0 0 0 3px var(--gold);
+    background:var(--ink);
+    image-rendering:pixelated;
+    image-rendering:-moz-crisp-edges;
+    image-rendering:crisp-edges;
+    transform-origin:50% 100%;
+  }
+  #dealer-face.talk{
+    animation: dealerTalk 0.5s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes dealerTalk{
+    0%{ transform:scale(1) rotate(0deg); }
+    30%{ transform:scale(1.06) rotate(-2.5deg); }
+    55%{ transform:scale(0.97) rotate(2deg); }
+    80%{ transform:scale(1.02) rotate(-1deg); }
+    100%{ transform:scale(1) rotate(0deg); }
+  }
+  .dealer-face-wrap{
+    position:relative;
+    flex-shrink:0;
+    animation: dealerIdle 3.6s ease-in-out infinite;
+  }
+  @keyframes dealerIdle{
+    0%,100%{ transform:translateY(0) rotate(0deg); }
+    50%{ transform:translateY(-4px) rotate(-0.8deg); }
+  }
+  #dealer-bubble{
+    position:absolute;
+    left:50%;
+    bottom:100%;
+    margin-bottom:12px;
+    min-width:150px;
+    max-width:230px;
+    width:max-content;
+    background:var(--cream);
+    color:var(--ink);
+    border:3px solid var(--ink);
+    border-radius:10px;
+    padding:8px 11px;
+    font-family:'VT323', monospace;
+    font-size:16px;
+    line-height:1.25;
+    text-align:center;
+    box-shadow:3px 3px 0 var(--ink);
+    opacity:0;
+    pointer-events:none;
+    transform:translateX(-50%) translateY(8px) scale(0.85);
+    transition:opacity 0.22s ease, transform 0.22s cubic-bezier(.34,1.56,.64,1);
+    z-index:5;
+  }
+  #dealer-bubble.show{
+    opacity:1;
+    transform:translateX(-50%) translateY(0) scale(1);
+  }
+  #dealer-bubble b{ color:#8a1c2c; }
+  #dealer-bubble::after{
+    content:"";
+    position:absolute;
+    top:100%;
+    left:50%;
+    transform:translateX(-50%);
+    border:8px solid transparent;
+    border-top-color:var(--ink);
+  }
+  #dealer-bubble::before{
+    content:"";
+    position:absolute;
+    top:calc(100% - 3px);
+    left:50%;
+    transform:translateX(-50%);
+    border:6px solid transparent;
+    border-top-color:var(--cream);
+    z-index:1;
+  }
   .hand{
     display:flex;
     min-height:150px;
@@ -239,7 +322,6 @@
     pointer-events:none;
   }
   .card-back-face{ transform: rotateY(180deg); }
-
   #center-msg{
     z-index:3;
     min-height:40px;
@@ -263,7 +345,6 @@
     75%{ transform:scale(0.94) rotate(-2deg); }
     100%{ transform:scale(1) rotate(0deg); }
   }
-
   #dock{
     z-index:2;
     width:100%;
@@ -291,7 +372,6 @@
     display:flex;
     gap:10px;
   }
-
   .chips-row{
     display:flex;
     gap:14px;
@@ -366,7 +446,6 @@
     40%{ transform:rotateX(-10deg) rotateY(0deg) scale(1.18) translateY(-6px); }
     100%{ transform:rotateX(-10deg) rotateY(0deg) scale(1); }
   }
-
   button.btn{
     position:relative;
     overflow:hidden;
@@ -415,7 +494,6 @@
     color:rgba(255,246,224,0.8);
   }
   button.btn.subtle:active{ transform:scale(0.97); box-shadow:none; }
-
   #bet-spot{
     position:absolute;
     right:14px;
@@ -500,11 +578,13 @@
     68%{ transform:translate(var(--tx), var(--ty)) scale(1.08) rotate(2deg); opacity:1; }
     100%{ transform:translate(calc(var(--tx) + 8px), calc(var(--ty) - 6px)) scale(0.85) rotate(6deg); opacity:0; }
   }
-
   @media (max-width:480px){
     .card-wrap{ width:66px; height:96px; margin-left:-36px; }
     .zone{ min-height:110px; }
     .hand{ min-height:110px; }
+    #dealer-face{ width:64px; height:64px; }
+    .dealer-row{ gap:8px; }
+    #dealer-bubble{ font-size:13px; min-width:120px; max-width:180px; padding:6px 8px; }
     #sound-btn{ right:8px; top:58px; font-size:8px; height:32px; }
     #help-btn{ right:8px; top:14px; width:34px; height:34px; }
     #topbar{ justify-content:center; text-align:center; }
@@ -517,7 +597,6 @@
     #bet-spot{ right:2px; bottom:150px; transform:scale(0.72); transform-origin:right center; }
     #bet-pile{ grid-template-columns:repeat(2, 32px); gap:6px 8px; padding:7px 6px; }
   }
-
   #scanlines{
     position:absolute; inset:0; pointer-events:none; z-index:1;
     background:repeating-linear-gradient(
@@ -543,7 +622,6 @@
     97%{ opacity:1; }
     98%{ opacity:0; }
   }
-
   #particle-layer{
     position:fixed; inset:0; pointer-events:none; z-index:60;
     overflow:hidden;
@@ -586,7 +664,6 @@
     0%{ transform:translate(0,0) scale(0.6); opacity:1; }
     100%{ transform:translate(var(--dx),var(--dy)) scale(1.1); opacity:0; }
   }
-
   #sound-btn{
     position:fixed;
     top:14px;
@@ -631,7 +708,6 @@
     0%,100%{ box-shadow:0 3px 8px rgba(0,0,0,0.5), 0 0 0 0 rgba(212,175,55,0.55); }
     50%{ box-shadow:0 3px 8px rgba(0,0,0,0.5), 0 0 0 8px rgba(212,175,55,0); }
   }
-
   #gameover-overlay{
     position:fixed; inset:0;
     background:rgba(10,4,20,0.78);
@@ -679,7 +755,6 @@
     margin-bottom:22px;
     line-height:1.4;
   }
-
   #tut-overlay{
     position:fixed; inset:0;
     background:rgba(10,4,20,0.6);
@@ -826,42 +901,36 @@
 </style>
 </head>
 <body>
-
-<div id="particle-layer"></div>
-
+<div id="particle-layer"><div class="sparkle" style="left: 27.0581%; top: 45.3166%; font-size: 8.58834px; color: rgb(255, 110, 199);">✧</div><div class="sparkle" style="left: 37.0803%; top: 39.5406%; font-size: 15.162px; color: rgb(255, 210, 63);">✦</div><div class="sparkle" style="left: 26.541%; top: 54.0268%; font-size: 13.4505px; color: rgb(76, 201, 240);">✧</div></div>
 <button id="sound-btn" title="Toggle sound">SFX ON</button>
 <button id="help-btn" title="How to play">?</button>
-
 <div id="gameover-overlay">
   <div id="gameover-card">
     <div id="gameover-title">GAME OVER</div>
     <div id="gameover-sub">that's the whole bankroll gone. happens to the best of us</div>
-    <button class="btn primary" id="gameover-btn">start over &mdash; $1000</button>
+    <button class="btn primary" id="gameover-btn">start over — $1000</button>
   </div>
 </div>
-
-<div id="tut-overlay">
+<div id="tut-overlay" class="open">
   <div id="tut-card">
-    <button id="tut-close" title="Close">&times;</button>
-    <h2 id="tut-step-title">Title</h2>
-    <div id="tut-step-body">Body</div>
-    <div id="tut-examples"></div>
-    <div id="tut-dots"></div>
+    <button id="tut-close" title="Close">×</button>
+    <h2 id="tut-step-title">ok so here's the deal</h2>
+    <div id="tut-step-body">closer to 21 than the dealer wins. go over 21 and you're toast. that's like 90% of the game honestly, everything else is just details</div>
+    <div id="tut-examples"><div class="mini-card-col"><div class="mini-card"><canvas width="176" height="254"></canvas><div class="card-corner tl" style="color: rgb(26, 19, 48);">K<br>♠</div><div class="card-corner br" style="color: rgb(26, 19, 48);">K<br>♠</div><div class="card-face-letter" style="color: rgb(26, 19, 48);">K</div></div><div class="mini-card-label">King</div></div><div class="mini-card-col"><div class="mini-card"><canvas width="176" height="254"></canvas><div class="card-corner tl" style="color: rgb(255, 56, 100);">A<br>♥</div><div class="card-corner br" style="color: rgb(255, 56, 100);">A<br>♥</div></div><div class="mini-card-label">Ace</div></div></div>
+    <div id="tut-dots"><span class="active"></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
     <div id="tut-nav">
       <button class="tut-btn" id="tut-skip">nah i got it</button>
       <div id="tut-nav-right">
-        <button class="tut-btn" id="tut-back">back</button>
+        <button class="tut-btn" id="tut-back" disabled="">back</button>
         <button class="tut-btn primary" id="tut-next">next</button>
       </div>
     </div>
   </div>
 </div>
-
 <div id="table">
   <div id="scanlines"></div>
   <div id="crt-flicker"></div>
   <div id="vignette"></div>
-
   <div id="topbar">
     <div id="brand">
       <h1>Blackjack</h1>
@@ -877,17 +946,20 @@
       </div>
     </div>
   </div>
-
   <div class="zone zone-dealer">
     <div class="zone-head">
       <div class="zone-label">Dealer</div>
       <div class="score-pill" id="dealer-score">0</div>
     </div>
-    <div class="hand" id="dealer-hand"></div>
+    <div class="dealer-row">
+      <div class="dealer-face-wrap">
+        <img id="dealer-face" src="dealer.png" alt="Dealer" onerror="this.style.display='none'">
+        <div id="dealer-bubble"></div>
+      </div>
+      <div class="hand" id="dealer-hand"></div>
+    </div>
   </div>
-
   <div id="center-msg"></div>
-
   <div class="zone zone-player">
     <div class="zone-head">
       <div class="zone-label">Player</div>
@@ -895,7 +967,6 @@
     </div>
     <div class="hand" id="player-hand"></div>
   </div>
-
   <div id="dock">
     <div id="bet-spot">
       <div id="bet-pile">
@@ -907,41 +978,36 @@
       </div>
       <div id="bet-spot-label">Place Bet</div>
     </div>
-    <div class="dock-row" id="bet-actions">
+    <div class="dock-row" id="bet-actions" style="display: flex;">
       <div class="chips-row" id="chips-row">
-        <div class="chip3d-stage" data-v="1"></div>
-        <div class="chip3d-stage" data-v="5"></div>
-        <div class="chip3d-stage" data-v="25"></div>
-        <div class="chip3d-stage" data-v="100"></div>
-        <div class="chip3d-stage" data-v="500"></div>
+        <div class="chip3d-stage" data-v="1"><div class="chip3d-inner"><div class="chip-edge-ring"><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(0deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(22.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(45deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(67.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(90deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(112.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(135deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(157.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(180deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(202.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(225deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(247.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(270deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(292.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(315deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(337.5deg) translateZ(25px); height: 9px;"></div></div><div class="chip3d-face back">$1<div class="chip-spot" style="transform: rotate(0deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(45deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(90deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(135deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(180deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(225deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(270deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(315deg) translateY(-21px);"></div></div><div class="chip3d-face front">$1<div class="chip-spot" style="transform: rotate(0deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(45deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(90deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(135deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(180deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(225deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(270deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(315deg) translateY(-21px);"></div></div></div></div>
+        <div class="chip3d-stage" data-v="5"><div class="chip3d-inner"><div class="chip-edge-ring"><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(0deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(22.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(45deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(67.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(90deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(112.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(135deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(157.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(180deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(202.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(225deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(247.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(270deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(292.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(315deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(337.5deg) translateZ(25px); height: 9px;"></div></div><div class="chip3d-face back">$5<div class="chip-spot" style="transform: rotate(0deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(45deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(90deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(135deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(180deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(225deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(270deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(315deg) translateY(-21px);"></div></div><div class="chip3d-face front">$5<div class="chip-spot" style="transform: rotate(0deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(45deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(90deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(135deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(180deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(225deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(270deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(315deg) translateY(-21px);"></div></div></div></div>
+        <div class="chip3d-stage" data-v="25"><div class="chip3d-inner"><div class="chip-edge-ring"><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(0deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(22.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(45deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(67.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(90deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(112.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(135deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(157.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(180deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(202.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(225deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(247.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(270deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(292.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(315deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(337.5deg) translateZ(25px); height: 9px;"></div></div><div class="chip3d-face back">$25<div class="chip-spot" style="transform: rotate(0deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(45deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(90deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(135deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(180deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(225deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(270deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(315deg) translateY(-21px);"></div></div><div class="chip3d-face front">$25<div class="chip-spot" style="transform: rotate(0deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(45deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(90deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(135deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(180deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(225deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(270deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(315deg) translateY(-21px);"></div></div></div></div>
+        <div class="chip3d-stage" data-v="100"><div class="chip3d-inner"><div class="chip-edge-ring"><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(0deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(22.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(45deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(67.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(90deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(112.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(135deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(157.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(180deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(202.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(225deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(247.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(270deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(292.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(315deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(337.5deg) translateZ(25px); height: 9px;"></div></div><div class="chip3d-face back">$100<div class="chip-spot" style="transform: rotate(0deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(45deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(90deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(135deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(180deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(225deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(270deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(315deg) translateY(-21px);"></div></div><div class="chip3d-face front">$100<div class="chip-spot" style="transform: rotate(0deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(45deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(90deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(135deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(180deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(225deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(270deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(315deg) translateY(-21px);"></div></div></div></div>
+        <div class="chip3d-stage" data-v="500"><div class="chip3d-inner"><div class="chip-edge-ring"><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(0deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(22.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(45deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(67.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(90deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(112.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(135deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(157.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(180deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(202.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(225deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(247.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(270deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(292.5deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(255, 255, 255, 0.9); transform: rotateY(315deg) translateZ(25px); height: 9px;"></div><div class="chip-slice" style="width: 10.8175px; left: calc(50% - 5.40874px); background: rgba(0, 0, 0, 0.35); transform: rotateY(337.5deg) translateZ(25px); height: 9px;"></div></div><div class="chip3d-face back">$500<div class="chip-spot" style="transform: rotate(0deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(45deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(90deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(135deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(180deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(225deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(270deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(315deg) translateY(-21px);"></div></div><div class="chip3d-face front">$500<div class="chip-spot" style="transform: rotate(0deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(45deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(90deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(135deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(180deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(225deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(270deg) translateY(-21px);"></div><div class="chip-spot" style="transform: rotate(315deg) translateY(-21px);"></div></div></div></div>
       </div>
       <div class="dock-buttons">
         <button class="btn" id="clear-bet-btn">Clear Bet</button>
         <button class="btn" id="allin-btn">All In</button>
-        <button class="btn primary" id="deal-btn" disabled>Deal</button>
+        <button class="btn primary" id="deal-btn" disabled="">Deal</button>
       </div>
     </div>
-
     <div class="dock-row centered" id="play-actions" style="display:none;">
       <button class="btn" id="hit-btn">Hit</button>
       <button class="btn primary" id="stand-btn">Stand</button>
       <button class="btn" id="double-btn">Double</button>
     </div>
-
     <div class="dock-row" id="next-actions" style="display:none;">
       <button class="btn subtle" id="reset-btn">Reset bankroll</button>
       <button class="btn primary" id="next-round-btn">Next Round</button>
     </div>
   </div>
 </div>
-
 <script>
 (function(){
   "use strict";
-
   var SUITS = ["spade","heart","diamond","club"];
   var RANKS = ["1","2","3","4","5","6","7","8","9","10","jack","queen","king"];
-
   function rankLabel(r){
     if(r==="1") return "A";
     if(r==="jack") return "J";
@@ -954,7 +1020,6 @@
     if(r==="jack"||r==="queen"||r==="king") return 10;
     return parseInt(r,10);
   }
-
   function buildDeck(){
     var deck = [];
     for(var s=0;s<SUITS.length;s++){
@@ -971,7 +1036,6 @@
     }
     return deck;
   }
-
   function handValue(hand){
     var total = 0, aces = 0;
     for(var i=0;i<hand.length;i++){
@@ -985,7 +1049,6 @@
   function isBlackjack(hand){
     return hand.length===2 && handValue(hand)===21;
   }
-
   var BANKROLL_KEY = "bj_bankroll_v1";
   var state = {
     deck: [],
@@ -996,7 +1059,6 @@
     phase: "betting",
     doubled: false
   };
-
   function loadBankroll(){
     var v = null;
     try{ v = localStorage.getItem(BANKROLL_KEY); }catch(e){}
@@ -1005,7 +1067,6 @@
   function saveBankroll(){
     try{ localStorage.setItem(BANKROLL_KEY, String(state.bankroll)); }catch(e){}
   }
-
   var dealerHandEl = document.getElementById("dealer-hand");
   var playerHandEl = document.getElementById("player-hand");
   var dealerScoreEl = document.getElementById("dealer-score");
@@ -1013,7 +1074,6 @@
   var bankrollEl = document.getElementById("bankroll");
   var betDisplayEl = document.getElementById("bet-display");
   var msgEl = document.getElementById("center-msg");
-
   var chipsRow = document.getElementById("chips-row");
   var clearBetBtn = document.getElementById("clear-bet-btn");
   var allInBtn = document.getElementById("allin-btn");
@@ -1029,14 +1089,14 @@
   var betPileEl = document.getElementById("bet-pile");
   var gameOverOverlay = document.getElementById("gameover-overlay");
   var gameOverBtn = document.getElementById("gameover-btn");
-
+  var dealerBubble = document.getElementById("dealer-bubble");
+  var dealerFace = document.getElementById("dealer-face");
   var PXC_INK = "#1a1330";
   var PXC_RED = "#ff3864";
   var PXC_CREAM = "#fff6e0";
   var PXC_GOLD = "#ffd23f";
   var PXC_PINK = "#ff6ec7";
   var PXC_CYAN = "#4cc9f0";
-
   var SUIT_BITMAPS = {
     spade: [
       "0001000",
@@ -1077,7 +1137,6 @@
   };
   var SUIT_GLYPH = { spade:"\u2660", heart:"\u2665", diamond:"\u2666", club:"\u2663" };
   function suitColor(suit){ return (suit==="heart"||suit==="diamond") ? PXC_RED : PXC_INK; }
-
   var PIP_LAYOUTS = {
     2:[[0.5,0.12],[0.5,0.88]],
     3:[[0.5,0.12],[0.5,0.5],[0.5,0.88]],
@@ -1089,7 +1148,6 @@
     9:[[0.25,0.08],[0.75,0.08],[0.25,0.32],[0.75,0.32],[0.5,0.5],[0.25,0.68],[0.75,0.68],[0.25,0.92],[0.75,0.92]],
     10:[[0.25,0.06],[0.75,0.06],[0.5,0.2],[0.25,0.36],[0.75,0.36],[0.25,0.64],[0.75,0.64],[0.5,0.8],[0.25,0.94],[0.75,0.94]]
   };
-
   function drawBitmap(ctx, bitmap, x, y, block, color){
     ctx.fillStyle = color;
     for(var r=0;r<bitmap.length;r++){
@@ -1101,16 +1159,13 @@
       }
     }
   }
-
   var CARD_PX_W = 176, CARD_PX_H = 254;
-
   function makeCardCanvas(){
     var c = document.createElement("canvas");
     c.width = CARD_PX_W;
     c.height = CARD_PX_H;
     return c;
   }
-
   function drawCardFrame(ctx, W, H){
     ctx.fillStyle = PXC_CREAM;
     ctx.fillRect(0,0,W,H);
@@ -1126,7 +1181,6 @@
     ctx.fillRect(W-off-ib,off,ib,H-2*off);
     return b;
   }
-
   function drawCardFront(canvas, suit, rank){
     var ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = false;
@@ -1134,7 +1188,6 @@
     var color = suitColor(suit);
     var bmp = SUIT_BITMAPS[suit];
     var b = drawCardFrame(ctx, W, H);
-
     if(rank === "1"){
       var block = 15, w = 7*block, h = 7*block;
       drawBitmap(ctx, bmp, W/2-w/2, H/2-h/2, block, color);
@@ -1161,7 +1214,6 @@
       });
     }
   }
-
   function drawCardBack(canvas){
     var ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = false;
@@ -1172,7 +1224,6 @@
     var b = 6;
     ctx.fillRect(0,0,W,b); ctx.fillRect(0,H-b,W,b);
     ctx.fillRect(0,0,b,H); ctx.fillRect(W-b,0,b,H);
-
     var cell = 16;
     var dia = SUIT_BITMAPS.diamond;
     for(var y=b+10; y<H-b-10; y+=cell){
@@ -1188,7 +1239,6 @@
     drawBitmap(ctx, SUIT_BITMAPS.spade, W/2-ew/2, H/2-ew/2, eb, PXC_GOLD);
     ctx.restore();
   }
-
   function buildCorner(suit, rank, cls){
     var el = document.createElement("div");
     el.className = "card-corner " + cls;
@@ -1196,7 +1246,6 @@
     el.innerHTML = rankLabel(rank) + "<br>" + SUIT_GLYPH[suit];
     return el;
   }
-
   function renderCardFaceInto(container, suit, rank){
     var canvas = makeCardCanvas();
     drawCardFront(canvas, suit, rank);
@@ -1211,17 +1260,14 @@
       container.appendChild(big);
     }
   }
-
   function renderCardBackInto(container){
     var canvas = makeCardCanvas();
     drawCardBack(canvas);
     container.appendChild(canvas);
   }
-
   var SFX = (function(){
     var ctx = null;
     var muted = false;
-
     function ensureCtx(){
       if(!ctx){
         var AC = window.AudioContext || window.webkitAudioContext;
@@ -1230,7 +1276,6 @@
       if(ctx && ctx.state === "suspended"){ ctx.resume(); }
       return ctx;
     }
-
     function tone(freq, dur, type, vol, delay, glideTo){
       if(muted) return;
       var c = ensureCtx();
@@ -1247,7 +1292,6 @@
       osc.connect(gain); gain.connect(c.destination);
       osc.start(t0); osc.stop(t0+dur+0.03);
     }
-
     function noise(dur, vol, delay, hp){
       if(muted) return;
       var c = ensureCtx();
@@ -1268,13 +1312,11 @@
       src.connect(filter); filter.connect(gain); gain.connect(c.destination);
       src.start(t0);
     }
-
     function sequence(notes, type, dur, gap, vol){
       for(var i=0;i<notes.length;i++){
         tone(notes[i], dur, type, vol, i*gap);
       }
     }
-
     return {
       setMuted:function(m){ muted = m; },
       isMuted:function(){ return muted; },
@@ -1299,7 +1341,182 @@
       error:function(){ tone(150, 0.08, "square", 0.1); }
     };
   })();
-
+  var DEALER_LINES = {
+    deal: [
+      "oh here we go again",
+      "let's see how fast you lose this one",
+      "cards are flying, hopes are dying",
+      "try not to embarrass yourself",
+      "another round, another donation to the house",
+      "buckle up buttercup",
+      "let's <b>deal</b> with this then",
+      "time to <b>shuffle</b> your feelings"
+    ],
+    hit: [
+      "bold choice. wrong, but bold",
+      "sure, why not dig deeper",
+      "greedy much?",
+      "here's your rope",
+      "you sure about that? ...eh go ahead",
+      "living dangerously huh",
+      "swing and a <b>hit</b>, maybe",
+      "that's a bold <b>draw</b>"
+    ],
+    stand: [
+      "wow. actual restraint. shocking",
+      "playing it safe huh",
+      "standing? never seen that before",
+      "coward's move. respect",
+      "look at you, showing discipline",
+      "no <b>flush</b> in this game but sure, stand there"
+    ],
+    double: [
+      "double or nothing, mostly nothing",
+      "confidence is cute",
+      "putting your money where your mouth is, brave",
+      "big spender over here",
+      "oh we're feeling lucky today",
+      "hope that <b>stack</b> was worth it"
+    ],
+    allin: [
+      "oh we're doing this huh",
+      "bold. probably dumb. but bold",
+      "confidence or stupidity, hard to tell",
+      "sending it all in, love that for you",
+      "well someone's feeling brave",
+      "shoving the whole <b>stack</b> in, huh"
+    ],
+    bust: [
+      "and there it is",
+      "called it",
+      "that's a yikes from me",
+      "math was never really your strong <b>suit</b> huh",
+      "thanks for the donation",
+      "went right past 21 didn't you",
+      "guess you couldn't <b>cut</b> it",
+      "well that went <b>bust</b>, shocker"
+    ],
+    blackjack: [
+      "...lucky",
+      "beginner's luck. has to be",
+      "fine. FINE. take it",
+      "don't get used to it",
+      "ugh. blackjack. really?",
+      "got an <b>ace</b> up your sleeve i guess"
+    ],
+    dealerBust: [
+      "ok that one's on me",
+      "even i mess up sometimes",
+      "don't celebrate too hard",
+      "a fluke. a glorious fluke",
+      "fine, you got lucky this time",
+      "guess my <b>hand</b> wasn't strong enough"
+    ],
+    win: [
+      "ugh. fine, you win this one",
+      "beginner's luck strikes again",
+      "don't let it go to your head",
+      "guess it's your turn i suppose",
+      "hmph. take your chips",
+      "gotta <b>hand</b> it to you, literally"
+    ],
+    lose: [
+      "and that's how it's done",
+      "house always wins eventually",
+      "thanks for playing, i mean paying",
+      "better luck never",
+      "come back when you've practiced",
+      "that's just how the cards <b>stack</b> up",
+      "better <b>fold</b> next time, champ"
+    ],
+    dealerBlackjack: [
+      "blackjack baby, who's surprised",
+      "did you really think you had this",
+      "i don't even have to try",
+      "yeah that's blackjack. cry about it",
+      "i've got the whole <b>deck</b> stacked, don't i"
+    ],
+    push: [
+      "a tie. how thrilling",
+      "nobody wins. everybody's sad",
+      "push. boring but fine",
+      "we both just wasted our time i guess",
+      "a <b>pair</b> of losers today, huh"
+    ]
+  };
+  var DEALER_MEME_LINES = {
+    hit: [
+      "STEVE. STEVE THIS IS A TERRIBLE BET",
+      "bro really just hit on 19 \uD83D\uDC80\uD83D\uDC80\uD83D\uDC80",
+      "WAKE UP. WAKE UP. WE'RE HITTING",
+      "chicken jockey!!"
+    ],
+    double: [
+      "not the whole bankroll. NOT THE WHOLE BANKROLL",
+      "i'm going feral about this bet"
+    ],
+    allin: [
+      "not the whole bankroll. NOT THE WHOLE BANKROLL",
+      "i'm going feral about this bet",
+      "STEVE. STEVE THIS IS A TERRIBLE BET"
+    ],
+    deal: [
+      "chicken jockey!!"
+    ],
+    bust: [
+      "bro really just hit on 19 \uD83D\uDC80\uD83D\uDC80\uD83D\uDC80",
+      "this ain't it chief, this ain't it at all",
+      "this is why we can't have nice things"
+    ],
+    win: [
+      "THE VILLAGE. THE VILLAGE IS GONE",
+      "guys. guys. this is SO OVER",
+      "this is why we can't have nice things"
+    ],
+    dealerBust: [
+      "THE VILLAGE. THE VILLAGE IS GONE",
+      "guys. guys. this is SO OVER",
+      "this is why we can't have nice things"
+    ],
+    lose: [
+      "not the whole bankroll. NOT THE WHOLE BANKROLL",
+      "this ain't it chief, this ain't it at all"
+    ],
+    dealerBlackjack: [
+      "chicken jockey!!"
+    ],
+    blackjack: [],
+    stand: [],
+    push: []
+  };
+  var MEME_CHANCE = 0.28;
+  var dealerBubbleTimer = null;
+  var dealerBubbleSwapTimer = null;
+  function dealerSay(category){
+    var lines = DEALER_LINES[category];
+    if(!lines || !lines.length) return;
+    var memePool = DEALER_MEME_LINES[category];
+    var pool = (memePool && memePool.length && Math.random() < MEME_CHANCE) ? memePool : lines;
+    var line = pool[Math.floor(Math.random()*pool.length)];
+    if(dealerBubbleTimer) clearTimeout(dealerBubbleTimer);
+    if(dealerBubbleSwapTimer) clearTimeout(dealerBubbleSwapTimer);
+    function showLine(){
+      dealerBubble.innerHTML = line;
+      dealerBubble.classList.remove("show");
+      void dealerBubble.offsetWidth;
+      dealerBubble.classList.add("show");
+      dealerFace.classList.remove("talk");
+      void dealerFace.offsetWidth;
+      dealerFace.classList.add("talk");
+      dealerBubbleTimer = setTimeout(function(){ dealerBubble.classList.remove("show"); }, 2800);
+    }
+    if(dealerBubble.classList.contains("show")){
+      dealerBubble.classList.remove("show");
+      dealerBubbleSwapTimer = setTimeout(showLine, 220);
+    } else {
+      showLine();
+    }
+  }
   var SOUND_KEY = "bj_sound_muted_v1";
   var soundBtn = document.getElementById("sound-btn");
   function updateSoundBtn(){
@@ -1324,10 +1541,8 @@
     SFX.unlock();
     document.body.removeEventListener("pointerdown", once);
   });
-
   var particleLayer = document.getElementById("particle-layer");
   var CONFETTI_COLORS = ["#ff6ec7","#4cc9f0","#ffd23f","#ff9f1c","#ff3864","#7bf1a8"];
-
   function spawnConfetti(x, y, count){
     count = count || 36;
     for(var i=0;i<count;i++){
@@ -1349,7 +1564,6 @@
       (function(el){ el.addEventListener("animationend", function(){ el.remove(); }); })(p);
     }
   }
-
   function spawnChipPop(x, y){
     var count = 8;
     for(var i=0;i<count;i++){
@@ -1368,7 +1582,6 @@
       (function(el){ el.addEventListener("animationend", function(){ el.remove(); }); })(p);
     }
   }
-
   var HAND_SVG =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
     '<g fill="#fff6e0" stroke="#1a1330" stroke-width="1.4" stroke-linejoin="round">' +
@@ -1378,30 +1591,25 @@
     '<rect x="11.6" y="2.3" width="3" height="9.2" rx="1.4"/>' +
     '<rect x="14.9" y="3.5" width="3" height="8.2" rx="1.4"/>' +
     '</g></svg>';
-
   function createHandEl(){
     var hand = document.createElement("div");
     hand.className = "push-hand";
     hand.innerHTML = HAND_SVG;
     return hand;
   }
-
   function pushChipToPile(denom, originRect){
     var stack = betPileEl.querySelector('.chip-stack[data-v="'+denom+'"]');
     if(!stack) return;
     stack.classList.add("has-chips");
     betPileEl.classList.add("filled");
-
     var count = stack.children.length;
     var stackRect = stack.getBoundingClientRect();
     var landX = stackRect.left + stackRect.width/2;
     var landY = stackRect.bottom - 8 - count*6;
-
     var startX = originRect.left + originRect.width/2;
     var startY = originRect.top + originRect.height/2;
     var tx = landX - startX;
     var ty = landY - startY;
-
     var travel = document.createElement("div");
     travel.className = "chip-token traveling";
     travel.setAttribute("data-v", denom);
@@ -1410,14 +1618,12 @@
     travel.style.setProperty("--tx", tx+"px");
     travel.style.setProperty("--ty", ty+"px");
     particleLayer.appendChild(travel);
-
     var hand = createHandEl();
     hand.style.left = (startX-17)+"px";
     hand.style.top = (startY-15)+"px";
     hand.style.setProperty("--tx", tx+"px");
     hand.style.setProperty("--ty", (ty-10)+"px");
     particleLayer.appendChild(hand);
-
     hand.addEventListener("animationend", function(){ hand.remove(); });
     travel.addEventListener("animationend", function(){
       travel.remove();
@@ -1430,7 +1636,6 @@
       SFX.chip();
     });
   }
-
   function clearBetPile(animate){
     var stacks = betPileEl.querySelectorAll(".chip-stack");
     betPileEl.classList.remove("filled");
@@ -1462,7 +1667,6 @@
       });
     }, maxDelay + 340);
   }
-
   function sendPileTo(targetEl){
     if(!targetEl) { clearBetPile(true); return; }
     var targetRect = targetEl.getBoundingClientRect();
@@ -1499,7 +1703,6 @@
       });
     }, maxDelay + 600);
   }
-
   function spawnSparkle(){
     var s = document.createElement("div");
     s.className = "sparkle";
@@ -1513,7 +1716,6 @@
     s.addEventListener("animationend", function(){ s.remove(); });
   }
   setInterval(spawnSparkle, 750);
-
   function shakeTable(){
     var table = document.getElementById("table");
     table.classList.remove("shake");
@@ -1521,26 +1723,21 @@
     table.classList.add("shake");
     setTimeout(function(){ table.classList.remove("shake"); }, 450);
   }
-
   var SUPPORTS_HOVER = window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-
   function restTransform(wrap){
     var t = wrap.dataset.tilt || "0";
     var l = wrap.dataset.lift || "0";
     return "rotate("+t+"deg) translateY("+l+"px)";
   }
-
   function applyTiltVars(wrap){
     wrap.style.setProperty("--tilt", (wrap.dataset.tilt || "0")+"deg");
     wrap.style.setProperty("--lift", (wrap.dataset.lift || "0")+"px");
   }
-
   function settleCard(wrap){
     wrap.style.animation = "none";
     wrap.dataset.settled = "1";
     wrap.style.transform = restTransform(wrap);
   }
-
   function attachCardTilt(wrap){
     if(!SUPPORTS_HOVER) return;
     wrap.addEventListener("pointermove", function(e){
@@ -1562,7 +1759,6 @@
       wrap.style.zIndex = "";
     });
   }
-
   function computeFanAngle(index, total, step, maxSpread){
     if(total<=1) return 0;
     var offset = index - (total-1)/2;
@@ -1570,7 +1766,6 @@
     if(maxSpread!=null){ angle = Math.max(-maxSpread, Math.min(maxSpread, angle)); }
     return angle;
   }
-
   function layoutDealerFan(){
     var wraps = dealerHandEl.querySelectorAll(".card-wrap");
     var n = wraps.length;
@@ -1588,7 +1783,6 @@
       }
     });
   }
-
   function renderCard(container, card, hidden){
     var wrap = document.createElement("div");
     wrap.className = "card-wrap";
@@ -1608,7 +1802,6 @@
       flip.classList.add("flipped");
       wrap.dataset.hidden = "1";
     }
-
     wrap.dataset.settled = "0";
     if(container === dealerHandEl){
       wrap.dataset.lift = "0";
@@ -1624,7 +1817,6 @@
     attachCardTilt(wrap);
     return flip;
   }
-
   function revealHiddenDealerCard(){
     var wraps = dealerHandEl.querySelectorAll(".card-wrap");
     for(var i=0;i<wraps.length;i++){
@@ -1635,13 +1827,11 @@
       }
     }
   }
-
   function bumpEl(el){
     el.classList.remove("bump");
     void el.offsetWidth;
     el.classList.add("bump");
   }
-
   function updateScores(showDealerFull){
     var newPlayer = handValue(state.player);
     if(playerScoreEl.textContent !== String(newPlayer)){
@@ -1659,7 +1849,6 @@
       bumpEl(dealerScoreEl);
     }
   }
-
   function setMessage(text, cls){
     msgEl.textContent = text || "";
     msgEl.className = cls || "";
@@ -1669,7 +1858,6 @@
       msgEl.classList.add("punch");
     }
   }
-
   function tweenNumber(el, from, to, statEl){
     if(from === to){ el.textContent = to; return; }
     var start = performance.now();
@@ -1688,7 +1876,6 @@
     }
     requestAnimationFrame(frame);
   }
-
   var lastBankroll = null, lastBet = null;
   function refreshBankrollUI(){
     var bStat = bankrollEl.closest(".stat");
@@ -1706,7 +1893,6 @@
     lastBankroll = state.bankroll;
     lastBet = state.bet;
   }
-
   function chipsEnabled(enabled){
     var chips = chipsRow.querySelectorAll(".chip3d-stage");
     chips.forEach(function(c){
@@ -1714,7 +1900,6 @@
       else c.classList.add("disabled");
     });
   }
-
   function showBettingPhase(){
     state.phase = "betting";
     betActions.style.display = "flex";
@@ -1736,14 +1921,11 @@
     playActions.style.display = "none";
     nextActions.style.display = "flex";
   }
-
   var CHIP_LABEL = { 1:"$1", 5:"$5", 25:"$25", 100:"$100", 500:"$500" };
-
   function buildChip3D(stage){
     var v = parseInt(stage.getAttribute("data-v"),10);
     var inner = document.createElement("div");
     inner.className = "chip3d-inner";
-
     var radius = 25, segs = 16, thickness = 9;
     var ring = document.createElement("div");
     ring.className = "chip-edge-ring";
@@ -1759,7 +1941,6 @@
       slice.style.height = thickness+"px";
       ring.appendChild(slice);
     }
-
     var back = document.createElement("div");
     back.className = "chip3d-face back";
     back.textContent = CHIP_LABEL[v] || ("$"+v);
@@ -1769,7 +1950,6 @@
       spot1.style.transform = "rotate("+(s1*45)+"deg) translateY(-21px)";
       back.appendChild(spot1);
     }
-
     var front = document.createElement("div");
     front.className = "chip3d-face front";
     front.textContent = CHIP_LABEL[v] || ("$"+v);
@@ -1779,14 +1959,12 @@
       spot2.style.transform = "rotate("+(s2*45)+"deg) translateY(-21px)";
       front.appendChild(spot2);
     }
-
     inner.appendChild(ring);
     inner.appendChild(back);
     inner.appendChild(front);
     stage.appendChild(inner);
     return inner;
   }
-
   function selectChip(v, stage){
     if(state.phase!=="betting") return;
     if(v > state.bankroll - state.bet) { SFX.error(); return; }
@@ -1799,14 +1977,12 @@
     void stage.offsetWidth;
     stage.classList.add("bump");
   }
-
   function attachChip3D(stage){
     var inner = buildChip3D(stage);
     var v = parseInt(stage.getAttribute("data-v"),10);
     var dragging = false, moved = 0;
     var startX = 0, startY = 0;
     var rotX = -10, rotY = 0;
-
     stage.addEventListener("pointerdown", function(e){
       if(stage.classList.contains("disabled")) return;
       dragging = true; moved = 0;
@@ -1838,9 +2014,7 @@
       if(dragging && e.buttons===0) endDrag(e);
     });
   }
-
   chipsRow.querySelectorAll(".chip3d-stage").forEach(attachChip3D);
-
   clearBetBtn.addEventListener("click", function(){
     if(state.phase!=="betting") return;
     state.bet = 0;
@@ -1849,7 +2023,6 @@
     clearBetPile(true);
     SFX.clear();
   });
-
   allInBtn.addEventListener("click", function(){
     if(state.phase!=="betting") return;
     var total = state.bankroll;
@@ -1869,6 +2042,7 @@
     state.bet = betAmount;
     refreshBankrollUI();
     dealBtn.disabled = state.bet<=0;
+    dealerSay("allin");
     chipsToPlace.forEach(function(v, i){
       setTimeout(function(){
         var stage = chipsRow.querySelector('.chip3d-stage[data-v="'+v+'"]');
@@ -1877,14 +2051,12 @@
       }, i*90);
     });
   });
-
   function draw(){
     if(state.deck.length < 4){
       state.deck = shuffle(buildDeck());
     }
     return state.deck.pop();
   }
-
   function startRound(){
     state.player = [];
     state.dealer = [];
@@ -1892,38 +2064,33 @@
     dealerHandEl.innerHTML = "";
     playerHandEl.innerHTML = "";
     setMessage("");
-
     state.player.push(draw());
     state.dealer.push(draw());
     state.player.push(draw());
     state.dealer.push(draw());
-
     renderCard(playerHandEl, state.player[0], false);
     renderCard(dealerHandEl, state.dealer[0], false);
     renderCard(playerHandEl, state.player[1], false);
     renderCard(dealerHandEl, state.dealer[1], true);
-
     [0,140,280,420].forEach(function(t){ setTimeout(function(){ SFX.deal(); }, t); });
-
+    setTimeout(function(){ dealerSay("deal"); }, 500);
     updateScores(false);
     showPlayingPhase();
-
     var pj = isBlackjack(state.player);
     var dj = isBlackjack(state.dealer);
     if(pj || dj){
       setTimeout(function(){ resolveRound(true); }, 500);
     }
   }
-
   dealBtn.addEventListener("click", function(){
     if(state.bet<=0 || state.bet>state.bankroll) return;
     SFX.click();
     startRound();
   });
-
   hitBtn.addEventListener("click", function(){
     if(state.phase!=="playing") return;
     SFX.hit();
+    dealerSay("hit");
     state.player.push(draw());
     renderCard(playerHandEl, state.player[state.player.length-1], false);
     setTimeout(function(){ SFX.deal(); }, 120);
@@ -1936,17 +2103,17 @@
       setTimeout(function(){ dealerPlay(); }, 300);
     }
   });
-
   standBtn.addEventListener("click", function(){
     if(state.phase!=="playing") return;
     SFX.stand();
+    dealerSay("stand");
     dealerPlay();
   });
-
   doubleBtn.addEventListener("click", function(){
     if(state.phase!=="playing" || state.player.length!==2) return;
     if(state.bankroll < state.bet) return;
     SFX.double();
+    dealerSay("double");
     state.doubled = true;
     state.bet *= 2;
     refreshBankrollUI();
@@ -1961,14 +2128,12 @@
       setTimeout(function(){ dealerPlay(); }, 300);
     }
   });
-
   function dealerPlay(){
     state.phase = "dealer";
     playActions.style.display = "none";
     SFX.flip();
     revealHiddenDealerCard();
     updateScores(true);
-
     function step(){
       var v = handValue(state.dealer);
       var pv = handValue(state.player);
@@ -1988,11 +2153,9 @@
     }
     setTimeout(step, 500);
   }
-
   function finishAfterDealer(){
     resolveRound(false);
   }
-
   function openGameOverScreen(){
     gameOverOverlay.classList.add("open");
   }
@@ -2024,7 +2187,6 @@
     closeGameOverScreen();
     showBettingPhase();
   });
-
   function resolveRound(fromBlackjack){
     if(fromBlackjack){
       SFX.flip();
@@ -2035,34 +2197,32 @@
     var dv = handValue(state.dealer);
     var pj = isBlackjack(state.player);
     var dj = isBlackjack(state.dealer);
-    var result, cls, delta, sound;
-
+    var result, cls, delta, sound, line;
     if(pj && dj){
-      result = "Push — both Blackjack"; cls="push"; delta=0; sound="push";
+      result = "Push — both Blackjack"; cls="push"; delta=0; sound="push"; line="push";
     } else if(pj){
       result = "Blackjack! You win " + Math.floor(state.bet*1.5);
-      cls="win"; delta = Math.floor(state.bet*1.5); sound="blackjack";
+      cls="win"; delta = Math.floor(state.bet*1.5); sound="blackjack"; line="blackjack";
     } else if(dj){
-      result = "Dealer has Blackjack"; cls="lose"; delta = -state.bet; sound="lose";
+      result = "Dealer has Blackjack"; cls="lose"; delta = -state.bet; sound="lose"; line="dealerBlackjack";
     } else if(pv>21){
-      result = "Bust! You lose"; cls="lose"; delta = -state.bet; sound="bust";
+      result = "Bust! You lose"; cls="lose"; delta = -state.bet; sound="bust"; line="bust";
     } else if(dv>21){
-      result = "Dealer busts! You win " + state.bet; cls="win"; delta = state.bet; sound="win";
+      result = "Dealer busts! You win " + state.bet; cls="win"; delta = state.bet; sound="win"; line="dealerBust";
     } else if(pv>dv){
-      result = "You win " + state.bet + "!"; cls="win"; delta = state.bet; sound="win";
+      result = "You win " + state.bet + "!"; cls="win"; delta = state.bet; sound="win"; line="win";
     } else if(pv<dv){
-      result = "Dealer wins"; cls="lose"; delta = -state.bet; sound="lose";
+      result = "Dealer wins"; cls="lose"; delta = -state.bet; sound="lose"; line="lose";
     } else {
-      result = "Push"; cls="push"; delta = 0; sound="push";
+      result = "Push"; cls="push"; delta = 0; sound="push"; line="push";
     }
-
     state.bankroll += delta;
     saveBankroll();
     setMessage(result, cls);
     refreshBankrollUI();
     showDonePhase();
     SFX[sound]();
-
+    setTimeout(function(){ dealerSay(line); }, 200);
     var rect = msgEl.getBoundingClientRect();
     var cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
     if(cls==="win"){
@@ -2070,7 +2230,6 @@
     } else if(cls==="lose"){
       shakeTable();
     }
-
     var pileTarget = (cls==="lose") ? document.querySelector(".zone-dealer .zone-head") : bankrollEl;
     setTimeout(function(){
       sendPileTo(pileTarget);
@@ -2081,7 +2240,6 @@
       }
     }, cls==="lose" ? 550 : 700);
   }
-
   nextRoundBtn.addEventListener("click", function(){
     SFX.click();
     state.bet = 0;
@@ -2095,7 +2253,6 @@
     showBettingPhase();
     maybeShowGameOver();
   });
-
   resetBtn.addEventListener("click", function(){
     SFX.error();
     state.bankroll = 1000;
@@ -2110,7 +2267,6 @@
     playerScoreEl.textContent = "0";
     showBettingPhase();
   });
-
   function miniCard(suit, rank, label){
     var col = document.createElement("div");
     col.className = "mini-card-col";
@@ -2141,7 +2297,6 @@
     }
     return col;
   }
-
   var TUT_STEPS = [
     {
       title: "ok so here's the deal",
@@ -2189,7 +2344,6 @@
       examples: function(){ return []; }
     }
   ];
-
   var tutIndex = 0;
   var tutOverlay = document.getElementById("tut-overlay");
   var tutTitle = document.getElementById("tut-step-title");
@@ -2201,7 +2355,6 @@
   var tutSkip = document.getElementById("tut-skip");
   var tutClose = document.getElementById("tut-close");
   var helpBtn = document.getElementById("help-btn");
-
   function renderTutStep(){
     var step = TUT_STEPS[tutIndex];
     tutTitle.innerHTML = step.title;
@@ -2218,7 +2371,6 @@
     tutBack.disabled = (tutIndex===0);
     tutNext.textContent = (tutIndex===TUT_STEPS.length-1) ? "ok let's go" : "next";
   }
-
   function openTutorial(){
     tutIndex = 0;
     renderTutStep();
@@ -2228,7 +2380,6 @@
   function closeTutorial(){
     tutOverlay.classList.remove("open");
   }
-
   tutNext.addEventListener("click", function(){
     SFX.click();
     if(tutIndex < TUT_STEPS.length-1){
@@ -2248,20 +2399,17 @@
     if(e.target === tutOverlay) closeTutorial();
   });
   helpBtn.addEventListener("click", function(){ SFX.toggle(); openTutorial(); });
-
   function maybeAutoShowTutorial(){
     setTimeout(openTutorial, 450);
   }
-
   loadBankroll();
   state.deck = shuffle(buildDeck());
   refreshBankrollUI();
   showBettingPhase();
   maybeAutoShowTutorial();
   maybeShowGameOver();
-
 })();
 </script>
 
-</body>
-</html>
+
+</body></html>
