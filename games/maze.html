@@ -23,14 +23,40 @@ body{overflow:hidden;background:#000;display:flex;align-items:center;justify-con
 <body>
 <div id="w">
 <div style="font-size:11px;color:#333;margin-bottom:6px">MAZE — FIND THE EXIT</div>
-<div id="r"><canvas id="cv" width="420" height="300"></canvas><div id="a"><h2 id="b"></h2><p id="c"></p><p id="d"></p><button id="e">try again</button></div></div>
-<div id="hd">WASD or arrows · <span id="g">distance: 0</span></div>
+<div id="r"><canvas id=""cv" width=""420" height=""300"></canvas><div id="a"><h2 id="b"></h2><p id="c"></p><p id="d"></p><button id="e">try again</button></div></div>
+<div id="hd">WASD or arrows · <span id=""g">distance: 0</span></div>
 <div id="f"></div>
+<img id=""gt" src="gate.gif" style="position:absolute;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1">
 </div>
 <script>
 const k=cv.getContext('2d'),W=420,H=300,N=31,F=Math.floor,C=Math.cos,S=Math.sin,R=Math.random,Q=Math.sqrt,Mn=Math.min,Mx=Math.max,A=Math.abs,PI=Math.PI
+const DEBUG=false
 const $=i=>document.getElementById(i),sd=(i,v)=>$(i).style.display=v,tc=(i,v)=>$(i).textContent=v,sc=(i,v)=>$(i).style.color=v
-let Z,px,py,pA,td,ph,fe,re,lT,T;const K={}
+let Z,px,py,pA,td,ph,fe,re,reCells,gateHoriz,gateMin,gateSpan,lT,T;const K={}
+let dvX,dvY,dvActive=false,dvPath=null,dvPathT=0
+let dying=false,dyPhase=1,dyT=0,dyDurYaw=1.3,dyDurPitch=1,dyStartAng=0,dyTargetAng=0
+let camPitch=0,camPitchMax=58
+const ease=t=>t<.5?2*t*t:1-((-2*t+2)**2)/2
+let actx=null,dyOsc=[],dyGain=null
+function ensureAudio(){if(!actx){try{actx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return}}if(actx.state=='suspended')actx.resume()}
+function playScary(){ensureAudio();if(!actx)return
+stopScary()
+dyGain=actx.createGain();dyGain.gain.value=0;dyGain.connect(actx.destination)
+dyGain.gain.linearRampToValueAtTime(.16,actx.currentTime+.6)
+const freqs=[55,58.3,110,164.8]
+freqs.forEach((f,i)=>{const o=actx.createOscillator();o.type=i%2?'sawtooth':'sine';o.frequency.value=f
+const g=actx.createGain();g.gain.value=.22/freqs.length;o.connect(g);g.connect(dyGain);o.start();dyOsc.push(o)})
+const lfo=actx.createOscillator();lfo.frequency.value=.14
+const lg=actx.createGain();lg.gain.value=.05;lfo.connect(lg);lg.connect(dyGain.gain);lfo.start();dyOsc.push(lfo)}
+function stopScary(){if(!actx)return
+if(dyGain){try{dyGain.gain.cancelScheduledValues(actx.currentTime);dyGain.gain.linearRampToValueAtTime(0,actx.currentTime+.4)}catch(e){}}
+const oo=dyOsc,og=dyGain
+setTimeout(()=>{oo.forEach(o=>{try{o.stop()}catch(e){}});if(og)try{og.disconnect()}catch(e){}},450)
+dyOsc=[];dyGain=null}
+const dvImg=new Image();let dvImgOK=false;dvImg.onload=()=>dvImgOK=true;dvImg.onerror=()=>dvImgOK=false;dvImg.src='chaser.png'
+const dvImg3=new Image();let dvImg3OK=false;dvImg3.onload=()=>dvImg3OK=true;dvImg3.onerror=()=>dvImg3OK=false;dvImg3.src='catcher.png'
+const gt=$('gt');let gtOK=gt.complete&&gt.naturalWidth>0
+gt.onload=()=>gtOK=true;gt.onerror=()=>gtOK=false
 const cl=(x,y)=>(x<0||x>=N||y<0||y>=N)?1:Z[y*N+x],sZ=(x,y,v)=>Z[y*N+x]=v
 function gn(){Z=new Uint8Array(N*N).fill(1);const s=[[1,1]];sZ(1,1,0);const D=[[0,-2],[0,2],[-2,0],[2,0]]
 while(s.length){const[cx,cy]=s[s.length-1],sh=[...D].sort(()=>R()-.5);let m=0
@@ -41,31 +67,101 @@ if(cl(x,y)&&((!cl(x-1,y)&&!cl(x+1,y))||(!cl(x,y-1)&&!cl(x,y+1))))sZ(x,y,0)}}
 function pE(n){const c=[];for(let y=1;y<N-1;y++)for(let x=1;x<N-1;x++){if(cl(x,y))continue
 if(n){const d=A(x-1)+A(y-1);if(d>3&&d<9)c.push([x,y])}else if(x>N*.75&&y>N*.75)c.push([x,y])}
 return c[F(R()*c.length)]||(n?[3,3]:[N-2,N-2])}
-function I(){sd('a','none');gn();px=1.5;py=1.5;pA=0;td=0;ph=0;T=0;fe=pE(1);re=pE(0);sZ(...fe,0);sZ(...re,0)
+function bfsPath(sx,sy,tx,ty){
+if(sx==tx&&sy==ty)return[[sx,sy]]
+const vis=new Uint8Array(N*N),prev=new Int32Array(N*N).fill(-1),key=(x,y)=>y*N+x
+const q=[[sx,sy]];vis[key(sx,sy)]=1
+let qi=0;const DD=[[1,0],[-1,0],[0,1],[0,-1]]
+while(qi<q.length){const[cx,cy]=q[qi++]
+if(cx==tx&&cy==ty)break
+for(const[dx,dy]of DD){const nx=cx+dx,ny=cy+dy
+if(nx<0||ny<0||nx>=N||ny>=N||cl(nx,ny))continue
+const kk=key(nx,ny);if(vis[kk])continue
+vis[kk]=1;prev[kk]=key(cx,cy);q.push([nx,ny])}}
+const tk=key(tx,ty);if(!vis[tk])return null
+const path=[];let ck=tk
+while(ck!==-1){path.push([ck%N,F(ck/N)]);ck=prev[ck]}
+return path.reverse()}
+function buildGate(){const DD=[[1,0],[-1,0],[0,1],[0,-1]]
+const openN=DD.filter(([dx,dy])=>!cl(re[0]+dx,re[1]+dy))
+const ax=openN.length?openN[F(R()*openN.length)]:[1,0]
+const perp=[-ax[1],ax[0]]
+const cells=[re]
+for(const s of[[perp[0],perp[1]],[-perp[0],-perp[1]]]){const x=re[0]+s[0],y=re[1]+s[1]
+if(x>=1&&x<N-1&&y>=1&&y<N-1)cells.push([x,y])}
+return cells}
+function findCellAtDist(sx,sy,td){const vis=new Uint8Array(N*N),key=(x,y)=>y*N+x
+let front=[[sx,sy]];vis[key(sx,sy)]=1
+const DD=[[1,0],[-1,0],[0,1],[0,-1]]
+for(let d=0;d<td&&front.length;d++){const nx2=[]
+for(const[cx,cy]of front)for(const[dx,dy]of DD){const nx=cx+dx,ny=cy+dy
+if(nx<0||ny<0||nx>=N||ny>=N||cl(nx,ny))continue
+const kk=key(nx,ny);if(vis[kk])continue
+vis[kk]=1;nx2.push([nx,ny])}
+if(nx2.length)front=nx2}
+return front[F(R()*front.length)]||[sx,sy]}
+function spawnDevil(){const cands=[]
+for(let y=1;y<N-1;y++)for(let x=1;x<N-1;x++){if(cl(x,y))continue
+if(Q((x-px)**2+(y-py)**2)>N*.45)cands.push([x,y])}
+const c=cands.length?cands[F(R()*cands.length)]:[N-2,N-2]
+dvX=c[0]+.5;dvY=c[1]+.5;dvActive=true;dvPath=null;dvPathT=0}
+function I(){sd('a','none');gn();px=1.5;py=1.5;pA=0;td=0;ph=0;T=0;fe=pE(1);re=pE(0);sZ(...fe,0)
+reCells=buildGate();reCells.forEach(c=>sZ(c[0],c[1],0))
+gateHoriz=new Set(reCells.map(c=>c[1])).size===1
+gateMin=gateHoriz?Mn(...reCells.map(c=>c[0])):Mn(...reCells.map(c=>c[1]))
+gateSpan=reCells.length
+dvActive=false;dying=false;camPitch=0;stopScary()
+if(DEBUG){const c=findCellAtDist(re[0],re[1],5);px=c[0]+.5;py=c[1]+.5;ph=1;spawnDevil()}
 tc('f','');sc('f','#0f0');tc('g','distance: 0');lT=performance.now()}
 const cM=(x,y)=>{const r=.22;return!cl(F(x-r),F(y-r))&&!cl(F(x+r),F(y-r))&&!cl(F(x-r),F(y+r))&&!cl(F(x+r),F(y+r))}
-function up(dt){if($('a').style.display=='block')return
+function up(dt){if(dying){dyT+=dt
+if(dyPhase==1){const t=Mn(1,dyT/dyDurYaw),e=ease(t)
+let delta=dyTargetAng-dyStartAng;while(delta>PI)delta-=2*PI;while(delta<-PI)delta+=2*PI
+pA=dyStartAng+delta*e
+if(t>=1){dyPhase=2;dyT=0}}
+else if(dyPhase==2){const t=Mn(1,dyT/dyDurPitch)
+camPitch=ease(t)*camPitchMax
+if(t>=1){dying=false;finishCaught()}}
+return}
+if($('a').style.display=='block')return
 pA+=((K.r?1:0)-(K.l?1:0))*2.6*dt
 const mv=(K.u?1:0)-(K.d?1:0)
 if(mv){const s=mv*2.4*dt,dx=C(pA)*s,dy=S(pA)*s;let X=0,Y=0
 if(cM(px+dx,py)){px+=dx;X=dx}if(cM(px,py+dy)){py+=dy;Y=dy}
 td+=Q(X*X+Y*Y);if(X||Y)tc('g','distance: '+td.toFixed(1))
 const cx=F(px),cy=F(py)
-if(ph==0&&cx==fe[0]&&cy==fe[1])ff();else if(ph==1&&cx==re[0]&&cy==re[1])rf()}}
+if(ph==0&&cx==fe[0]&&cy==fe[1])ff();else if(ph==1&&reCells.some(c=>c[0]==cx&&c[1]==cy))rf()}
+if(ph==1&&dvActive){
+dvPathT-=dt
+if(dvPathT<=0){dvPathT=.3;dvPath=bfsPath(F(dvX),F(dvY),F(px),F(py))}
+if(dvPath){
+const homing=dvPath.length<=2
+const tx=homing?px:dvPath[1][0]+.5,ty=homing?py:dvPath[1][1]+.5
+const ang=Math.atan2(ty-dvY,tx-dvX),spd=1.9*dt
+dvX+=C(ang)*spd;dvY+=S(ang)*spd
+if(!homing&&Q((tx-dvX)**2+(ty-dvY)**2)<.15)dvPath.shift()}
+if(Q((dvX-px)**2+(dvY-py)**2)<.45)caught()}}
 const sM=(x,c)=>{sc('f',c||'#0f0');tc('f',x)}
 function ff(){ph=.5;sd('a','block');tc('b','✓ EXIT FOUND');sc('b','#0f0');tc('c','you escaped in '+td.toFixed(1)+' distance.');tc('d','');sd('e','none')
 setTimeout(()=>{sd('a','none');rT()},2200)}
-function rT(){ph=1;sM('...wait.','#ff4444')
+function rT(){ph=1;spawnDevil();sM('...wait.','#ff4444')
 setTimeout(()=>{sM('that exit was fake. you barely moved.','#ff4444')
 sd('a','block');tc('b','THAT WAS FAKE');sc('b','#ff4444')
 tc('c','you were near the start the whole time.')
 tc('d','the real exit pulses on the map. go.');sc('d','#ff6644')
 sd('e','inline-block');tc('e','keep going')
 $('e').onclick=()=>{sd('a','none');sM('find the REAL exit. good luck.','#ff6600')}},1400)}
-function rf(){sd('a','block');tc('b','YOU ACTUALLY DID IT');sc('b','#ff0')
+function rf(){dvActive=false;sd('a','block');tc('b','YOU ACTUALLY DID IT');sc('b','#ff0')
 tc('c',td.toFixed(1)+' total distance. both exits found.')
 tc('d','genuinely impressive. or concerning.');sc('d','#aaa')
 sd('e','inline-block');tc('e','play again');$('e').onclick=I}
+function caught(){if(dying)return
+dying=true;dyPhase=1;dyT=0;dyStartAng=pA;camPitch=0
+dyTargetAng=Math.atan2(dvY-py,dvX-px)
+playScary()}
+function finishCaught(){dvActive=false;sd('a','block');tc('b','THE DEVIL GOT YOU');sc('b','#ff2222')
+tc('c',td.toFixed(1)+' distance before he caught you.');tc('d','run faster next time.');sc('d','#ff6666')
+sd('e','inline-block');tc('e','try again');$('e').onclick=I}
 const dc=(t,o)=>`hsl(${(t*140+o*6)%360},100%,${55+S(t*9+o*.3)*12}%)`
 function dMap(){const w=160,cw=w/N,o=10
 k.fillStyle='#050805';k.fillRect(o,o,w,w)
@@ -76,8 +172,12 @@ k.fillStyle=cl(x,y)?`rgb(${g},${g},${g})`:`rgb(${r},${b},${F(b*.25)})`
 k.fillRect(o+x*cw,o+y*cw,cw+.5,cw+.5)}
 if(ph<1){k.fillStyle='rgba(0,255,100,.25)';k.fillRect(o+fe[0]*cw-2,o+fe[1]*cw-2,cw+4,cw+4)
 k.fillStyle='#00ff64';k.fillRect(o+fe[0]*cw-.5,o+fe[1]*cw-.5,cw+1,cw+1)}
-else{const p=.6+S(T*8)*.4;k.fillStyle=`rgba(255,0,200,${p*.4})`;k.fillRect(o+re[0]*cw-4,o+re[1]*cw-4,cw+8,cw+8)
-k.fillStyle=dc(T,0);k.fillRect(o+re[0]*cw-.5,o+re[1]*cw-.5,cw+1,cw+1)}
+else{const p=.6+S(T*8)*.4
+reCells.forEach(c=>{k.fillStyle=`rgba(255,0,200,${p*.4})`;k.fillRect(o+c[0]*cw-4,o+c[1]*cw-4,cw+8,cw+8)
+k.fillStyle=dc(T,0);k.fillRect(o+c[0]*cw-.5,o+c[1]*cw-.5,cw+1,cw+1)})}
+if(ph==1&&dvActive){const dd=Q((dvX-px)**2+(dvY-py)**2)
+if(dd<3.4){const pl=.6+S(T*12)*.4;k.fillStyle=`rgba(255,20,20,${pl})`
+k.beginPath();k.arc(o+dvX*cw,o+dvY*cw,2.5,0,PI*2);k.fill()}}
 k.fillStyle='#ffeb3b';k.beginPath();k.arc(o+px*cw,o+py*cw,2.5,0,PI*2);k.fill()
 k.strokeStyle='#ffeb3b';k.lineWidth=1;k.beginPath();k.moveTo(o+px*cw,o+py*cw);k.lineTo(o+(px+C(pA)*1.5)*cw,o+(py+S(pA)*1.5)*cw);k.stroke()
 k.strokeStyle='#1a3a1a';k.lineWidth=.5;k.strokeRect(o,o,w,w)
@@ -85,36 +185,62 @@ k.fillStyle='#333';k.font='9px Courier New';k.textAlign='left';k.fillText('LAMP'
 function ray(ra){const sx=C(ra)*.025,sy=S(ra)*.025;let rx=px,ry=py,d=0,pm=F(px),qm=F(py),sh=0
 while(d<16){rx+=sx;ry+=sy;d+=.025;const mx=F(rx),my=F(ry)
 if(mx!=pm||my!=qm){sh=my!=qm
-const iF=mx==fe[0]&&my==fe[1]&&ph==0,iR=mx==re[0]&&my==re[1]&&ph==1
+const iF=mx==fe[0]&&my==fe[1]&&ph==0,iR=ph==1&&reCells.some(c=>c[0]==mx&&c[1]==my)
 if(iF||iR||cl(mx,my))return{d,sh,iF,iR,X:rx,Y:ry}
 pm=mx;qm=my}}}
-function dFP(){const rx=185,rw=W-190,rh=H,FOV=PI/2.5,RY=96
-k.fillStyle='#080d08';k.fillRect(rx,0,rw,rh/2)
-const fg=k.createLinearGradient(0,rh/2,0,rh);fg.addColorStop(0,'#0a160a');fg.addColorStop(1,'#152015');k.fillStyle=fg;k.fillRect(rx,rh/2,rw,rh/2)
+function dFP(){const rx=185,rw=W-190,rh=H,FOV=PI/2.5,RY=96,hz=rh/2+camPitch
+k.fillStyle='#080d08';k.fillRect(rx,0,rw,hz)
+const fg=k.createLinearGradient(0,hz,0,rh);fg.addColorStop(0,'#0a160a');fg.addColorStop(1,'#152015');k.fillStyle=fg;k.fillRect(rx,hz,rw,rh-hz)
 const hs=[];for(let i=0;i<RY;i++)hs.push(ray(pA-FOV/2+i/RY*FOV))
 for(let i=0;i<RY;i++){const h=hs[i];if(!h||!h.iR)continue
 const ra=pA-FOV/2+i/RY*FOV,co=h.d*C(ra-pA),wH=Mn(rh*1.5,rh/(co+.001))
 const bx=rx+i/RY*rw,bw=rw/RY+1,br=Mx(.15,1-h.d/16),hu=(T*180+i*4)%360
-k.fillStyle=`hsla(${hu},100%,60%,${.15*br})`;k.fillRect(bx-bw*2,rh/2-wH*.7,bw*5,wH*1.4)
-k.fillStyle=`hsla(${hu},100%,65%,${.25*br})`;k.fillRect(bx-bw,rh/2-wH*1.15/2,bw*3,wH*1.15)}
+k.fillStyle=`hsla(${hu},100%,60%,${.15*br})`;k.fillRect(bx-bw*2,hz-wH*.7,bw*5,wH*1.4)
+k.fillStyle=`hsla(${hu},100%,65%,${.25*br})`;k.fillRect(bx-bw,hz-wH*1.15/2,bw*3,wH*1.15)}
 for(let i=0;i<RY;i++){const h=hs[i];if(!h)continue
 const ra=pA-FOV/2+i/RY*FOV,co=h.d*C(ra-pA),wH=Mn(rh*1.5,rh/(co+.001))
-const bx=rx+i/RY*rw,bw=rw/RY+1,wt=rh/2-wH/2,br=Mx(.08,1-h.d/16)
-if(h.iR){const bN=8,bH=wH/bN
+const bx=rx+i/RY*rw,bw=rw/RY+1,wt=hz-wH/2,br=Mx(.08,1-h.d/16)
+if(h.iR){
+if(gtOK&&gt.naturalWidth>0&&gt.naturalHeight>0){
+try{
+const gU=(gateHoriz?h.X:h.Y)-gateMin,GU0=.02,GU1=.81
+const su=GU0+Mx(0,Mn(.999,gU/gateSpan))*(GU1-GU0)
+k.drawImage(gt,Mx(0,Mn(gt.naturalWidth-1,F(su*gt.naturalWidth))),0,1,gt.naturalHeight,bx,wt,bw,wH)
+}catch(err){gtOK=false;console.warn('gate.gif draw failed:',err)}
+}else{const bN=8,bH=wH/bN
 for(let b=0;b<bN;b++){const hu=(T*180+b*40+i*4)%360,li=50+S(T*10+b*.7+i*.05)*18
 k.fillStyle=`hsl(${hu},100%,${li}%)`;k.fillRect(bx,wt+b*bH,bw,bH+1)}
-k.fillStyle=`hsla(0,0%,100%,${.3*br})`;k.fillRect(bx,wt+wH*.45,bw,wH*.1)}
+k.fillStyle=`hsla(0,0%,100%,${.3*br})`;k.fillRect(bx,wt+wH*.45,bw,wH*.1)}}
 else if(h.iF){const b1=F(br*220);k.fillStyle=`rgb(0,${b1},${F(b1*.4)})`;k.fillRect(bx,wt,bw,wH)}
 else{const ss=h.sh?.65:1,bN=6,bH=wH/bN,wU=h.sh?h.X:h.Y
 for(let b=0;b<bN;b++){const off=b%2?.5:0,bU=(wU*2+off)%1,mo=bU<.06||bU>.94
 const bt=br*ss*(mo?.35:1)*(.85+b*.04)*(.92+(F(wU*7)+b*31)%13/13*.15)
 k.fillStyle=`rgb(${F(bt*30)},${F(bt*115)},${F(bt*40)})`;k.fillRect(bx,wt+b*bH,bw,bH+1)}
 k.fillStyle=`rgba(0,0,0,${.5*br})`;for(let b=1;b<bN;b++)k.fillRect(bx,wt+b*bH-.5,bw,.7)}}
-k.fillStyle='rgba(255,235,80,.6)';k.fillRect(rx+rw/2-1,rh/2-5,1,10);k.fillRect(rx+rw/2-5,rh/2-1,10,1)
+if(ph==1&&dvActive){
+const adx=dvX-px,ady=dvY-py,ddist=Q(adx*adx+ady*ady)
+if(ddist<16&&ddist>.05){
+const angTo=Math.atan2(ady,adx);let rel=angTo-pA
+while(rel>PI)rel-=2*PI;while(rel<-PI)rel+=2*PI
+const angHalf=Math.atan2(.35,ddist)
+if(A(rel)<FOV/2+angHalf){
+const co=Mx(.05,ddist*C(rel)),wH=Mn(rh*1.6,rh/(co+.001)),wt=hz-wH/2
+const iC=(rel+FOV/2)/FOV*RY,iHalf=angHalf/FOV*RY
+const i0=Mx(0,Math.ceil(iC-iHalf)),i1=Mn(RY-1,Math.floor(iC+iHalf))
+for(let i=i0;i<=i1;i++){const h=hs[i]
+if(h&&h.d<ddist-.15)continue
+const bx=rx+i/RY*rw,bw=rw/RY+1
+const u=(i-(iC-iHalf))/((iHalf*2)||1)
+const img=(dying&&dyPhase>=2&&dvImg3OK)?dvImg3:(dvImgOK?dvImg:null)
+if(img){k.drawImage(img,Mx(0,Mn(img.width-1,F(u*img.width))),0,1,img.height,bx,wt,bw,wH)}
+else{const pl=.5+S(T*10)*.3;k.fillStyle=`rgba(255,${F(20+pl*30)},0,.9)`;k.fillRect(bx,wt,bw,wH)}}}}}
+k.fillStyle='rgba(255,235,80,.6)';k.fillRect(rx+rw/2-1,hz-5,1,10);k.fillRect(rx+rw/2-5,hz-1,10,1)
 k.fillStyle='#1a3a1a';k.font='9px Courier New';k.textAlign='left';k.fillText('VIEW',rx+4,12)}
-function lp(n){const dt=Mn(.05,(n-lT)/1000);lT=n;T+=dt;up(dt);k.fillStyle='#000';k.fillRect(0,0,W,H);dMap();dFP();requestAnimationFrame(lp)}
+function lp(n){const dt=Mn(.05,(n-lT)/1000);lT=n;T+=dt
+try{up(dt);k.fillStyle='#000';k.fillRect(0,0,W,H);dMap();dFP()}catch(err){console.warn('frame error:',err)}
+requestAnimationFrame(lp)}
 const KM={ArrowLeft:'l',ArrowRight:'r',ArrowUp:'u',ArrowDown:'d',KeyA:'l',KeyD:'r',KeyW:'u',KeyS:'d'}
-onkeydown=e=>{if(KM[e.code]){K[KM[e.code]]=1;e.preventDefault()}}
+onkeydown=e=>{if(KM[e.code]){ensureAudio();K[KM[e.code]]=1;e.preventDefault()}}
 onkeyup=e=>K[KM[e.code]]=0
 function rz(){const sc=Mn(window.innerWidth/W,window.innerHeight/H);cv.style.width=W*sc+'px';cv.style.height=H*sc+'px'}
 window.onresize=rz;$('e').onclick=I;I();rz();requestAnimationFrame(lp)
