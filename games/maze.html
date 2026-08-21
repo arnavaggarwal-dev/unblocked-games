@@ -23,10 +23,10 @@ body{overflow:hidden;background:#000;display:flex;align-items:center;justify-con
 <body>
 <div id="w">
 <div style="font-size:11px;color:#333;margin-bottom:6px">MAZE — FIND THE EXIT</div>
-<div id="r"><canvas id=""cv" width=""420" height=""300"></canvas><div id="a"><h2 id="b"></h2><p id="c"></p><p id="d"></p><button id="e">try again</button></div></div>
-<div id="hd">WASD or arrows · <span id=""g">distance: 0</span></div>
+<div id="r"><canvas id="cv" width="420" height="300"></canvas><div id="a"><h2 id="b"></h2><p id="c"></p><p id="d"></p><button id="e">try again</button></div></div>
+<div id="hd">WASD or arrows · <span id="g">distance: 0</span></div>
 <div id="f"></div>
-<img id=""gt" src="gate.gif" style="position:absolute;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1">
+<img id="gt" src="gate.gif" style="position:absolute;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1">
 </div>
 <script>
 const k=cv.getContext('2d'),W=420,H=300,N=31,F=Math.floor,C=Math.cos,S=Math.sin,R=Math.random,Q=Math.sqrt,Mn=Math.min,Mx=Math.max,A=Math.abs,PI=Math.PI
