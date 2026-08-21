@@ -11,7 +11,7 @@ REM cd into the script's own folder first, then use a RELATIVE path to the .ps1.
 REM Passing "%~dp0scripts\push.ps1" works from cmd and Explorer, but Git Bash re-quotes
 REM arguments on the way through and splits this project's path at "OneDrive - NUS".
 pushd "%~dp0"
-powershell -NoProfile -ExecutionPolicy Bypass -File "scripts\push.ps1" %*
+powershell -NoProfile -ExecutionPolicy Bypass -File "scripts\push.ps1" -Release %*
 popd
 
 REM Keep the window open when launched by double-click so errors stay readable.
