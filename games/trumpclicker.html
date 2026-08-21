@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Click Man</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #ece0c4;
+    --paper2: #e2d3ac;
+    --paper-dark: #d6c497;
+    --card: #f4ead0;
+    --ink: #2b2420;
+    --ink-soft: #5b5142;
+    --accent: #b5442e;
+    --accent2: #3b6e52;
+    --tape: rgba(255,255,250,0.55);
+    --shadow: rgba(60,45,20,0.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; height:100%;
+    background: var(--paper);
+    font-family:'Kalam', cursive;
+    color: var(--ink);
+    overflow:hidden;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  body{
+    background-image:
+      radial-gradient(circle at 20% 15%, rgba(255,255,255,0.25), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(0,0,0,0.06), transparent 45%);
+  }
+  .grain{
+    position:fixed; inset:0; pointer-events:none; z-index:5;
+    opacity:0.09; mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  .wrap{
+    position:relative; width:100%; height:100%;
+    display:flex; flex-direction:column; align-items:center;
+    padding: 18px 14px 10px;
+  }
+
+  h1{
+    font-size: clamp(24px, 5vw, 34px);
+    margin: 2px 0 10px;
+    letter-spacing: 1px;
+    color: var(--ink);
+    text-shadow: 1px 1px 0 rgba(255,255,255,0.4);
+    transform: rotate(-1deg);
+  }
+  .score-note{
+    position:relative;
+    background: var(--card);
+    border-radius: 4px 4px 8px 6px / 6px 4px 8px 4px;
+    padding: 10px 26px;
+    box-shadow: 0 6px 14px var(--shadow), 0 1px 0 rgba(255,255,255,0.6) inset;
+    transform: rotate(-1.5deg);
+    margin-bottom: 6px;
+    min-width: 220px;
+    text-align:center;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  .score-note::before{
+    content:"";
+    position:absolute; top:-10px; left:50%; transform:translateX(-50%) rotate(-4deg);
+    width:46px; height:20px;
+    background: var(--tape);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    border: 1px solid rgba(0,0,0,0.05);
+  }
+  .score-num{
+    font-family:'Special Elite', monospace;
+    font-size: clamp(30px, 8vw, 44px);
+    line-height:1;
+    color: var(--ink);
+  }
+  .score-label{
+    font-size: 13px; color: var(--ink-soft); letter-spacing:1px; text-transform:uppercase;
+  }
+  .stage{
+    position: relative;
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 420px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height: 524px;
+  }
+
+  .rig{
+    position:relative;
+    width: 762px;
+    height: 524px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .clickman-img{
+    position:absolute;
+    left:50%; top:50%;
+    transform: translate(-50%,-50%);
+    width: 306px; height: 401px;
+    z-index: 1;
+    filter: drop-shadow(3px 6px 5px var(--shadow));
+    transition: transform 90ms ease-out;
+    pointer-events:none;
+    object-fit: contain;
+  }
+  .rig.squish .clickman-img{
+    transform: translate(-50%,-50%) scaleX(1.08) scaleY(0.9);
+  }
+
+  .hand{
+    position:absolute;
+    top: 50%;
+    width: 219px; height: 143px;
+    z-index: 4;
+    pointer-events:none;
+    filter: drop-shadow(2px 4px 4px var(--shadow));
+  }
+  .hand img{ width:100%; height:100%; display:block; object-fit: contain; }
+  .hand.left{
+    left: 50%;
+    transform-origin: 92% 50%;
+    transform: translate(calc(-100% - 150px), -50%) rotate(6deg);
+  }
+  .hand.right{
+    left: 50%;
+    transform-origin: 8% 50%;
+    transform: translate(170px, -50%) rotate(-6deg);
+  }
+  .rig.spread .hand.left{
+    animation: spreadLeft 50ms steps(1, end);
+  }
+  .rig.spread .hand.right{
+    animation: spreadRight 50ms steps(1, end);
+  }
+  @keyframes spreadLeft{
+    0%   { transform: translate(calc(-100% - 321px), -62%) rotate(-28deg); }
+    100% { transform: translate(calc(-100% - 150px), -50%) rotate(6deg); }
+  }
+  @keyframes spreadRight{
+    0%   { transform: translate(342px, -62%) rotate(28deg); }
+    100% { transform: translate(170px, -50%) rotate(-6deg); }
+  }
+
+  .ring{
+    position:absolute; border-radius:50%;
+    border: 2px solid var(--accent);
+    left:50%; top:50%;
+    width: 10px; height:10px;
+    transform: translate(-50%,-50%);
+    opacity: 0.6;
+    pointer-events:none;
+    animation: ringOut 500ms ease-out forwards;
+    z-index: 1;
+  }
+  @keyframes ringOut{
+    to{ width: 200px; height:200px; opacity:0; }
+  }
+
+  .pop{
+    position:absolute;
+    font-family:'Special Elite', monospace;
+    font-size: 18px;
+    color: var(--accent2);
+    pointer-events:none;
+    z-index: 6;
+    animation: floatUp 750ms ease-out forwards;
+  }
+  @keyframes floatUp{
+    0%{ transform: translate(-50%,-50%) translateY(0); opacity:1; }
+    100%{ transform: translate(-50%,-50%) translateY(-70px); opacity:0; }
+  }
+
+  .scrap{
+    position:absolute; width:8px; height:12px;
+    left:50%; top:50%;
+    pointer-events:none; z-index:6;
+    border-radius:1px;
+  }
+
+  .hint{
+    font-size: 11px; color: var(--ink-soft); opacity:0.8; margin-top:-4px; margin-bottom:6px;
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="wrap">
+  <h1>Click Man</h1>
+
+  <div class="score-note">
+    <div class="score-num" id="scoreNum">0</div>
+    <div class="score-label">clicks</div>
+  </div>
+
+  <div class="stage">
+    <div class="rig" id="rig">
+      <div class="hand left" id="handLeft">
+        <img src="handsleft.jpg" alt="">
+      </div>
+      <div class="hand right" id="handRight">
+        <img src="handsright.jpg" alt="">
+      </div>
+      <img class="clickman-img" id="manImg" src="clickmen/clickman1.jpg" alt="">
+    </div>
+  </div>
+  <div class="hint">tap the paper man</div>
+  <audio id="bgAudio" src="clickmen/audio.mp3" loop preload="auto"></audio>
+</div>
+
+<script>
+(function(){
+  var bgAudio = document.getElementById('bgAudio');
+  var audioStopTimer = null;
+  function pulseAudio(){
+    if(bgAudio.paused){
+      bgAudio.play().catch(function(){});
+    }
+    clearTimeout(audioStopTimer);
+    audioStopTimer = setTimeout(function(){ bgAudio.pause(); }, 400);
+  }
+
+  var CLICKMAN_SKIN_FILES = [
+    'clickmen/clickman1.jpg',
+    'clickmen/clickman2.jpg',
+    'clickmen/clickman3.jpg',
+    'clickmen/clickman4.jpg',
+    'clickmen/clickman5.jpg',
+    'clickmen/clickman6.jpg',
+    'clickmen/clickman7.jpg',
+    'clickmen/clickman8.jpg',
+    'clickmen/clickman9.jpg'
+  ];
+
+  var manImgEl = document.getElementById('manImg');
+  var loadedSkins = [];
+  var currentSkin = manImgEl.getAttribute('src');
+
+  CLICKMAN_SKIN_FILES.forEach(function(file){
+    var pre = new Image();
+    pre.onload = function(){ loadedSkins.push(file); };
+    pre.src = file;
+  });
+
+  var clicksSinceSkinChange = 0;
+  var nextSkinThreshold = 5 + Math.floor(Math.random() * 6);
+
+  function maybeSwapSkin(){
+    clicksSinceSkinChange++;
+    if(clicksSinceSkinChange < nextSkinThreshold) return;
+    if(loadedSkins.length < 2){ clicksSinceSkinChange = 0; return; }
+
+    var choices = loadedSkins.filter(function(f){ return f !== currentSkin; });
+    var next = choices[Math.floor(Math.random() * choices.length)];
+    currentSkin = next;
+    manImgEl.src = next;
+
+    clicksSinceSkinChange = 0;
+    nextSkinThreshold = 5 + Math.floor(Math.random() * 6);
+  }
+
+  var state = { score: 0, perClick: 1 };
+
+  var scoreNum = document.getElementById('scoreNum');
+  var rig = document.getElementById('rig');
+  var stage = document.querySelector('.stage');
+
+  function fmt(n){
+    n = Math.floor(n);
+    if(n < 1000) return String(n);
+    if(n < 1000000) return (n/1000).toFixed(n%1000===0?0:1)+'k';
+    return (n/1000000).toFixed(2)+'m';
+  }
+
+  function renderStats(){
+    scoreNum.textContent = fmt(state.score);
+  }
+
+  var scrapColors = ['#b5442e','#3b6e52','#c9a227','#5b5142','#2b2420'];
+
+  function spawnPop(x, y, amount){
+    var el = document.createElement('div');
+    el.className = 'pop';
+    el.style.left = x+'px';
+    el.style.top = y+'px';
+    el.textContent = '+' + fmt(amount);
+    stage.appendChild(el);
+    setTimeout(function(){ el.remove(); }, 780);
+  }
+
+  function spawnRing(x, y){
+    var el = document.createElement('div');
+    el.className = 'ring';
+    el.style.left = x+'px';
+    el.style.top = y+'px';
+    stage.appendChild(el);
+    setTimeout(function(){ el.remove(); }, 520);
+  }
+
+  function spawnScraps(x, y){
+    for(var i=0;i<7;i++){
+      var s = document.createElement('div');
+      s.className = 'scrap';
+      s.style.left = x+'px';
+      s.style.top = y+'px';
+      s.style.background = scrapColors[i % scrapColors.length];
+      var angle = (Math.random()*Math.PI*2);
+      var dist = 40 + Math.random()*50;
+      var dx = Math.cos(angle)*dist;
+      var dy = Math.sin(angle)*dist - 20;
+      var rot = (Math.random()*360-180);
+      s.animate([
+        { transform:'translate(-50%,-50%) rotate(0deg)', opacity:1 },
+        { transform:'translate('+(dx-4)+'px,'+(dy)+'px) rotate('+rot+'deg)', opacity:0.9, offset:0.6 },
+        { transform:'translate('+dx+'px,'+(dy+60)+'px) rotate('+(rot*1.4)+'deg)', opacity:0 }
+      ], { duration: 650 + Math.random()*200, easing:'cubic-bezier(.2,.7,.3,1)' });
+      stage.appendChild(s);
+      setTimeout(function(el){ el.remove(); }, 900, s);
+    }
+  }
+
+  var spreadTimer = null, squishTimer = null;
+
+  function onTap(clientX, clientY){
+    state.score += state.perClick;
+    renderStats();
+    maybeSwapSkin();
+    pulseAudio();
+
+    var rect = stage.getBoundingClientRect();
+    var x = clientX - rect.left;
+    var y = clientY - rect.top;
+
+    spawnPop(x, y - 40, state.perClick);
+    spawnRing(x, y);
+    spawnScraps(x, y);
+
+    rig.classList.remove('spread'); void rig.offsetWidth; rig.classList.add('spread');
+    rig.classList.remove('squish'); void rig.offsetWidth; rig.classList.add('squish');
+    clearTimeout(spreadTimer); clearTimeout(squishTimer);
+    spreadTimer = setTimeout(function(){ rig.classList.remove('spread'); }, 60);
+    squishTimer = setTimeout(function(){ rig.classList.remove('squish'); }, 140);
+  }
+
+  rig.addEventListener('click', function(e){
+    onTap(e.clientX, e.clientY);
+  });
+  rig.addEventListener('touchstart', function(e){
+    e.preventDefault();
+    var t = e.changedTouches[0];
+    onTap(t.clientX, t.clientY);
+  }, { passive:false });
+
+  window.addEventListener('keydown', function(e){
+    if(e.code === 'Space' || e.key === ' '){
+      e.preventDefault();
+      var rect = rig.getBoundingClientRect();
+      onTap(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    }
+  });
+
+  renderStats();
+})();
+</script>
+</body>
+</html>
